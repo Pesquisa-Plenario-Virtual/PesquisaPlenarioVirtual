@@ -368,8 +368,8 @@ def _tipo_ambiente(df: pd.DataFrame, ano_ini: int, ano_fim: int, show_values: bo
     fig = aplicar_padrao(
         fig, titulo, subtitulo,
         xaxis=dict(title=""), yaxis=dict(title="", range=[0, 105]),
-        barmode="group", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=0.96, x=0.5, xanchor="center"),
-        margin=dict(t=150, b=70, l=60, r=40),
+        barmode="group", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.05, x=0.5, xanchor="center"),
+        margin=dict(t=200, b=70, l=60, r=40),
     )
     fig.update_xaxes(tickfont=dict(size=22), title_font=dict(size=22))
     fig.update_yaxes(showline=False, showticklabels=False, ticks="")
