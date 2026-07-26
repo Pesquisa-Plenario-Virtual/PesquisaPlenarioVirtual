@@ -207,7 +207,7 @@ def _classe_ano(df: pd.DataFrame, ambiente: str, show_values: bool, titulo: str,
     fig = go.Figure()
     for classe in _CLASSES:
         if show_values:
-            textos = [f"<span style='font-size:20px'>{br(v)}</span><br><span style='font-size:12px'>({pct_tab.loc[ano, classe]:.0f}%)</span>" if totais_ano[ano] > 0 else br(v)
+            textos = [f"<span style='font-size:20px'>{br(v)}</span><br><span style='font-size:12px'>{pct_tab.loc[ano, classe]:.1f}%</span>" if totais_ano[ano] > 0 else br(v)
                       for v, ano in zip(tab[classe], tab.index)]
         else:
             textos = None
@@ -432,7 +432,7 @@ def _categoria_ano(df: pd.DataFrame, ambiente: str, show_values: bool, titulo: s
     fig = go.Figure()
     for cat in cats:
         if show_values:
-            textos = [f"<span style='font-size:20px'>{br(v)}</span><br><span style='font-size:12px'>({pct_tab.loc[ano, cat]:.0f}%)</span>" if total_ano[ano] > 0 else br(v)
+            textos = [f"<span style='font-size:20px'>{br(v)}</span><br><span style='font-size:12px'>{pct_tab.loc[ano, cat]:.1f}%</span>" if total_ano[ano] > 0 else br(v)
                       for v, ano in zip(tab[cat], tab.index)]
         else:
             textos = None
@@ -493,7 +493,7 @@ def _nc_categoria_ano(df: pd.DataFrame, ambiente: str, show_values: bool, titulo
     fig = go.Figure()
     for cat in cats:
         if show_values:
-            textos = [f"<span style='font-size:20px'>{br(v)}</span><br><span style='font-size:12px'>({pct_tab.loc[ano, cat]:.0f}%)</span>" if total_ano[ano] > 0 else br(v)
+            textos = [f"<span style='font-size:20px'>{br(v)}</span><br><span style='font-size:12px'>{pct_tab.loc[ano, cat]:.1f}%</span>" if total_ano[ano] > 0 else br(v)
                       for v, ano in zip(tab[cat], tab.index)]
         else:
             textos = None
@@ -588,7 +588,7 @@ def _tramitacao_periodo_vertical(df: pd.DataFrame, ano_ini: int, ano_fim: int, s
         fig.add_trace(go.Bar(
             x=[""], y=[pct[cat]], name=cat.replace("Somente ", "").upper(),
             marker_color=_CORES_TRAMITACAO[cat],
-            text=[f"{br(vc[cat])}<br>({br(pct[cat], 1)}%)"] if show_values else None,
+            text=[f"{br(vc[cat])}<br>{br(pct[cat], 1)}%"] if show_values else None,
             textposition="outside", textfont=dict(color="black", size=20, weight="bold"), cliponaxis=False,
         ))
     fig = aplicar_padrao(
