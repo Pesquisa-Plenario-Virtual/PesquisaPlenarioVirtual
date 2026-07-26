@@ -22,7 +22,7 @@ _CORES_CATEGORIA = {
 }
 _CORES_NC = {
     "Pedido de vista": "#1E3A8A", "Destaque": "#2563EB",
-    "Retirado de pauta": "#60A5FA", "Motivos diversos": "#93C5FD",
+    "Retirado de pauta": "#60A5FA", "Motivos diversos": "#A7F3D0",
 }
 
 
