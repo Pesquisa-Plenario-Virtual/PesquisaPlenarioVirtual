@@ -348,17 +348,21 @@ def fig_2j2_recursos_2016(df: pd.DataFrame, show_values: bool = True) -> go.Figu
 # ── 2.k1 / 2.k2 ──────────────────────────────────────────────────────────────
 def _tipo_ambiente(df: pd.DataFrame, ano_ini: int, ano_fim: int, show_values: bool, titulo: str, subtitulo: str) -> go.Figure:
     sub = df[df["ano"].between(ano_ini, ano_fim)].copy()
-    # "Não identificado" é tratado como Principal (PR), igual ao script de referência da cliente
     sub["tipo_questao"] = sub["tipo_questao"].replace("Não identificado", "PR")
     tab = sub.groupby(["tipo_questao", "ambiente"]).size().unstack(fill_value=0).reindex(index=["PR", "QI", "RC"], fill_value=0)
     tipos = tab.index.tolist()
+    pct_tab = tab.div(tab.sum(axis=0), axis=1).fillna(0) * 100
 
     fig = go.Figure()
     for amb, cor in [("Plenário Virtual", COR_PV), ("Plenário Presencial", COR_PP)]:
+        if show_values:
+            textos = [f"<span style='font-size:20px'>{br(v)}</span><br><span style='font-size:12px'>{pct_tab.loc[tp, amb]:.1f}%</span>"
+                      for tp, v in zip(tipos, tab[amb])]
+        else:
+            textos = None
         fig.add_trace(go.Bar(
             x=tipos, y=tab[amb], name=amb.upper(), marker_color=cor,
-            text=[br(v) for v in tab[amb]] if show_values else None,
-            textposition="outside", textfont=dict(color="black", size=20, weight="bold"),
+            text=textos, textposition="outside", textfont=dict(color="black", size=20, weight="bold"),
             cliponaxis=False,
         ))
     fig = aplicar_padrao(
