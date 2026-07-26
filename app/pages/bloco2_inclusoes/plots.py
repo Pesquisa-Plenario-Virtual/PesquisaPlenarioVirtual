@@ -21,8 +21,8 @@ _CORES_CATEGORIA = {
     "Maioria (relator vencido)": "#f59e0b", "Não concluído": CINZA,
 }
 _CORES_NC = {
-    "Pedido de vista": "#8b5cf6", "Destaque": "#ec4899",
-    "Retirado de pauta": "#f59e0b", "Motivos diversos": CINZA,
+    "Pedido de vista": "#1E3A8A", "Destaque": "#2563EB",
+    "Retirado de pauta": "#60A5FA", "Motivos diversos": "#93C5FD",
 }
 
 
