@@ -447,9 +447,10 @@ def fig_2l2_pauta_vs_concluidos(df: pd.DataFrame, show_values: bool = True) -> g
         xaxis=dict(title=""), yaxis=dict(title="", range=[0, 105]),
         barmode="group", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.2, x=0.5, xanchor="center"),
         margin=dict(t=190, b=70, l=60, r=40),
+        bargap=0.2, bargroupgap=0.05,
     )
     fig.update_yaxes(showline=False, showticklabels=False, ticks="")
-    fig.update_xaxes(tickfont=dict(size=20), title_font=dict(size=20), showline=True)
+    fig.update_xaxes(tickfont=dict(size=20), title_font=dict(size=20), ticks="")
     return fig
 
 
