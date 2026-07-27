@@ -348,7 +348,7 @@ def fig_2j2_recursos_2016(df: pd.DataFrame, show_values: bool = True) -> go.Figu
 # ── 2.k1 / 2.k2 ──────────────────────────────────────────────────────────────
 def _tipo_ambiente(df: pd.DataFrame, ano_ini: int, ano_fim: int, show_values: bool, titulo: str, subtitulo: str) -> go.Figure:
     sub = df[df["ano"].between(ano_ini, ano_fim)].copy()
-    tab = sub.groupby(["tipo_questao", "ambiente"]).size().unstack(fill_value=0).reindex(index=["PR", "QI", "RC"], fill_value=0)
+    tab = sub.groupby(["tipo_questao", "ambiente"]).size().unstack(fill_value=0).reindex(index=["PR", "QI", "RC", "Não identificado"], fill_value=0)
     tipos = tab.index.tolist()
     pct_tab = tab.div(tab.sum(axis=0), axis=1).fillna(0) * 100
 
