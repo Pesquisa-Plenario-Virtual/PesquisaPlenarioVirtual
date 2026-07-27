@@ -428,12 +428,11 @@ def _categoria_tab(df: pd.DataFrame, ambiente: str) -> pd.DataFrame:
 def _cat_max(df: pd.DataFrame) -> float:
     tab_pv = _categoria_tab(df, "Plenário Virtual")
     tab_pp = _categoria_tab(df, "Plenário Presencial")
-    m = max(tab_pv.values.max(), tab_pp.values.max(), 1)
-    return int(math.ceil(m / 50)) * 50
+    return max(tab_pv.values.max(), tab_pp.values.max(), 1)
 
 
 def _categoria_ano(df: pd.DataFrame, ambiente: str, show_values: bool, titulo: str, subtitulo: str,
-                   legend_y: float = 1.05) -> go.Figure:
+                   legend_y: float = 1.05, ymax: float | None = None) -> go.Figure:
     cats = ["Unânime", "Maioria (relator vencedor)", "Maioria (relator vencido)", "Não concluído"]
     tab = _categoria_tab(df, ambiente)
     anos = [str(a) for a in tab.index]
@@ -448,13 +447,14 @@ def _categoria_ano(df: pd.DataFrame, ambiente: str, show_values: bool, titulo: s
         else:
             textos = None
         fig.add_trace(go.Bar(
-            x=anos, y=pct_tab[cat], name=cat.upper(), marker_color=_CORES_CATEGORIA[cat],
+            x=anos, y=tab[cat], name=cat.upper(), marker_color=_CORES_CATEGORIA[cat],
             text=textos, textposition="outside", textfont=dict(color="black", size=20, weight="bold"),
             cliponaxis=False,
         ))
+    yr = [0, (ymax if ymax is not None else tab.values.max()) * 1.15]
     fig = aplicar_padrao(
         fig, titulo, subtitulo,
-        xaxis=dict(title=""), yaxis=dict(title="", range=[0, 105]),
+        xaxis=dict(title=""), yaxis=dict(title="", range=yr),
         barmode="group", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=legend_y, x=0.5, xanchor="center"),
         margin=dict(t=300, b=70, l=60, r=40),
     )
@@ -464,14 +464,17 @@ def _categoria_ano(df: pd.DataFrame, ambiente: str, show_values: bool, titulo: s
 
 
 def fig_2m_categoria_ano_pv(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    ymax = _cat_max(df)
     return _categoria_ano(df, "Plenário Virtual", show_values,
-                           "Desfecho por categoria e ano — Plenário Virtual (2020–2025)", None)
+                           "Desfecho por categoria e ano — Plenário Virtual (2020–2025)", None,
+                           ymax=ymax)
 
 
 def fig_2n_categoria_ano_pp(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    ymax = _cat_max(df)
     return _categoria_ano(df, "Plenário Presencial", show_values,
                            "Desfecho por categoria e ano — Plenário Presencial (2020–2025)", None,
-                           legend_y=1.2)
+                           legend_y=1.2, ymax=ymax)
 
 
 # ── 2.o / 2.p ────────────────────────────────────────────────────────────────
