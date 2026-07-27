@@ -7,6 +7,7 @@ Fonte dos dados: inclusoes_em_pauta (2016–2025, já traz tipo_questao/sufixo c
 """
 
 from __future__ import annotations
+import math
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -427,7 +428,8 @@ def _categoria_tab(df: pd.DataFrame, ambiente: str) -> pd.DataFrame:
 def _cat_max(df: pd.DataFrame) -> float:
     tab_pv = _categoria_tab(df, "Plenário Virtual")
     tab_pp = _categoria_tab(df, "Plenário Presencial")
-    return max(tab_pv.values.max(), tab_pp.values.max(), 1)
+    m = max(tab_pv.values.max(), tab_pp.values.max(), 1)
+    return int(math.ceil(m / 50)) * 50
 
 
 def _categoria_ano(df: pd.DataFrame, ambiente: str, show_values: bool, titulo: str, subtitulo: str,
@@ -450,7 +452,7 @@ def _categoria_ano(df: pd.DataFrame, ambiente: str, show_values: bool, titulo: s
             text=textos, textposition="outside", textfont=dict(color="black", size=20, weight="bold"),
             cliponaxis=False,
         ))
-    yr = [0, (ymax if ymax is not None else tab.values.max()) * 1.3]
+    yr = [0, ymax if ymax is not None else tab.values.max()]
     fig = aplicar_padrao(
         fig, titulo, subtitulo,
         xaxis=dict(title=""), yaxis=dict(title="", range=yr),
