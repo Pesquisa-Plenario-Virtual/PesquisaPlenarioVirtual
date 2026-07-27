@@ -432,7 +432,8 @@ def _cat_max(df: pd.DataFrame) -> float:
     return int(math.ceil(m / 50)) * 50
 
 
-def _categoria_ano(df: pd.DataFrame, ambiente: str, show_values: bool, titulo: str, subtitulo: str) -> go.Figure:
+def _categoria_ano(df: pd.DataFrame, ambiente: str, show_values: bool, titulo: str, subtitulo: str,
+                   legend_y: float = 1.05) -> go.Figure:
     cats = ["Unânime", "Maioria (relator vencedor)", "Maioria (relator vencido)", "Não concluído"]
     tab = _categoria_tab(df, ambiente)
     anos = [str(a) for a in tab.index]
@@ -454,7 +455,7 @@ def _categoria_ano(df: pd.DataFrame, ambiente: str, show_values: bool, titulo: s
     fig = aplicar_padrao(
         fig, titulo, subtitulo,
         xaxis=dict(title=""), yaxis=dict(title="", range=[0, 105]),
-        barmode="group", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.05, x=0.5, xanchor="center"),
+        barmode="group", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=legend_y, x=0.5, xanchor="center"),
         margin=dict(t=300, b=70, l=60, r=40),
     )
     fig.update_xaxes(tickfont=dict(size=22), title_font=dict(size=22))
@@ -469,7 +470,8 @@ def fig_2m_categoria_ano_pv(df: pd.DataFrame, show_values: bool = True) -> go.Fi
 
 def fig_2n_categoria_ano_pp(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
     return _categoria_ano(df, "Plenário Presencial", show_values,
-                           "Desfecho por categoria e ano — Plenário Presencial (2020–2025)", None)
+                           "Desfecho por categoria e ano — Plenário Presencial (2020–2025)", None,
+                           legend_y=1.2)
 
 
 # ── 2.o / 2.p ────────────────────────────────────────────────────────────────
