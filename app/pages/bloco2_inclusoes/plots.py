@@ -391,15 +391,20 @@ def fig_2k2_tipo_ambiente_2020(df: pd.DataFrame, show_values: bool = True) -> go
 # ── 2.l ──────────────────────────────────────────────────────────────────────
 def fig_2l_pauta_vs_concluidos(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
     sub = df[df["ano"].between(2020, 2025)]
-    pct_pauta = 100 * (sub["ambiente"] == "Plenário Virtual").mean()
+    pauta_pv = (sub["ambiente"] == "Plenário Virtual").sum()
+    pauta_total = len(sub)
+    pct_pauta = 100 * pauta_pv / pauta_total
     concl = sub[sub["desfecho"].str.startswith("Concluído")]
-    pct_concl = 100 * (concl["ambiente"] == "Plenário Virtual").mean()
+    concl_pv = (concl["ambiente"] == "Plenário Virtual").sum()
+    concl_total = len(concl)
+    pct_concl = 100 * concl_pv / concl_total
 
     categorias = ["Pautas", "Concluídos"]
     valores = [pct_pauta, pct_concl]
+    absolutos = [pauta_pv, concl_pv]
     fig = go.Figure(go.Bar(
         x=categorias, y=valores, marker_color=COR_PV,
-        text=[f"{v:.1f}%".replace(".", ",") for v in valores] if show_values else None,
+        text=[f"<span style='font-size:22px'>{br(a)}</span><br><span style='font-size:16px'>{br(v, 1)}%</span>" for a, v in zip(absolutos, valores)] if show_values else None,
         textposition="outside", textfont=dict(color="black", size=22, weight="bold"), cliponaxis=False,
     ))
     fig = aplicar_padrao(
