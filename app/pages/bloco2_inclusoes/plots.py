@@ -457,7 +457,7 @@ def _categoria_ano(df: pd.DataFrame, ambiente: str, show_values: bool, titulo: s
         fig, titulo, subtitulo,
         xaxis=dict(title=""), yaxis=dict(title="", range=yr),
         barmode="group", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.05, x=0.5, xanchor="center"),
-        margin=dict(t=200, b=70, l=60, r=40),
+        margin=dict(t=250, b=70, l=60, r=40),
     )
     fig.update_xaxes(tickfont=dict(size=22), title_font=dict(size=22))
     fig.update_yaxes(showline=False, showticklabels=False, ticks="")
