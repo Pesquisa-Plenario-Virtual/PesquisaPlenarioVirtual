@@ -20,6 +20,7 @@ _CATALOGO = [
     ("2.k1 — Tipo × ambiente (2016–2019)", "Tipo de questão por ambiente (2016–2019).", p.fig_2k1_tipo_ambiente_2016),
     ("2.k2 — Tipo × ambiente (2020–2025)", "Tipo de questão por ambiente (2020–2025).", p.fig_2k2_tipo_ambiente_2020),
     ("2.l — Pauta vs. concluídos", "Participação do PV na pauta e nos concluídos (2020–2025).", p.fig_2l_pauta_vs_concluidos),
+    ("2.l.2 — Pauta vs. concluídos — contraste PV × PP", "Inclusões em pauta e julgamentos concluídos, em número e percentual, por ambiente (2020–2025).", p.fig_2l2_pauta_vs_concluidos),
     ("2.m — Desfecho por categoria (PV)", "Desfecho por categoria e ano no PV (2020–2025).", p.fig_2m_categoria_ano_pv),
     ("2.m.2 — Desfecho por categoria (PV) — %", "Desfecho por categoria e ano no PV (2020–2025), em percentual.", p.fig_2m2_categoria_ano_pv),
     ("2.n — Desfecho por categoria (PP)", "Desfecho por categoria e ano no PP (2020–2025).", p.fig_2n_categoria_ano_pp),

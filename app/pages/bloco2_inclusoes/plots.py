@@ -417,6 +417,41 @@ def fig_2l_pauta_vs_concluidos(df: pd.DataFrame, show_values: bool = True) -> go
     return fig
 
 
+def fig_2l2_pauta_vs_concluidos(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    sub = df[df["ano"].between(2020, 2025)]
+    pauta_pv = int((sub["ambiente"] == "Plenário Virtual").sum())
+    pauta_pp = int((sub["ambiente"] == "Plenário Presencial").sum())
+    total_pauta = pauta_pv + pauta_pp
+    concl = sub[sub["desfecho"].str.startswith("Concluído")]
+    concl_pv = int((concl["ambiente"] == "Plenário Virtual").sum())
+    concl_pp = int((concl["ambiente"] == "Plenário Presencial").sum())
+    total_concl = concl_pv + concl_pp
+
+    grupos = ["NAS INCLUSÕES EM PAUTA", "NOS JULGAMENTOS CONCLUÍDOS"]
+    pares = [("PLENÁRIO VIRTUAL", COR_PV), ("PLENÁRIO PRESENCIAL", COR_PP)]
+
+    fig = go.Figure()
+    for leg, cor in pares:
+        n_amb = [pauta_pv, concl_pv] if leg == "PLENÁRIO VIRTUAL" else [pauta_pp, concl_pp]
+        pct_amb = [100 * pauta_pv / total_pauta, 100 * concl_pv / total_concl] if leg == "PLENÁRIO VIRTUAL" else [100 * pauta_pp / total_pauta, 100 * concl_pp / total_concl]
+        for i, grupo in enumerate(grupos):
+            fig.add_trace(go.Bar(
+                x=[grupo], y=[pct_amb[i]], name=leg, marker_color=cor, legendgroup=leg,
+                showlegend=i == 0,
+                text=[f"<span style='font-size:18px'><b>{br(n_amb[i])}</b></span><br><span style='font-size:14px'>{br(pct_amb[i], 1)}%</span>"] if show_values else None,
+                textposition="outside", textfont=dict(color="black", size=20, weight="bold"), cliponaxis=False,
+            ))
+    fig = aplicar_padrao(
+        fig, "O Plenário Virtual concentra os julgamentos concluídos",
+        "Inclusões em pauta e julgamentos concluídos, em número e percentual, por ambiente (2020–2025)",
+        xaxis=dict(title=""), yaxis=dict(title="", range=[0, 105]),
+        barmode="group", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=0.98, x=0.5, xanchor="center"),
+    )
+    fig.update_yaxes(showline=False, showticklabels=False, ticks="")
+    fig.update_xaxes(tickfont=dict(size=20), title_font=dict(size=20), showline=True)
+    return fig
+
+
 # ── 2.m / 2.n ────────────────────────────────────────────────────────────────
 def _categoria_tab(df: pd.DataFrame, ambiente: str) -> pd.DataFrame:
     sub = df[(df["ambiente"] == ambiente) & df["ano"].between(2020, 2025)].copy()
