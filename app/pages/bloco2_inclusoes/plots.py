@@ -427,7 +427,7 @@ def fig_2l2_pauta_vs_concluidos(df: pd.DataFrame, show_values: bool = True) -> g
     concl_pp = int((concl["ambiente"] == "Plenário Presencial").sum())
     total_concl = concl_pv + concl_pp
 
-    grupos = ["NAS INCLUSÕES EM PAUTA", "NOS JULGAMENTOS CONCLUÍDOS"]
+    grupos = ["INCLUSÕES EM PAUTA", "JULGAMENTOS CONCLUÍDOS"]
     pares = [("PLENÁRIO VIRTUAL", COR_PV), ("PLENÁRIO PRESENCIAL", COR_PP)]
 
     fig = go.Figure()
@@ -445,8 +445,8 @@ def fig_2l2_pauta_vs_concluidos(df: pd.DataFrame, show_values: bool = True) -> g
         fig, "O Plenário Virtual concentra os julgamentos concluídos",
         "Inclusões em pauta e julgamentos concluídos, em número e percentual, por ambiente (2020–2025)",
         xaxis=dict(title=""), yaxis=dict(title="", range=[0, 105]),
-        barmode="group", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.2, x=0.5, xanchor="center"),
-        margin=dict(t=190, b=70, l=60, r=40),
+        barmode="group", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.35, x=0.5, xanchor="center"),
+        margin=dict(t=340, b=70, l=60, r=40),
         bargap=0.2, bargroupgap=0.05,
     )
     fig.update_yaxes(showline=False, showticklabels=False, ticks="")
@@ -506,14 +506,14 @@ def fig_2m_categoria_ano_pv(df: pd.DataFrame, show_values: bool = True) -> go.Fi
     ymax = _cat_max(df)
     return _categoria_ano(df, "Plenário Virtual", show_values,
                            "Desfecho por categoria e ano — Plenário Virtual (2020–2025)", None,
-                           ymax=ymax)
+                           legend_y=1.2, ymax=ymax)
 
 
 def fig_2n_categoria_ano_pp(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
     ymax = _cat_max(df)
     return _categoria_ano(df, "Plenário Presencial", show_values,
                            "Desfecho por categoria e ano — Plenário Presencial (2020–2025)", None,
-                           legend_y=1.2, ymax=ymax)
+                           legend_y=1.35, ymax=ymax)
 
 
 def fig_2m2_categoria_ano_pv(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
