@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 
 from estilo import (
     aplicar_padrao, add_er_marker, _frac_ano, br,
-    CINZA, VERMELHO, VERDE, ER_DATAS,
+    AZUL, CINZA, VERMELHO, VERDE, ER_DATAS,
 )
 
 _CLASSES = ["ADI", "ADPF", "ADC", "ADO"]
@@ -49,6 +49,47 @@ def fig_1a_variacao_trienal(df: pd.DataFrame, show_values: bool = True) -> go.Fi
         valores.append(tot.loc[mask, "variacao"].sum())
 
     cores = [CINZA if v >= 0 else VERMELHO for v in valores]
+    textos = [f"{'+' if v >= 0 else ''}{br(v)}" for v in valores]
+
+    fig = go.Figure(go.Bar(
+        x=rotulos, y=valores, marker_color=cores,
+        text=textos if show_values else None, textposition="outside",
+        textfont=dict(color="black", size=13, weight="bold"), cliponaxis=False,
+    ))
+    fig = aplicar_padrao(
+        fig,
+        "Após três décadas de acumulação, o acervo passa a encolher em 2018",
+        "Variação do acervo ativo de controle concentrado (baixa – distribuição), por triênio (1988–2025)",
+        xaxis=dict(title=""), yaxis=dict(title=""),
+    )
+    fig.update_yaxes(showline=False, showticklabels=False, ticks="", visible=False)
+    return fig
+
+
+def fig_1a2_variacao_trienal(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    """1.a.2 — Variante paleta de 1.a: negativo azul em vez de vermelho (positivo cinza mantido)."""
+    tot = _totais_por_ano(df).sort_values("ano")
+    tot["variacao"] = tot["quantidade_distribuidos"] - tot["quantidade_baixas"]
+
+    anos = tot["ano"].tolist()
+    ano_max = max(anos)
+    grupos, rotulos = [], []
+    a = ANO_MIN
+    while a <= ano_max:
+        fim = min(a + 2, ano_max)
+        grupos.append((a, fim))
+        rot = f"{a}<br>{fim}" if a != fim else str(a)
+        if a == 2024 and fim == 2025:
+            rot += "*"
+        rotulos.append(rot)
+        a = fim + 1
+
+    valores = []
+    for ini, fim in grupos:
+        mask = (tot["ano"] >= ini) & (tot["ano"] <= fim)
+        valores.append(tot.loc[mask, "variacao"].sum())
+
+    cores = [CINZA if v >= 0 else AZUL for v in valores]
     textos = [f"{'+' if v >= 0 else ''}{br(v)}" for v in valores]
 
     fig = go.Figure(go.Bar(
@@ -236,8 +277,8 @@ def fig_1c_distribuicao_baixa(df: pd.DataFrame, show_values: bool = True) -> go.
         "Distribuições e baixas anuais (espelhadas), controle concentrado (1988–2025)",
         xaxis=dict(title="", tickangle=-90, type="category", range=[-0.5, len(anos) - 0.5]),
         yaxis=dict(title="", range=[ymin, ymax]),
-        showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0.5, xanchor="center"),
-        height=650,
+        showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.15, x=0.5, xanchor="center"),
+        height=650, margin=dict(t=230, b=70, l=60, r=40),
     )
     for er in (51, 52, 53):
         if er in (52, 53):
@@ -267,6 +308,73 @@ def fig_1c_distribuicao_baixa(df: pd.DataFrame, show_values: bool = True) -> go.
                   line=dict(color=VERMELHO, width=1.5, dash="dash"), xref="x", yref="y")
 
     # Seta dupla (medida), do início (depois do ER 53) ao final das linhas do ESPIN.
+    fig.add_annotation(x=x0_linha_espin, y=y_topo_espin, ax=x1, ay=y_topo_espin, axref="x", ayref="y",
+                       xref="x", yref="y", showarrow=True, arrowhead=2, arrowsize=1.6,
+                       arrowwidth=1.2, arrowcolor=VERMELHO, text="")
+    fig.add_annotation(x=x1, y=y_topo_espin, ax=x0_linha_espin, ay=y_topo_espin, axref="x", ayref="y",
+                       xref="x", yref="y", showarrow=True, arrowhead=2, arrowsize=1.6,
+                       arrowwidth=1.2, arrowcolor=VERMELHO, text="")
+    fig.add_annotation(x=(x0_linha_espin + x1) / 2, y=y_topo_espin, yanchor="bottom", yshift=6,
+                       text="<b>ESPIN</b>", showarrow=False,
+                       font=dict(color=VERMELHO, size=13, weight="bold"),
+                       xref="x", yref="y")
+    fig.update_yaxes(showline=False, showticklabels=False, ticks="")
+    return fig
+
+
+def fig_1d2_variacao_anual(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    """1.d.2 — Variante paleta de 1.d: decréscimo azul em vez de vermelho (acréscimo cinza mantido).
+
+    Destaque ESPIN permanece em vermelho: é um marcador de período, não faz parte da paleta de dados.
+    """
+    tot = _totais_por_ano(df).sort_values("ano")
+    tot["variacao"] = tot["quantidade_distribuidos"] - tot["quantidade_baixas"]
+    anos = [str(a) for a in tot["ano"]]
+
+    anos_str = [str(a) for a in tot["ano"]]
+    cores = [CINZA if v >= 0 else AZUL for v in tot["variacao"]]
+    fig = go.Figure(go.Bar(x=anos_str, y=tot["variacao"], marker_color=cores, showlegend=False,
+                           text=[f"{'+' if v >= 0 else ''}{br(v)}" for v in tot["variacao"]] if show_values else None,
+                           textposition="outside", textfont=dict(color="black", size=13, weight="bold"),
+                           cliponaxis=False))
+    for nome, cor in [("ACRÉSCIMO", CINZA), ("DECRÉSCIMO", AZUL)]:
+        fig.add_trace(go.Bar(x=[None], y=[None], name=nome, marker_color=cor, showlegend=True))
+    v_abs = max(abs(tot["variacao"].max()), abs(tot["variacao"].min()))
+    ymax = int(v_abs * 1.4)
+    ymin = -int(v_abs * 1.15)
+    fig = aplicar_padrao(
+        fig,
+        "2018 inicia sequência inédita de 8 anos de retração do acervo",
+        "Variação anual do acervo (distribuições − baixas), controle concentrado (1988–2025)",
+        xaxis=dict(title="", dtick=1, tickangle=-90), yaxis=dict(title="", range=[ymin, ymax]),
+        showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=0.98, x=0.5, xanchor="center"),
+    )
+    for er in (51, 52, 53):
+        if er in (52, 53):
+            ano_er, _, _ = ER_DATAS[er]
+            x = anos.index(str(ano_er)) - 0.5
+        else:
+            ano, mes, dia = ER_DATAS[er]
+            x = _frac_ano(ANO_MIN, ano, mes, dia)
+        fig.add_shape(type="line", x0=x, x1=x, y0=ymin, y1=ymax,
+                      line=dict(color="black", width=1.5, dash="dash"), xref="x", yref="y")
+        fig.add_annotation(x=x, y=ymax, yanchor="bottom", text=f"<b>ER<br>{er}</b>", showarrow=False,
+                           font=dict(color="black", size=11), bgcolor="white", borderpad=1,
+                           xref="x", yref="y")
+
+    idx_2020 = anos.index("2020")
+    idx_2022 = anos.index("2022")
+    x0 = idx_2020 - 0.5
+    x1 = idx_2022 + 0.5
+    y_topo_espin = ymax * 0.87
+    x0_linha_espin = x0 + 0.06
+
+    fig.add_vrect(x0=x0, x1=x1, fillcolor="#FCE7F3", opacity=0.7, line_width=0, layer="below")
+    fig.add_shape(type="line", x0=x0_linha_espin, x1=x0_linha_espin, y0=ymin, y1=y_topo_espin,
+                  line=dict(color=VERMELHO, width=1.5, dash="dash"), xref="x", yref="y")
+    fig.add_shape(type="line", x0=x1, x1=x1, y0=ymin, y1=y_topo_espin,
+                  line=dict(color=VERMELHO, width=1.5, dash="dash"), xref="x", yref="y")
+
     fig.add_annotation(x=x0_linha_espin, y=y_topo_espin, ax=x1, ay=y_topo_espin, axref="x", ayref="y",
                        xref="x", yref="y", showarrow=True, arrowhead=2, arrowsize=1.6,
                        arrowwidth=1.2, arrowcolor=VERMELHO, text="")

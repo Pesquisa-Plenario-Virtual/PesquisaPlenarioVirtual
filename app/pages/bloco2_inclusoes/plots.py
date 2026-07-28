@@ -143,8 +143,8 @@ def fig_2c_composicao_pv_tipo(df: pd.DataFrame, show_values: bool = True) -> go.
         xaxis=dict(title="", type="category", range=[-0.5, len(anos) - 0.5]),
         yaxis=dict(title="", range=[0, totais.max() * 1.2]),
         barmode="stack", showlegend=True,
-        legend=dict(orientation="h", yanchor="bottom", y=0.98, x=0.5, xanchor="center", traceorder="normal"),
-        height=650,
+        legend=dict(orientation="h", yanchor="bottom", y=1.12, x=0.5, xanchor="center", traceorder="normal"),
+        height=650, margin=dict(t=230, b=70, l=60, r=40),
     )
     fig.update_xaxes(tickfont=dict(size=22), title_font=dict(size=22))
     fig.update_yaxes(showline=False, showticklabels=False, ticks="")
@@ -569,8 +569,8 @@ def _nc_categoria_ano(df: pd.DataFrame, ambiente: str, show_values: bool, titulo
     fig = aplicar_padrao(
         fig, titulo, subtitulo,
         xaxis=dict(title=""), yaxis=dict(title="", range=yr),
-        barmode="group", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=0.96, x=0.5, xanchor="center"),
-        margin=dict(t=150, b=70, l=60, r=40),
+        barmode="group", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.12, x=0.5, xanchor="center"),
+        margin=dict(t=230, b=70, l=60, r=40),
     )
     fig.update_xaxes(tickfont=dict(size=22), title_font=dict(size=22))
     fig.update_yaxes(showline=False, showticklabels=False, ticks="")
@@ -605,7 +605,8 @@ def fig_2q_media_por_processo(df: pd.DataFrame, show_values: bool = True) -> go.
     fig = aplicar_padrao(
         fig, "Média de inclusões em pauta por processo pautado, em cada ambiente (2020–2025)", None,
         xaxis=dict(title="", showticklabels=False), yaxis=dict(title="", range=[0, 5.5]),
-        showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=0.98, x=0.5, xanchor="center"),
+        showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.12, x=0.5, xanchor="center"),
+        margin=dict(t=190, b=70, l=60, r=40),
     )
     fig.update_yaxes(showline=False, showticklabels=False, ticks="")
     fig.update_xaxes(showline=True, showticklabels=False, ticklen=0)
@@ -640,8 +641,9 @@ def fig_2r_pct_concluidos(df: pd.DataFrame, show_values: bool = True) -> go.Figu
     fig = aplicar_padrao(
         fig, "O virtual conclui mais, por processo e por inclusão em pauta",
         "Julgamentos concluídos, em número e percentual, por unidade de medida e ambiente (2020–2025)",
-        xaxis=dict(title=""), yaxis=dict(title="", range=[0, 105]),
-        barmode="group", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=0.98, x=0.5, xanchor="center"),
+        xaxis=dict(title=""), yaxis=dict(title="", range=[0, 110]),
+        barmode="group", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.2, x=0.5, xanchor="center"),
+        margin=dict(t=250, b=70, l=60, r=40),
     )
     fig.update_yaxes(showline=False, showticklabels=False, ticks="")
     fig.update_xaxes(tickfont=dict(size=20), title_font=dict(size=20), showline=True)
