@@ -290,7 +290,7 @@ def fig_1c_distribuicao_baixa(df: pd.DataFrame, show_values: bool = True) -> go.
         fig.add_shape(type="line", x0=x, x1=x, y0=ymin, y1=ymax,
                       line=dict(color="black", width=1.5, dash="dash"), xref="x", yref="y")
         # Sigla e número empilhados (ER\n51), ancorados no topo da própria linha (y=ymax).
-        fig.add_annotation(x=x, y=ymax, yanchor="bottom", text=f"<b>ER<br>{er}</b>", showarrow=False,
+        fig.add_annotation(x=x, y=ymax, yanchor="bottom", yshift=10, text=f"<b>ER<br>{er}</b>", showarrow=False,
                            font=dict(color="black", size=11), bgcolor="white", borderpad=1,
                            xref="x", yref="y")
 
@@ -314,7 +314,7 @@ def fig_1c_distribuicao_baixa(df: pd.DataFrame, show_values: bool = True) -> go.
     fig.add_annotation(x=x1, y=y_topo_espin, ax=x0_linha_espin, ay=y_topo_espin, axref="x", ayref="y",
                        xref="x", yref="y", showarrow=True, arrowhead=2, arrowsize=1.6,
                        arrowwidth=1.2, arrowcolor=VERMELHO, text="")
-    fig.add_annotation(x=(x0_linha_espin + x1) / 2, y=y_topo_espin, yanchor="bottom", yshift=6,
+    fig.add_annotation(x=(x0_linha_espin + x1) / 2, y=y_topo_espin, yanchor="bottom", yshift=12,
                        text="<b>ESPIN</b>", showarrow=False,
                        font=dict(color=VERMELHO, size=13, weight="bold"),
                        xref="x", yref="y")
@@ -412,7 +412,8 @@ def fig_1d_variacao_anual(df: pd.DataFrame, show_values: bool = True) -> go.Figu
         "2018 inicia sequência inédita de 8 anos de retração do acervo",
         "Variação anual do acervo (distribuições − baixas), controle concentrado (1988–2025)",
         xaxis=dict(title="", dtick=1, tickangle=-90), yaxis=dict(title="", range=[ymin, ymax]),
-        showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=0.98, x=0.5, xanchor="center"),
+        showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.2, x=0.5, xanchor="center"),
+        margin=dict(t=170, b=70, l=60, r=40),
     )
     for er in (51, 52, 53):
         if er in (52, 53):
