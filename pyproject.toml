@@ -35,9 +35,8 @@ dev = [
 where = ["."]
 include = ["src*", "app*"]
 
-# stf-etl entry point volta quando src/ existir de fato (ver docs/superpowers/specs)
-# [project.scripts]
-# stf-etl = "src.cleaning:_cli"
+[project.scripts]
+stf-etl = "src.cleaning:_cli"
 
 # After `pip install -e .` you can do clean imports:
 #   from src.cleaning import run_pipeline
