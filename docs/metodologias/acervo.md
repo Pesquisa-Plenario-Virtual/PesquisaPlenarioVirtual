@@ -15,7 +15,6 @@ O escopo abrange exclusivamente as ações de controle concentrado de constituci
 - **ADPF** — Arguição de Descumprimento de Preceito Fundamental
 - **ADC** — Ação Declaratória de Constitucionalidade
 - **ADO** — Ação Direta de Inconstitucionalidade por Omissão
-- **CC** — Conflito de Competência (classe residual, volume marginal)
 
 Ficam fora do escopo quaisquer outras classes processuais do STF (recursos extraordinários, habeas corpus, mandados de segurança etc.) — o dataset de origem (`data/raw/ArquivosConcatenados.csv`) já é recortado a esse universo antes de chegar ao pipeline de Acervo.
 
@@ -83,14 +82,8 @@ Duas métricas complementares, com corte por **ano de ocorrência** (não cumula
 
 Como checagem de consistência interna, cada linha ano/classe é validada pela identidade `ativos + inativos == total_geral`, garantida por `assert` no pipeline (`src/acervo.py::evolucao_acervo_por_ano`) — qualquer violação interrompe a execução em vez de gerar dado silenciosamente incorreto.
 
-### Limitações assumidas
-
-- Reativação de processo após baixa (por embargos/recursos) não é modelada — o primeiro evento de baixa é tratado como saída definitiva do acervo para fins deste indicador.
-- O corte anual é sempre 31/12, não havendo granularidade infra-anual (mensal/trimestral) no indicador atual.
-- Depende inteiramente da qualidade do texto livre em `and_nome`; variações de grafia fora dos 4 termos mapeados não são capturadas.
-
 ## Referências de implementação
 
-- Pipeline: [`src/acervo.py`](../src/acervo.py)
-- Notebook de orquestração e EDA: [`notebooks/02_acervo.ipynb`](../notebooks/02_acervo.ipynb)
-- Contrato geral dos dados processados: [`CONTEXTO_DADOS.md`](CONTEXTO_DADOS.md)
+- Pipeline: [`src/acervo.py`](../../src/acervo.py)
+- Notebook de orquestração e EDA: [`notebooks/02_acervo.ipynb`](../../notebooks/02_acervo.ipynb)
+- Contrato geral dos dados processados: [`CONTEXTO_DADOS.md`](../CONTEXTO_DADOS.md)
