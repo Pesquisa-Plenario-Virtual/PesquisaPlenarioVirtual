@@ -181,8 +181,8 @@ def fig_1b_acervo_por_classe(df: pd.DataFrame, show_values: bool = True) -> go.F
     return fig
 
 
-def fig_1b2_acervo_por_classe_vertical(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
-    """1.b2 — Acervo ativo por classe, barras verticais empilhadas, 1988 a 2025."""
+def _fig_1b2_base(df: pd.DataFrame, esconder_eixo_y: bool = False) -> tuple[go.Figure, list[str], pd.Series]:
+    """Monta a base comum das versões 1.b2/1.b3/1.b4 (barras + ESPIN + ER + layout)."""
     piv = df.pivot_table(index="ano", columns="classe", values="quantidade_ativos", aggfunc="sum").fillna(0)
     piv = piv.reindex(columns=_CLASSES, fill_value=0).sort_index()
     anos = [str(a) for a in piv.index]
@@ -195,7 +195,7 @@ def fig_1b2_acervo_por_classe_vertical(df: pd.DataFrame, show_values: bool = Tru
         fig.add_trace(go.Bar(x=anos, y=piv[classe], name=classe, marker_color=_CORES_CLASSE[classe]))
     fig.update_layout(barmode="stack")
 
-    y_er = ymax * 1.1
+    y_er = ymax * 1.32
     y_espin = ymax * 1.1
 
     # ESPIN — mesma estrutura do 1.c
@@ -236,16 +236,52 @@ def fig_1b2_acervo_por_classe_vertical(df: pd.DataFrame, show_values: bool = Tru
                            font=dict(color="black", size=11), bgcolor="white", borderpad=1,
                            xref="x", yref="y")
 
+    yaxis = (
+        dict(title="", range=[0, ymax * 1.45], showline=False, showticklabels=False, ticks="", visible=False)
+        if esconder_eixo_y
+        else dict(title="Nº de processos", range=[0, ymax * 1.45])
+    )
     fig = aplicar_padrao(
         fig,
         "O acervo ativo é dominado por ADI ao longo de toda a série",
         "Acervo ativo por classe processual e ano, controle concentrado (1988–2025)",
-        xaxis=dict(title=""), yaxis=dict(title="", range=[0, ymax * 1.2]),
-        showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=0.95, x=0.5, xanchor="center"),
+        xaxis=dict(title=""), yaxis=yaxis,
+        showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.08, x=0.5, xanchor="center"),
         height=650, margin=dict(t=150, b=120, l=60, r=40),
     )
-    fig.update_yaxes(showline=True)
+    if not esconder_eixo_y:
+        fig.update_yaxes(showline=True)
     fig.update_xaxes(tickfont=dict(size=16), title_font=dict(size=22), dtick=1, tickangle=-90)
+    return fig, anos, totais
+
+
+def fig_1b2_acervo_por_classe_vertical(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    """1.b2 — Acervo ativo por classe, barras verticais empilhadas, 1988 a 2025."""
+    fig, _, _ = _fig_1b2_base(df)
+    return fig
+
+
+def fig_1b3_acervo_por_classe_vertical_extremos(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    """1.b3 — Igual ao 1.b2, com os totais de 2017 e 2025 rotulados no topo da barra."""
+    fig, anos, totais = _fig_1b2_base(df)
+    for ano, xshift in (("2017", 14), ("2025", 0)):
+        if ano in anos:
+            i = anos.index(ano)
+            fig.add_annotation(x=i, y=totais.iloc[i], yanchor="bottom", yshift=4, xshift=xshift,
+                               text=f"<b>{br(totais.iloc[i])}</b>", showarrow=False,
+                               font=dict(color="black", size=14), xref="x", yref="y")
+    return fig
+
+
+def fig_1b4_acervo_por_classe_vertical_sem_eixo(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    """1.b4 — Igual ao 1.b2, sem eixo esquerdo; com 'exibir valores' rotula o total de cada ano."""
+    fig, anos, totais = _fig_1b2_base(df, esconder_eixo_y=True)
+    if show_values:
+        for i, (ano, total) in enumerate(zip(anos, totais)):
+            xshift = 14 if ano == "2017" else 0
+            fig.add_annotation(x=i, y=total, yanchor="bottom", yshift=4, xshift=xshift,
+                               text=f"<b>{br(total)}</b>", showarrow=False,
+                               font=dict(color="black", size=11), xref="x", yref="y")
     return fig
 
 
