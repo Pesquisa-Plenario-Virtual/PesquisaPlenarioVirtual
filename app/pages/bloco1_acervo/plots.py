@@ -392,9 +392,10 @@ def fig_1d2_variacao_anual(df: pd.DataFrame, show_values: bool = True) -> go.Fig
         else:
             ano, mes, dia = ER_DATAS[er]
             x = _frac_ano(ANO_MIN, ano, mes, dia)
-        fig.add_shape(type="line", x0=x, x1=x, y0=ymin, y1=ymax,
+        y_er = ymax * 0.82
+        fig.add_shape(type="line", x0=x, x1=x, y0=ymin, y1=y_er,
                       line=dict(color="black", width=1.5, dash="dash"), xref="x", yref="y")
-        fig.add_annotation(x=x, y=ymax, yanchor="bottom", text=f"<b>ER<br>{er}</b>", showarrow=False,
+        fig.add_annotation(x=x, y=y_er, yanchor="bottom", text=f"<b>ER<br>{er}</b>", showarrow=False,
                            font=dict(color="black", size=11), bgcolor="white", borderpad=1,
                            xref="x", yref="y")
 
@@ -402,7 +403,7 @@ def fig_1d2_variacao_anual(df: pd.DataFrame, show_values: bool = True) -> go.Fig
     idx_2022 = anos.index("2022")
     x0 = idx_2020 - 0.5
     x1 = idx_2022 + 0.5
-    y_topo_espin = ymax * 0.87
+    y_topo_espin = ymax * 0.55
     x0_linha_espin = x0 + 0.06
 
     fig.add_vrect(x0=x0, x1=x1, fillcolor="#FCE7F3", opacity=0.7, line_width=0, layer="below")
