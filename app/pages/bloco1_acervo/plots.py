@@ -314,8 +314,8 @@ def fig_1c_distribuicao_baixa(df: pd.DataFrame, show_values: bool = True) -> go.
         "Distribuições e baixas anuais (espelhadas), controle concentrado (1988–2025)",
         xaxis=dict(title="", tickangle=-90, type="category", range=[-0.5, len(anos) - 0.5]),
         yaxis=dict(title="", range=[ymin, ymax]),
-        showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0.5, xanchor="center"),
-        height=650, margin=dict(t=160, b=70, l=60, r=40),
+        showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.10, x=0.5, xanchor="center"),
+        height=650, margin=dict(t=175, b=70, l=60, r=40),
     )
     y_er = ymax * 0.95
     for er in (51, 52, 53):

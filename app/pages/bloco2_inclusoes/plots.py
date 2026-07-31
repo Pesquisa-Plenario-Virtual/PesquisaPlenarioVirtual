@@ -126,18 +126,19 @@ def fig_2a2_participacao_ano_marcos(df: pd.DataFrame, show_values: bool = True) 
     if 2020 in anos_int and 2022 in anos_int:
         x0 = anos.index("2020") - 0.5
         x1 = anos.index("2022") + 0.5
+        x0_linha = x0 + 0.06  # linha do ESPIN separada da linha do ER 53 (mesma fronteira)
         fig.add_vrect(x0=x0, x1=x1, fillcolor="#FCE7F3", opacity=0.7, line_width=0, layer="below")
-        fig.add_shape(type="line", x0=x0, x1=x0, y0=0, y1=y_espin,
+        fig.add_shape(type="line", x0=x0_linha, x1=x0_linha, y0=0, y1=y_espin,
                       line=dict(color=VERMELHO, width=1.5, dash="dash"), xref="x", yref="y")
         fig.add_shape(type="line", x0=x1, x1=x1, y0=0, y1=y_espin,
                       line=dict(color=VERMELHO, width=1.5, dash="dash"), xref="x", yref="y")
-        fig.add_annotation(x=x0, y=y_espin, ax=x1, ay=y_espin, axref="x", ayref="y",
+        fig.add_annotation(x=x0_linha, y=y_espin, ax=x1, ay=y_espin, axref="x", ayref="y",
                            xref="x", yref="y", showarrow=True, arrowhead=2, arrowsize=1.6,
                            arrowwidth=1.2, arrowcolor=VERMELHO, text="")
-        fig.add_annotation(x=x1, y=y_espin, ax=x0, ay=y_espin, axref="x", ayref="y",
+        fig.add_annotation(x=x1, y=y_espin, ax=x0_linha, ay=y_espin, axref="x", ayref="y",
                            xref="x", yref="y", showarrow=True, arrowhead=2, arrowsize=1.6,
                            arrowwidth=1.2, arrowcolor=VERMELHO, text="")
-        fig.add_annotation(x=(x0 + x1) / 2, y=y_espin, yanchor="bottom", yshift=6,
+        fig.add_annotation(x=(x0_linha + x1) / 2, y=y_espin, yanchor="bottom", yshift=6,
                            text="<b>ESPIN</b>", showarrow=False,
                            font=dict(color=VERMELHO, size=13, weight="bold"),
                            xref="x", yref="y")
