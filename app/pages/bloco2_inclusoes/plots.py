@@ -11,7 +11,7 @@ import math
 import pandas as pd
 import plotly.graph_objects as go
 
-from estilo import aplicar_padrao, br, AZUL, AZUL_CLARO, CINZA, VERDE, ROXO, VERMELHO
+from estilo import aplicar_padrao, br, AZUL, AZUL_CLARO, CINZA, VERDE, ROXO, VERMELHO, ER_DATAS, _frac_ano
 
 COR_PV, COR_PP = AZUL, CINZA
 _CLASSES = ["ADI", "ADPF", "ADC", "ADO"]
@@ -83,6 +83,70 @@ def fig_2a_participacao_ano(df: pd.DataFrame, show_values: bool = True) -> go.Fi
         "Participação do Plenário Virtual nas inclusões em pauta (2016–2025)",
         xaxis=dict(title=""),
         yaxis=dict(title="", range=[0, 90]),
+    )
+    fig.update_yaxes(showline=False, showticklabels=False, ticks="")
+    fig.update_xaxes(tickfont=dict(size=22), title_font=dict(size=22))
+    return fig
+
+
+# ── 2.a.2 ────────────────────────────────────────────────────────────────────
+def fig_2a2_participacao_ano_marcos(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    """2.a.2 — Igual ao 2.a, com marcos ER 51/52/53 e ESPIN completos (como no Bloco 1)."""
+    tab = df.groupby(["ano", "ambiente"]).size().unstack(fill_value=0)
+    pct = 100 * tab["Plenário Virtual"] / tab.sum(axis=1)
+    anos = [str(a) for a in pct.index]
+    anos_int = list(pct.index)
+    ano_min = anos_int[0]
+
+    fig = go.Figure(go.Bar(
+        x=anos, y=pct.values, marker_color=COR_PV,
+        text=[f"{v:.1f}%".replace(".", ",") for v in pct.values] if show_values else None,
+        textposition="outside", textfont=dict(color="black", size=16, weight="bold"),
+        cliponaxis=False,
+    ))
+
+    y_er, y_espin = 88, 76
+    for er in (51, 52, 53):
+        if er in (52, 53):
+            ano_er, _, _ = ER_DATAS[er]
+            if ano_er not in anos_int:
+                continue
+            x = anos.index(str(ano_er)) - 0.5
+        else:
+            ano_er, mes, dia = ER_DATAS[er]
+            if ano_er not in anos_int:
+                continue
+            x = _frac_ano(ano_min, ano_er, mes, dia)
+        fig.add_shape(type="line", x0=x, x1=x, y0=0, y1=y_er,
+                      line=dict(color="black", width=1.5, dash="dash"), xref="x", yref="y")
+        fig.add_annotation(x=x, y=y_er, yanchor="bottom", text=f"<b>ER<br>{er}</b>", showarrow=False,
+                           font=dict(color="black", size=11), bgcolor="white", borderpad=1,
+                           xref="x", yref="y")
+
+    if 2020 in anos_int and 2022 in anos_int:
+        x0 = anos.index("2020") - 0.5
+        x1 = anos.index("2022") + 0.5
+        fig.add_vrect(x0=x0, x1=x1, fillcolor="#FCE7F3", opacity=0.7, line_width=0, layer="below")
+        fig.add_shape(type="line", x0=x0, x1=x0, y0=0, y1=y_espin,
+                      line=dict(color=VERMELHO, width=1.5, dash="dash"), xref="x", yref="y")
+        fig.add_shape(type="line", x0=x1, x1=x1, y0=0, y1=y_espin,
+                      line=dict(color=VERMELHO, width=1.5, dash="dash"), xref="x", yref="y")
+        fig.add_annotation(x=x0, y=y_espin, ax=x1, ay=y_espin, axref="x", ayref="y",
+                           xref="x", yref="y", showarrow=True, arrowhead=2, arrowsize=1.6,
+                           arrowwidth=1.2, arrowcolor=VERMELHO, text="")
+        fig.add_annotation(x=x1, y=y_espin, ax=x0, ay=y_espin, axref="x", ayref="y",
+                           xref="x", yref="y", showarrow=True, arrowhead=2, arrowsize=1.6,
+                           arrowwidth=1.2, arrowcolor=VERMELHO, text="")
+        fig.add_annotation(x=(x0 + x1) / 2, y=y_espin, yanchor="bottom", yshift=6,
+                           text="<b>ESPIN</b>", showarrow=False,
+                           font=dict(color=VERMELHO, size=13, weight="bold"),
+                           xref="x", yref="y")
+
+    fig = aplicar_padrao(
+        fig, "De 4% a dois terços da pauta: o degrau da universalização",
+        "Participação do Plenário Virtual nas inclusões em pauta, com marcos regimentais (2016–2025)",
+        xaxis=dict(title=""),
+        yaxis=dict(title="", range=[0, 95]),
     )
     fig.update_yaxes(showline=False, showticklabels=False, ticks="")
     fig.update_xaxes(tickfont=dict(size=22), title_font=dict(size=22))

@@ -306,15 +306,15 @@ def fig_1c_distribuicao_baixa(df: pd.DataFrame, show_values: bool = True) -> go.
     d_max = tot["quantidade_distribuidos"].max()
     b_max = tot["quantidade_baixas"].max()
     ymin = -int(b_max * 1.15)
-    ymax = int(d_max * 1.45)
+    ymax = int(d_max * 1.25)
     fig = aplicar_padrao(
         fig,
         "A baixa supera a distribuição a partir de 2018",
         "Distribuições e baixas anuais (espelhadas), controle concentrado (1988–2025)",
         xaxis=dict(title="", tickangle=-90, type="category", range=[-0.5, len(anos) - 0.5]),
         yaxis=dict(title="", range=[ymin, ymax]),
-        showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.15, x=0.5, xanchor="center"),
-        height=650, margin=dict(t=230, b=70, l=60, r=40),
+        showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0.5, xanchor="center"),
+        height=650, margin=dict(t=160, b=70, l=60, r=40),
     )
     for er in (51, 52, 53):
         if er in (52, 53):
