@@ -264,7 +264,7 @@ def fig_1b2_acervo_por_classe_vertical(df: pd.DataFrame, show_values: bool = Tru
 def fig_1b3_acervo_por_classe_vertical_extremos(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
     """1.b3 — Igual ao 1.b2, com os totais de 2017 e 2025 rotulados no topo da barra."""
     fig, anos, totais = _fig_1b2_base(df)
-    for ano, xshift in (("2017", 14), ("2025", 0)):
+    for ano, xshift in (("2017", 8), ("2025", 0)):
         if ano in anos:
             i = anos.index(ano)
             fig.add_annotation(x=i, y=totais.iloc[i], yanchor="bottom", yshift=4, xshift=xshift,
