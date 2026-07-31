@@ -279,10 +279,10 @@ def fig_1b4_acervo_por_classe_vertical_sem_eixo(df: pd.DataFrame, show_values: b
     fig, anos, totais = _fig_1b2_base(df, esconder_eixo_y=True)
     if show_values:
         for i, (ano, total) in enumerate(zip(anos, totais)):
-            xshift = 14 if ano == "2017" else 0
-            fig.add_annotation(x=i, y=total, yanchor="bottom", yshift=4, xshift=xshift,
+            bg = dict(bgcolor="white", borderpad=2) if ano == "2017" else {}
+            fig.add_annotation(x=i, y=total, yanchor="bottom", yshift=4,
                                text=f"<b>{br(total)}</b>", showarrow=False,
-                               font=dict(color="black", size=11), xref="x", yref="y")
+                               font=dict(color="black", size=11), xref="x", yref="y", **bg)
     return fig
 
 
@@ -317,6 +317,7 @@ def fig_1c_distribuicao_baixa(df: pd.DataFrame, show_values: bool = True) -> go.
         showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0.5, xanchor="center"),
         height=650, margin=dict(t=160, b=70, l=60, r=40),
     )
+    y_er = ymax * 0.95
     for er in (51, 52, 53):
         if er in (52, 53):
             ano_er, _, _ = ER_DATAS[er]
@@ -324,10 +325,10 @@ def fig_1c_distribuicao_baixa(df: pd.DataFrame, show_values: bool = True) -> go.
         else:
             ano, mes, dia = ER_DATAS[er]
             x = _frac_ano(ANO_MIN, ano, mes, dia)
-        fig.add_shape(type="line", x0=x, x1=x, y0=ymin, y1=ymax,
+        fig.add_shape(type="line", x0=x, x1=x, y0=ymin, y1=y_er,
                       line=dict(color="black", width=1.5, dash="dash"), xref="x", yref="y")
-        # Sigla e número empilhados (ER\n51), ancorados no topo da própria linha (y=ymax).
-        fig.add_annotation(x=x, y=ymax, yanchor="bottom", text=f"<b>ER<br>{er}</b>", showarrow=False,
+        # Sigla e número empilhados (ER\n51), ancorados no topo da própria linha.
+        fig.add_annotation(x=x, y=y_er, yanchor="bottom", text=f"<b>ER<br>{er}</b>", showarrow=False,
                            font=dict(color="black", size=11), bgcolor="white", borderpad=1,
                            xref="x", yref="y")
 
@@ -335,7 +336,7 @@ def fig_1c_distribuicao_baixa(df: pd.DataFrame, show_values: bool = True) -> go.
     idx_2022 = anos.index("2022")
     x0 = idx_2020 - 0.5  # início (coincide com a linha do ER 53)
     x1 = idx_2022 + 0.5  # final
-    y_topo_espin = ymax * 0.93  # acima do rótulo da barra de 2021, abaixo do rótulo do ER
+    y_topo_espin = ymax * 0.91  # acima do rótulo da barra de 2021, abaixo da linha do ER
     x0_linha_espin = x0 + 0.06  # linha do ESPIN fica depois (à direita) da linha do ER 53
 
     fig.add_vrect(x0=x0, x1=x1, fillcolor="#FCE7F3", opacity=0.7, line_width=0, layer="below")
