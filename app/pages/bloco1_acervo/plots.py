@@ -247,7 +247,7 @@ def _fig_1b2_base(df: pd.DataFrame, esconder_eixo_y: bool = False) -> tuple[go.F
         "Acervo ativo por classe processual e ano, controle concentrado (1988–2025)",
         xaxis=dict(title=""), yaxis=yaxis,
         showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.08, x=0.5, xanchor="center"),
-        height=650, margin=dict(t=150, b=120, l=60, r=40),
+        height=650, margin=dict(t=165, b=120, l=60, r=40),
     )
     if not esconder_eixo_y:
         fig.update_yaxes(showline=True)
