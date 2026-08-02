@@ -15,7 +15,10 @@ RE_VOTO_DIRETO = re.compile(
     r'|ajust\w*\s+.{0,20}?vot'
     r'|alteraram\s+(?:os\s+|seus\s+)?vot'
     r'|reajustad\w*\s+.{0,30}?vot'
-    r'|(?:relator|ministr\w*)[^.]{0,40}?(?:agora|ora)\s+reajustad\w*',
+    r'|(?:relator|ministr\w*)[^.]{0,40}?(?:agora|ora)\s+reajustad\w*'
+    r'|vot\w*[\s,]+(?:ora\s+)?retificad\w*'
+    r'|retific\w*\s+.{0,20}?vot'
+    r'|retificad\w*\s+.{0,30}?vot',
     re.IGNORECASE
 )
 
