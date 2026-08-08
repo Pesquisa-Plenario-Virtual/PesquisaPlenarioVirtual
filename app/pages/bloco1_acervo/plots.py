@@ -297,7 +297,7 @@ def fig_1c_distribuicao_baixa(df: pd.DataFrame, show_values: bool = True) -> go.
                           text=[br(v) for v in tot["quantidade_distribuidos"]] if show_values else None,
                           textposition="outside", textfont=dict(color="black", size=13, weight="bold"),
                           cliponaxis=False))
-    fig.add_trace(go.Bar(x=anos, y=-tot["quantidade_baixas"], name="BAIXAS",
+    fig.add_trace(go.Bar(x=anos, y=-tot["quantidade_baixas"], name="SAÍDAS",
                           marker_color=CINZA,
                           text=[br(v) if v > 0 else "" for v in tot["quantidade_baixas"]] if show_values else None,
                           textposition="outside", textfont=dict(color="black", size=13, weight="bold"),
@@ -310,8 +310,8 @@ def fig_1c_distribuicao_baixa(df: pd.DataFrame, show_values: bool = True) -> go.
     ymax = int(d_max * 1.25)
     fig = aplicar_padrao(
         fig,
-        "A baixa supera a entrada a partir de 2018",
-        "Entradas e baixas anuais (espelhadas), controle concentrado (1988–2025)",
+        "A saída supera a entrada a partir de 2018",
+        "Entradas e saídas anuais (espelhadas), controle concentrado (1988–2025)",
         xaxis=dict(title="", tickangle=-90, type="category", range=[-0.5, len(anos) - 0.5]),
         yaxis=dict(title="", range=[ymin, ymax]),
         showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.10, x=0.5, xanchor="center"),
@@ -383,7 +383,7 @@ def fig_1d2_variacao_anual(df: pd.DataFrame, show_values: bool = True) -> go.Fig
     fig = aplicar_padrao(
         fig,
         "2018 inicia sequência inédita de 8 anos de retração do acervo",
-        "Variação anual do acervo (entradas − baixas), controle concentrado (1988–2025)",
+        "Variação anual do acervo (entradas − saídas), controle concentrado (1988–2025)",
         xaxis=dict(title="", dtick=1, tickangle=-90), yaxis=dict(title="", range=[ymin, ymax]),
         showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=0.98, x=0.5, xanchor="center"),
     )
