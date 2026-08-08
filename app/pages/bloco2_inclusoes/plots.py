@@ -724,10 +724,10 @@ def fig_2n3_motivos_diversos_pp(df: pd.DataFrame, show_values: bool = True) -> g
     # recalculados de dim_andamentos/dim_decisões aqui — evita carregar os
     # datasets brutos (~560MB) só para uma tabela estática de 4 linhas.
     categorias = [
-        ("Pauta sem julgamento\nna data", 1326, 68.7, "#1E3A8A"),
-        ("Registro de sessão sem\nresultado identificável", 450, 23.3, "#2563EB"),
-        ("Retirada, adiamento ou\nsobrestamento", 152, 7.9, "#60A5FA"),
-        ("Decisão não vinculada\nà inclusão", 3, 0.2, "#BFDBFE"),
+        ("Pauta sem<br>julgamento<br>na data", 1326, 68.7, "#1E3A8A"),
+        ("Registro de sessão<br>sem resultado<br>identificável", 450, 23.3, "#2563EB"),
+        ("Retirada, adiamento<br>ou sobrestamento", 152, 7.9, "#60A5FA"),
+        ("Decisão não<br>vinculada<br>à inclusão", 3, 0.2, "#BFDBFE"),
     ]
 
     fig = go.Figure(go.Bar(
@@ -744,7 +744,7 @@ def fig_2n3_motivos_diversos_pp(df: pd.DataFrame, show_values: bool = True) -> g
         showlegend=False, margin=dict(t=190, b=90, l=60, r=40),
     )
     fig.update_yaxes(showline=False, showticklabels=False, ticks="")
-    fig.update_xaxes(tickfont=dict(size=16), showline=True)
+    fig.update_xaxes(tickfont=dict(size=13), showline=True, tickangle=0)
     return fig
 
 
