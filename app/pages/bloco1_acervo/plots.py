@@ -292,7 +292,7 @@ def fig_1c_distribuicao_baixa(df: pd.DataFrame, show_values: bool = True) -> go.
     anos = [str(a) for a in tot["ano"]]
 
     fig = go.Figure()
-    fig.add_trace(go.Bar(x=anos, y=tot["quantidade_distribuidos"], name="DISTRIBUIÇÕES",
+    fig.add_trace(go.Bar(x=anos, y=tot["quantidade_distribuidos"], name="ENTRADAS",
                           marker_color="#2563EB",
                           text=[br(v) for v in tot["quantidade_distribuidos"]] if show_values else None,
                           textposition="outside", textfont=dict(color="black", size=13, weight="bold"),
@@ -310,8 +310,8 @@ def fig_1c_distribuicao_baixa(df: pd.DataFrame, show_values: bool = True) -> go.
     ymax = int(d_max * 1.25)
     fig = aplicar_padrao(
         fig,
-        "A baixa supera a distribuição a partir de 2018",
-        "Distribuições e baixas anuais (espelhadas), controle concentrado (1988–2025)",
+        "A baixa supera a entrada a partir de 2018",
+        "Entradas e baixas anuais (espelhadas), controle concentrado (1988–2025)",
         xaxis=dict(title="", tickangle=-90, type="category", range=[-0.5, len(anos) - 0.5]),
         yaxis=dict(title="", range=[ymin, ymax]),
         showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.10, x=0.5, xanchor="center"),
@@ -383,7 +383,7 @@ def fig_1d2_variacao_anual(df: pd.DataFrame, show_values: bool = True) -> go.Fig
     fig = aplicar_padrao(
         fig,
         "2018 inicia sequência inédita de 8 anos de retração do acervo",
-        "Variação anual do acervo (distribuições − baixas), controle concentrado (1988–2025)",
+        "Variação anual do acervo (entradas − baixas), controle concentrado (1988–2025)",
         xaxis=dict(title="", dtick=1, tickangle=-90), yaxis=dict(title="", range=[ymin, ymax]),
         showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=0.98, x=0.5, xanchor="center"),
     )
