@@ -59,7 +59,7 @@ def fig_1a_variacao_trienal(df: pd.DataFrame, show_values: bool = True) -> go.Fi
     fig = aplicar_padrao(
         fig,
         "Após três décadas de acumulação, o acervo passa a encolher em 2018",
-        "Variação do acervo ativo de controle concentrado (baixa – distribuição), por triênio (1988–2025)",
+        "Variação do acervo ativo de controle concentrado (saída – entrada), por triênio (1988–2025)",
         xaxis=dict(title=""), yaxis=dict(title=""),
     )
     fig.update_yaxes(showline=False, showticklabels=False, ticks="", visible=False)
@@ -100,7 +100,7 @@ def fig_1a2_variacao_trienal(df: pd.DataFrame, show_values: bool = True) -> go.F
     fig = aplicar_padrao(
         fig,
         "Após três décadas de acumulação, o acervo passa a encolher em 2018",
-        "Variação do acervo ativo de controle concentrado (baixa – distribuição), por triênio (1988–2025)",
+        "Variação do acervo ativo de controle concentrado (saída – entrada), por triênio (1988–2025)",
         xaxis=dict(title=""), yaxis=dict(title=""),
     )
     fig.update_yaxes(showline=False, showticklabels=False, ticks="", visible=False)
@@ -449,7 +449,7 @@ def fig_1d_variacao_anual(df: pd.DataFrame, show_values: bool = True) -> go.Figu
     fig = aplicar_padrao(
         fig,
         "2018 inicia sequência inédita de 8 anos de retração do acervo",
-        "Variação anual do acervo (distribuições − baixas), controle concentrado (1988–2025)",
+        "Variação anual do acervo (entradas − saídas), controle concentrado (1988–2025)",
         xaxis=dict(title="", dtick=1, tickangle=-90), yaxis=dict(title="", range=[ymin, ymax]),
         showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.2, x=0.5, xanchor="center"),
         margin=dict(t=170, b=70, l=60, r=40),
