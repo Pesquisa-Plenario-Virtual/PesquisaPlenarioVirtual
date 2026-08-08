@@ -715,8 +715,8 @@ def fig_2r_pct_concluidos(df: pd.DataFrame, show_values: bool = True) -> go.Figu
     return fig
 
 
-# ── 2.s ──────────────────────────────────────────────────────────────────────
-def fig_2s_motivos_diversos_pp(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+# ── 2.n.3 ────────────────────────────────────────────────────────────────────
+def fig_2n3_motivos_diversos_pp(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
     """Desdobra o "motivos diversos" do PP (2020-2025) nas 4 subcategorias da Tarefa 3
     do notebook 03_inclusao_em_pauta.ipynb — totais conferidos manualmente pela cliente.
     """
