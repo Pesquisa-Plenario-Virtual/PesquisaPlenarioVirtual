@@ -30,6 +30,7 @@ _CATALOGO = [
     ("2.p — Não concluídos por categoria (PP)", "Motivos de não conclusão no PP (2020–2025).", p.fig_2p_nc_categoria_ano_pp),
     ("2.q — Média de inclusões por processo", "Média de inclusões por processo (2020–2025).", p.fig_2q_media_por_processo),
     ("2.r — % concluídos por processo e inclusão", "Julgamentos concluídos, em número e percentual, por unidade de medida e ambiente (2020–2025).", p.fig_2r_pct_concluidos),
+    ("2.s — Motivos diversos por subcategoria (PP)", "Desdobramento de \"motivos diversos\" do PP em 4 subcategorias, período 2020–2025.", p.fig_2s_motivos_diversos_pp),
     ("3.1 — Tramitação por período (2016–2019)", "Tramitação por ambiente, 2016–2019.", p.fig_31_tramitacao_2016),
     ("3.1 (alt) — Tramitação por período (2016–2019)", "Tramitação por ambiente, 2016–2019 (colunas).", p.fig_31_tramitacao_alt),
     ("3.2 — Tramitação por período (2020–2025)", "Tramitação por ambiente, 2020–2025.", p.fig_32_tramitacao_2020),

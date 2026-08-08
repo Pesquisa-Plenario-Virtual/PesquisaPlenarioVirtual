@@ -715,6 +715,39 @@ def fig_2r_pct_concluidos(df: pd.DataFrame, show_values: bool = True) -> go.Figu
     return fig
 
 
+# ── 2.s ──────────────────────────────────────────────────────────────────────
+def fig_2s_motivos_diversos_pp(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    """Desdobra o "motivos diversos" do PP (2020-2025) nas 4 subcategorias da Tarefa 3
+    do notebook 03_inclusao_em_pauta.ipynb — totais conferidos manualmente pela cliente.
+    """
+    # ponytail: números fixos (conferidos por amostragem manual da Jana), não
+    # recalculados de dim_andamentos/dim_decisões aqui — evita carregar os
+    # datasets brutos (~560MB) só para uma tabela estática de 4 linhas.
+    categorias = [
+        ("Pauta sem julgamento\nna data", 1326, 68.7, "#1E3A8A"),
+        ("Registro de sessão sem\nresultado identificável", 450, 23.3, "#2563EB"),
+        ("Retirada, adiamento ou\nsobrestamento", 152, 7.9, "#60A5FA"),
+        ("Decisão não vinculada\nà inclusão", 3, 0.2, "#BFDBFE"),
+    ]
+
+    fig = go.Figure(go.Bar(
+        x=[c[0] for c in categorias], y=[c[1] for c in categorias],
+        marker_color=[c[3] for c in categorias],
+        text=[f"<span style='font-size:20px'><b>{br(c[1])}</b></span><br><span style='font-size:14px'>{br(c[2], 1)}%</span>"
+              for c in categorias] if show_values else None,
+        textposition="outside", textfont=dict(color="black", size=20, weight="bold"), cliponaxis=False,
+    ))
+    fig = aplicar_padrao(
+        fig, "A categoria é formada, quase por inteiro, por pauta sem julgamento na data",
+        "Inclusões em pauta não concluídas por motivos diversos, no Plenário Presencial, de 2020 a 2025",
+        xaxis=dict(title=""), yaxis=dict(title="", range=[0, 1326 * 1.25]),
+        showlegend=False, margin=dict(t=190, b=90, l=60, r=40),
+    )
+    fig.update_yaxes(showline=False, showticklabels=False, ticks="")
+    fig.update_xaxes(tickfont=dict(size=16), showline=True)
+    return fig
+
+
 def _tramitacao_periodo_vertical(df: pd.DataFrame, ano_ini: int, ano_fim: int, show_values: bool,
                                   titulo: str, subtitulo: str) -> go.Figure:
     tram = _tramitacao_por_processo(df, ano_ini, ano_fim)
