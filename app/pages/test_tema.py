@@ -261,6 +261,36 @@ def test_pizza_nao_e_um_tipo_oferecido():
     assert "pizza" not in TIPOS
 
 
+def test_pie_sem_x_y_nao_quebra_e_devolve_intacta():
+    for tipo in ("linha", "area", "barra_h"):
+        fig = go.Figure(go.Pie(labels=["a", "b"], values=[1, 2]))
+        convertida = converter_tipo(fig, tipo)
+        assert convertida.data[0].type == "pie"
+        assert list(convertida.data[0].labels) == ["a", "b"]
+
+
+def test_cor_vetorial_sobrevive_em_barra_h():
+    fig = go.Figure(go.Bar(x=["2020", "2021"], y=[10, -5], name="Variação",
+                           marker_color=["#aaaaaa", "#bbbbbb"]))
+    convertida = converter_tipo(fig, "barra_h")
+    assert convertida.data[0].type == "bar"
+    assert list(convertida.data[0].marker.color) == ["#aaaaaa", "#bbbbbb"]
+
+
+def test_cor_vetorial_em_linha_devolve_a_figura_intacta():
+    fig = go.Figure(go.Bar(x=["2020", "2021"], y=[10, -5], name="Variação",
+                           marker_color=["#aaaaaa", "#bbbbbb"]))
+    convertida = converter_tipo(fig, "linha")
+    assert convertida.data[0].type == "bar"
+    assert list(convertida.data[0].marker.color) == ["#aaaaaa", "#bbbbbb"]
+
+
+def test_cor_escalar_ainda_converte_para_linha_sem_regressao():
+    fig = converter_tipo(_fig_barras(), "linha")
+    assert fig.data[0].type == "scatter"
+    assert fig.data[0].line.color == "#2a78d6"
+
+
 if __name__ == "__main__":
     for nome, fn in sorted(globals().items()):
         if nome.startswith("test_"):

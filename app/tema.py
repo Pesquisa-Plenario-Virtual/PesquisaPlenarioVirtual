@@ -184,10 +184,20 @@ def aplicar_tema(fig: go.Figure, tema: str = "novo", dark: bool = False) -> go.F
 TIPOS = ("barra", "linha", "area", "barra_h")
 
 
-def _cor_do_trace(tr) -> str | None:
+def _e_vetor(c) -> bool:
+    """Mesmo critério de _normalizar_traces: lista/tupla/array/Series é vetor,
+    string não é."""
+    return c is not None and not isinstance(c, str) and hasattr(c, "__len__")
+
+
+def _cor_marker_bruta(tr):
     marker = getattr(tr, "marker", None)
-    c = getattr(marker, "color", None) if marker is not None else None
-    if isinstance(c, (list, tuple)):
+    return getattr(marker, "color", None) if marker is not None else None
+
+
+def _cor_do_trace(tr) -> str | None:
+    c = _cor_marker_bruta(tr)
+    if _e_vetor(c):
         return None
     if c:
         return c
@@ -200,8 +210,17 @@ def converter_tipo(fig: go.Figure, tipo: str = "barra") -> go.Figure:
 
     Tipo desconhecido devolve a figura como está — o seletor da casca só oferece
     as formas declaradas em GraficoSpec.tipos, então isso é rede de segurança.
+
+    Também devolve a figura intocada quando a reconstrução não tem como
+    preservar o essencial: trace sem x/y (Pie, Sunburst, Treemap — não têm
+    forma de barra/linha/área) ou cor vetorial (uma cor por barra) pedida como
+    linha/área, onde uma única linha não tem como carregar várias cores.
     """
     if tipo not in TIPOS or tipo == "barra" or not fig.data:
+        return fig
+    if any(not hasattr(tr, "x") or not hasattr(tr, "y") for tr in fig.data):
+        return fig
+    if tipo in ("linha", "area") and any(_e_vetor(_cor_marker_bruta(tr)) for tr in fig.data):
         return fig
 
     novos = []
@@ -219,8 +238,10 @@ def converter_tipo(fig: go.Figure, tipo: str = "barra") -> go.Figure:
             novos.append(go.Scatter(mode="lines", stackgroup="um", fill="tonexty",
                                     line=dict(color=c, width=2), **base))
         elif tipo == "barra_h":
+            bruta = _cor_marker_bruta(tr)
+            cor_barra = bruta if _e_vetor(bruta) else c
             trocado = dict(base, x=tr.y, y=tr.x)
-            novos.append(go.Bar(orientation="h", marker=dict(color=c), **trocado))
+            novos.append(go.Bar(orientation="h", marker=dict(color=cor_barra), **trocado))
 
     layout = fig.layout
     nova = go.Figure(data=novos, layout=layout)
