@@ -7,6 +7,27 @@ from components.catalogo import (
 )
 from components.grafico import GraficoSpec
 
+# ponytail: pandas 3.0.5 + pyarrow segfoca dentro do AppTest ao renderizar
+# gráfico de verdade — stubar render_grafico como no-op e passar df=None é
+# válido porque render_pagina nunca usa df, só repassa. Sem isso não dá pra
+# testar render_pagina fim a fim nesse venv.
+def _pagina_de_teste():
+    import streamlit as st  # noqa: F401
+    from components import catalogo
+    from components.grafico import GraficoSpec as _Spec
+
+    catalogo.render_grafico = lambda spec, df, key: None
+
+    def _f(df):
+        return None
+
+    catalogo_completo = [
+        _Spec(id=f"G{i}", rotulo=f"G{i} rótulo", subtitulo="s", descricao="d", fn=_f)
+        for i in range(1, 17)
+    ] + [_Spec(id="G24", rotulo="G24 rótulo", subtitulo="s", descricao="d", fn=_f)]
+
+    catalogo.render_pagina(catalogo_completo, None, "pageA")
+
 
 def _cat() -> list[GraficoSpec]:
     def _f(df):
@@ -64,6 +85,40 @@ def test_persiste_quando_id_selecionado_segue_visivel():
 def test_nome_param_url_isola_por_prefixo():
     assert nome_param_url("g") != nome_param_url("t")
     assert nome_param_url("g") == "g_g"
+
+
+def test_apptest_busca_exclui_e_restaura_selecao_ao_limpar():
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_function(_pagina_de_teste)
+    at.run()
+
+    at.selectbox[0].select("G24 rótulo")
+    at.run()
+    assert at.session_state["pageA_selecionado"] == "G24"
+
+    at.text_input(key="pageA_busca").set_value("G10")
+    at.run()
+    assert at.session_state["pageA_selecionado"] == "G24"  # busca não sobrescreve
+    assert at.selectbox[0].value == "G10"  # tela mostra o fallback, não persiste
+
+    at.text_input(key="pageA_busca").set_value("")
+    at.run()
+    assert at.session_state["pageA_selecionado"] == "G24"
+    assert at.selectbox[0].value == "G24"  # G24 volta, na tela e persistido
+
+
+def test_apptest_botao_do_sumario_move_o_selectbox():
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_function(_pagina_de_teste)
+    at.run()
+    assert at.selectbox[0].value == "G1"
+
+    at.button(key="pageA_ir_G24").click()
+    at.run()
+    assert at.session_state["pageA_selecionado"] == "G24"
+    assert at.selectbox[0].value == "G24"
 
 
 if __name__ == "__main__":
