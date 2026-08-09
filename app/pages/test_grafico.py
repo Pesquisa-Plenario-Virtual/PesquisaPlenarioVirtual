@@ -48,6 +48,36 @@ def test_figura_vazia_devolve_dataframe_vazio():
     assert tabela_da_figura(go.Figure()).empty
 
 
+def test_trace_com_x_y_de_tamanhos_diferentes_e_ignorado():
+    # Contrato: um trace com x e y desalinhados é um bug de quem montou a
+    # figura. tabela_da_figura não inventa um valor para ele — ignora o
+    # trace e segue com os demais, em vez de lançar ou de fabricar um número.
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=["2020", "2021"], y=[10, 20], name="A"))
+    fig.add_trace(go.Bar(x=["2020", "2021", "2022"], y=[1, 2], name="B"))
+    tab = tabela_da_figura(fig)
+    assert "B" not in tab.columns
+    assert list(tab["A"]) == [10, 20, 30]
+
+
+def test_valor_nao_numerico_nao_vira_zero():
+    # Categoria acidentalmente ligada ao eixo de valor (y de texto) deve
+    # aparecer como está, nunca como 0.0 — 0.0 seria indistinguível de uma
+    # série legitimamente zerada.
+    fig = go.Figure(go.Bar(x=["A", "B"], y=["cat1", "cat2"], name="X"))
+    tab = tabela_da_figura(fig)
+    assert list(tab["X"])[:2] == ["cat1", "cat2"]
+    assert 0.0 not in list(tab["X"])[:2]
+
+
+def test_categoria_real_chamada_total_nao_e_sobrescrita():
+    fig = go.Figure(go.Bar(x=["2020", "Total"], y=[10, 20], name="A"))
+    tab = tabela_da_figura(fig)
+    linhas_total = tab[tab.iloc[:, 0] == "Total"]
+    # a categoria real "Total" (valor 20) e a linha de soma (30) coexistem
+    assert list(linhas_total["A"]) == [20, 30]
+
+
 if __name__ == "__main__":
     for nome, fn in sorted(globals().items()):
         if nome.startswith("test_"):
