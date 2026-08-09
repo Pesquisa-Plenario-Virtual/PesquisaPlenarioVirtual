@@ -162,6 +162,21 @@ def test_nao_quebra_com_marker_color_vetorial():
     assert list(fig.data[0].marker.color) == ["#aaaaaa", "#bbbbbb"]
 
 
+def test_nao_quebra_com_marker_sem_propriedade_color():
+    """Pie, Sunburst, Treemap e Funnelarea têm Marker sem 'color'."""
+    aplicar_tema(go.Figure(go.Pie(labels=["a", "b"], values=[1, 2], name="ADI")))
+    aplicar_tema(go.Figure(go.Sunburst(labels=["a", "b"], parents=["", "a"], values=[1, 2], name="ADI")))
+    aplicar_tema(go.Figure(go.Treemap(labels=["a", "b"], parents=["", "a"], values=[1, 2], name="ADI")))
+
+
+def test_nao_quebra_com_marker_color_vetorial_numpy():
+    import numpy as np
+    fig = go.Figure(go.Bar(x=[1, 2], y=[3, 4], name="ADI",
+                           marker_color=np.array(["#aaaaaa", "#bbbbbb"])))
+    aplicar_tema(fig)
+    assert list(fig.data[0].marker.color) == ["#aaaaaa", "#bbbbbb"]
+
+
 if __name__ == "__main__":
     for nome, fn in sorted(globals().items()):
         if nome.startswith("test_"):

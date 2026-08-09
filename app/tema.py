@@ -83,7 +83,9 @@ def _normalizar_traces(fig: go.Figure, dark: bool) -> None:
             continue
         nova = cor(nome, dark)
         marker = getattr(tr, "marker", None)
-        if marker is not None and not isinstance(getattr(marker, "color", None), (list, tuple)):
+        cor_atual = getattr(marker, "color", None) if marker is not None else None
+        vetorial = hasattr(cor_atual, "__len__") and not isinstance(cor_atual, str)
+        if marker is not None and hasattr(marker, "color") and not vetorial:
             tr.marker.color = nova
         if hasattr(tr, "line") and tr.type in ("scatter", "scattergl"):
             tr.line.color = nova
