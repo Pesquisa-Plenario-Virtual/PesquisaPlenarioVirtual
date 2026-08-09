@@ -15,8 +15,8 @@ CORES_TRAM = {
     "Físico":             CINZA,  # PP
 }
 CORES_AMBIENTE = {
-    "Plenário Virtual":   AZUL,   # PV
-    "Plenário Físico":    CINZA,  # PP
+    "Plenário Virtual":     AZUL,   # PV
+    "Plenário Presencial":  CINZA,  # PP
 }
 CORES_CLASSE = {
     "ADI":  "#2563eb",
@@ -48,15 +48,23 @@ _TRAMS   = ["Virtual", "Físico", "Ambos os ambientes"]
 def _barras_grupo(tab: pd.DataFrame, col_x: str, col_grupo: str,
                   cores: dict, titulo: str, subtitulo: str,
                   label_y: str, x_title: str,
-                  show_values: bool = True) -> go.Figure:
+                  show_values: bool = True, proporcao: bool = False) -> go.Figure:
+    if proporcao:
+        totais = tab.groupby(col_x)["n"].transform("sum")
+        tab = tab.assign(y=(tab["n"] / totais * 100).round(1))
+        label_y = "% do total"
+    else:
+        tab = tab.assign(y=tab["n"])
+
     fig = go.Figure()
     grupos = [g for g in cores if g in tab[col_grupo].unique()]
     for g in grupos:
         d = tab[tab[col_grupo] == g]
+        texto = d["y"].apply(lambda v: f"{v:.1f}%") if proporcao else d["y"]
         fig.add_trace(go.Bar(
-            x=d[col_x], y=d["n"], name=g.upper(),
+            x=d[col_x], y=d["y"], name=g.upper(),
             marker_color=cores[g],
-            text=d["n"] if show_values else None,
+            text=texto if show_values else None,
             textposition="outside", cliponaxis=False,
             textfont=dict(family="Arial, sans-serif", size=17, color="black"),
         ))
@@ -85,7 +93,7 @@ def _proc(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# T1 — Pizza geral por ambiente
+# T1 — Barras geral por ambiente
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def gt1_tramitacao(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
@@ -101,7 +109,7 @@ def gt1_tramitacao(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
     aplicar_padrao(
         fig,
         "Maioria dos processos tramita em apenas um ambiente",
-        "Distribuição de processos distintos por ambiente de tramitação — CC (2020–2025)",
+        "Distribuição de processos distintos por ambiente de tramitação — CC (2016–2025)",
         xaxis=dict(title=""), yaxis=dict(title="Processos distintos"),
     )
     return fig
@@ -117,7 +125,7 @@ def gt2_tram_por_classe(df: pd.DataFrame, show_values: bool = True) -> go.Figure
     return _barras_grupo(
         tab, "classe", "tramitacao", CORES_TRAM,
         "Tramitação por ambiente varia conforme a classe processual",
-        "Processos CC por classe e ambiente de tramitação (2020–2025)",
+        "Processos CC por classe e ambiente de tramitação (2016–2025)",
         "Processos distintos", "Classe", show_values=show_values,
     )
 
@@ -133,7 +141,7 @@ def gt3_tram_por_tipo(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
     return _barras_grupo(
         tab, "tipo_questao", "tramitacao", CORES_TRAM,
         "Tramitação por ambiente varia conforme o tipo de questão",
-        "Processos CC por tipo de questão e ambiente de tramitação (2020–2025)",
+        "Processos CC por tipo de questão e ambiente de tramitação (2016–2025)",
         "Processos distintos", "Tipo de questão", show_values=show_values,
     )
 
@@ -160,7 +168,7 @@ def gt4_ambos_por_tipo(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
     aplicar_padrao(
         fig,
         "Poucos processos tramitam em ambos os ambientes",
-        "Processos que tramitaram em Plenário Virtual e Físico, por tipo de questão (2020–2025)",
+        "Processos que tramitaram em Plenário Virtual e Presencial, por tipo de questão (2016–2025)",
         barmode="group",
         showlegend=True,
     )
@@ -178,7 +186,7 @@ def gt5_macro_por_tram(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
     return _barras_grupo(
         tab, "tramitacao", "macro_desfecho", CORES_MACRO,
         "Taxa de conclusão varia entre ambientes de tramitação",
-        "Macro-desfecho por ambiente de tramitação — Inclusões (2020–2025)",
+        "Macro-desfecho por ambiente de tramitação — Inclusões (2016–2025)",
         "Inclusões em pauta", "Tramitação", show_values=show_values,
     )
 
@@ -187,18 +195,19 @@ def gt5_macro_por_tram(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
 # T6 — Desfecho detalhado por ambiente de tramitação (inclusões)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def gt6_desfecho_por_tram(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+def gt6_desfecho_por_tram(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False) -> go.Figure:
     tab = df.groupby(["tramitacao", "desfecho"], observed=True).size().reset_index(name="n")
     return _barras_grupo(
         tab, "tramitacao", "desfecho", CORES_DESFECHO,
         "Composição dos desfechos difere por ambiente de tramitação",
-        "Desfecho detalhado por ambiente de tramitação — Inclusões (2020–2025)",
-        "Inclusões em pauta", "Tramitação", show_values=show_values,
+        "Desfecho detalhado por ambiente de tramitação — Inclusões (2016–2025)",
+        "Quantidade de desfechos", "Ambiente de tramitação",
+        show_values=show_values, proporcao=proporcao,
     )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# T7 — Classe por ambiente de tramitação — pizza por ambiente (dict de figuras)
+# T7 — Classe por ambiente de tramitação (barras 100% empilhadas)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def gt7_classe_por_tram(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
@@ -223,7 +232,7 @@ def gt7_classe_por_tram(df: pd.DataFrame, show_values: bool = True) -> go.Figure
     aplicar_padrao(
         fig,
         "Composição por classe varia conforme o ambiente de tramitação",
-        "Distribuição por classe processual, dentro de cada ambiente de tramitação (2020–2025)",
+        "Distribuição por classe processual, dentro de cada ambiente de tramitação (2016–2025)",
         barmode="stack", showlegend=True,
         xaxis=dict(title="", categoryorder="array", categoryarray=[t.upper() for t in ordem]),
         yaxis=dict(title="% de processos", range=[0, 100]),
@@ -258,7 +267,7 @@ def gt8_tipo_por_tram(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
     aplicar_padrao(
         fig,
         "Composição por tipo de questão varia conforme o ambiente de tramitação",
-        "Distribuição por tipo de questão, dentro de cada ambiente de tramitação (2020–2025)",
+        "Distribuição por tipo de questão, dentro de cada ambiente de tramitação (2016–2025)",
         barmode="stack", showlegend=True,
         xaxis=dict(title="", categoryorder="array", categoryarray=[t.upper() for t in ordem]),
         yaxis=dict(title="% de processos", range=[0, 100]),
@@ -281,7 +290,7 @@ def gt9_taxa_conclusao(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
     return _barras_grupo(
         tab, "tramitacao", "classe", CORES_CLASSE,
         "Taxa de conclusão por ambiente de tramitação, por classe",
-        "% de inclusões concluídas por ambiente de tramitação e classe (2020–2025)",
+        "% de inclusões concluídas por ambiente de tramitação e classe (2016–2025)",
         "% de inclusões concluídas", "Tramitação", show_values=show_values,
     )
 
@@ -406,17 +415,15 @@ def gt10_tabulador(
 
 def gt11_proc_ano_ambiente(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
     """Processos distintos por ano e ambiente (drop_duplicates incidente+ano+ambiente)."""
-    d = df.copy()
-    d["ambiente"] = d["ambiente"].replace({"Plenário Presencial": "Plenário Físico"})
     tab = (
-        d.drop_duplicates(subset=["incidente", "ano", "ambiente"])
+        df.drop_duplicates(subset=["incidente", "ano", "ambiente"])
         .groupby(["ano", "ambiente"], observed=True).size()
         .reset_index(name="n")
     )
     fig = _barras_grupo(
         tab, "ano", "ambiente", CORES_AMBIENTE,
         "Volume de processos por ambiente muda ao longo dos anos",
-        "Processos distintos por ano e ambiente (2020–2025)",
+        "Processos distintos por ano e ambiente (2016–2025)",
         "Processos (incidentes distintos)", "Ano", show_values=show_values,
     )
     fig.update_yaxes(range=[0, 800])
@@ -430,18 +437,16 @@ def gt11_proc_ano_ambiente(df: pd.DataFrame, show_values: bool = True) -> go.Fig
 
 def _classificar_tramitacao(ambientes: set) -> str:
     tem_v = "Plenário Virtual" in ambientes
-    tem_f = "Plenário Físico" in ambientes
-    if tem_v and tem_f:
+    tem_p = "Plenário Presencial" in ambientes
+    if tem_v and tem_p:
         return "Ambos os ambientes"
     return "Virtual" if tem_v else "Físico"
 
 
 def gt12_proc_tramitacao_primeiro_ano(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
     """Cada processo UMA vez: ano = primeira inclusão, tipo = histórico completo."""
-    d = df.copy()
-    d["ambiente"] = d["ambiente"].replace({"Plenário Presencial": "Plenário Físico"})
     proc = (
-        d.groupby("incidente")
+        df.groupby("incidente")
         .agg(
             ambientes=("ambiente", set),
             ano_primeira=("data_inclusao_dt", "min"),
@@ -455,7 +460,7 @@ def gt12_proc_tramitacao_primeiro_ano(df: pd.DataFrame, show_values: bool = True
     fig = _barras_grupo(
         tab, "ano", "tramitacao", CORES_TRAM,
         "Ambiente de primeira inclusão muda ao longo dos anos",
-        "Processos por tipo de tramitação, por ano da primeira inclusão (2020–2025)",
+        "Processos por tipo de tramitação, por ano da primeira inclusão (2016–2025)",
         "Processos (incidentes distintos)", "Ano", show_values=show_values,
     )
     _marcar_periodo_2020_2025(fig, y_max=y_max)
@@ -488,7 +493,7 @@ def gt13_tramitacao_periodo(df: pd.DataFrame, show_values: bool = True) -> go.Fi
         .reset_index(name="ambientes")
     )
     proc["tramitacao"] = proc["ambientes"].apply(_classificar_tramitacao_t13)
-    proc["periodo"] = "2020–2025"
+    proc["periodo"] = "2016–2025"
 
     tab = proc.groupby(["periodo", "tramitacao"], observed=True).size().reset_index(name="n")
 
@@ -506,7 +511,7 @@ def gt13_tramitacao_periodo(df: pd.DataFrame, show_values: bool = True) -> go.Fi
     aplicar_padrao(
         fig,
         "Maioria dos processos tramita em um único ambiente no período",
-        "Processos por tipo de tramitação (2020–2025)",
+        "Processos por tipo de tramitação (2016–2025)",
         barmode="group",
         showlegend=True,
         height=600,
