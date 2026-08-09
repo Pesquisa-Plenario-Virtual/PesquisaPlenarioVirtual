@@ -1,7 +1,7 @@
 """Testes de tema.py — pós-processamento de figura."""
 import plotly.graph_objects as go
 
-from tema import FONTE, TAMANHOS, aplicar_tema
+from tema import FONTE, TAMANHOS, aplicar_tema, limpar_html_de_fonte
 
 
 def _fig_suja() -> go.Figure:
@@ -175,6 +175,33 @@ def test_nao_quebra_com_marker_color_vetorial_numpy():
                            marker_color=np.array(["#aaaaaa", "#bbbbbb"])))
     aplicar_tema(fig)
     assert list(fig.data[0].marker.color) == ["#aaaaaa", "#bbbbbb"]
+
+
+def test_remove_font_size_inline_preservando_o_texto():
+    assert limpar_html_de_fonte(
+        "<span style='font-size:20px'>1.234</span>"
+    ) == "1.234"
+    assert limpar_html_de_fonte(
+        "<b>Total</b><br><span style='font-size:12px'>ADI 900</span>"
+    ) == "<b>Total</b><br>ADI 900"
+
+
+def test_texto_sem_span_nao_muda():
+    assert limpar_html_de_fonte("<b>Achado</b>") == "<b>Achado</b>"
+    assert limpar_html_de_fonte("1.234") == "1.234"
+
+
+def test_aplicar_tema_limpa_titulo_anotacao_e_texto_de_barra():
+    fig = go.Figure(go.Bar(
+        x=[1], y=[2], name="ADI",
+        text=["<span style='font-size:20px'>500</span>"],
+    ))
+    fig.update_layout(title="<b><span style='font-size:22px'>Título</span></b>")
+    fig.add_annotation(x=0, y=1, text="<span style='font-size:14px'>nota</span>")
+    aplicar_tema(fig)
+    assert fig.layout.title.text == "<b>Título</b>"
+    assert list(fig.data[0].text) == ["500"]
+    assert fig.layout.annotations[0].text == "nota"
 
 
 if __name__ == "__main__":

@@ -10,6 +10,8 @@ funciona sem duplicar código de gráfico.
 
 from __future__ import annotations
 
+import re
+
 import plotly.graph_objects as go
 
 from paleta import CORES, canonico, cor
@@ -33,6 +35,25 @@ FUNDO_ESCURO = "#0e1117"
 
 _PLENARIO_FISICO = "Plenário Físico"
 _PLENARIO_PRESENCIAL = "Plenário Presencial"
+
+
+_SPAN_FONTE = re.compile(r"<span[^>]*font-size[^>]*>(.*?)</span>", re.IGNORECASE | re.DOTALL)
+
+
+def limpar_html_de_fonte(texto: str) -> str:
+    """Remove <span style='font-size:...'> preservando o conteúdo.
+
+    Os Blocos Empíricos embutem tamanho no próprio rótulo; sem isso o valor
+    embutido vence o textfont padronizado quando essas figuras são importadas
+    pelas páginas temáticas.
+    """
+    if not texto or "<span" not in texto.lower():
+        return texto
+    anterior = None
+    while anterior != texto:
+        anterior = texto
+        texto = _SPAN_FONTE.sub(r"\1", texto)
+    return texto
 
 
 def _sem_plenario_fisico(texto):
@@ -79,6 +100,11 @@ def _normalizar_traces(fig: go.Figure, dark: bool) -> None:
             tr.name = canonico(nome)
         if hasattr(tr, "textfont"):
             tr.textfont = valor
+        texto = getattr(tr, "text", None)
+        if isinstance(texto, str):
+            tr.text = limpar_html_de_fonte(texto)
+        elif isinstance(texto, (list, tuple)):
+            tr.text = [limpar_html_de_fonte(t) if isinstance(t, str) else t for t in texto]
         if not nome or canonico(nome) not in CORES:
             continue
         nova = cor(nome, dark)
@@ -94,6 +120,8 @@ def _normalizar_traces(fig: go.Figure, dark: bool) -> None:
 def _normalizar_anotacoes(fig: go.Figure, dark: bool) -> None:
     anotacao = _fonte("anotacao", dark)
     for ann in fig.layout.annotations:
+        if ann.text:
+            ann.text = limpar_html_de_fonte(ann.text)
         # a cor da anotação é semântica (ER preto, ESPIN vermelho) — preservar
         cor_original = ann.font.color
         ann.font = dict(family=FONTE, size=TAMANHOS["anotacao"],
@@ -144,6 +172,8 @@ def aplicar_tema(fig: go.Figure, tema: str = "novo", dark: bool = False) -> go.F
         paper_bgcolor=fundo,
         plot_bgcolor=fundo,
     )
+    if fig.layout.title.text:
+        fig.layout.title.text = limpar_html_de_fonte(fig.layout.title.text)
     _normalizar_eixos(fig, dark)
     _normalizar_traces(fig, dark)
     _normalizar_anotacoes(fig, dark)
