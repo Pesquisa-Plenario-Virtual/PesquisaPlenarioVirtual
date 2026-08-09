@@ -38,6 +38,21 @@ def sumario_por_bloco(catalogo: list[GraficoSpec]) -> dict[str, list[GraficoSpec
     return blocos
 
 
+def deve_persistir_selecao(ids_visiveis: list[str], persistido: str) -> bool:
+    """Diz se a seleção do selectbox deve substituir a seleção persistida.
+
+    Falso quando a busca excluiu o id persistido: nesse caso o selectbox está
+    mostrando um fallback forçado (index=0), não uma escolha real do usuário,
+    e persisti-lo apagaria a seleção real assim que a busca fosse limpa.
+    """
+    return persistido in ids_visiveis
+
+
+def nome_param_url(key_prefix: str) -> str:
+    """Nome do query param de compartilhamento, isolado por página."""
+    return f"g_{key_prefix}"
+
+
 def render_pagina(catalogo: list[GraficoSpec], df, key_prefix: str,
                   sumario_titulo: str = "Sumário — visualizações disponíveis") -> None:
     """Renderiza uma página inteira a partir do seu catálogo."""
@@ -45,7 +60,7 @@ def render_pagina(catalogo: list[GraficoSpec], df, key_prefix: str,
 
     # Estado vindo do link compartilhado, lido só uma vez.
     if chave_sel not in st.session_state:
-        do_link = st.query_params.get("g")
+        do_link = st.query_params.get(nome_param_url(key_prefix))
         st.session_state[chave_sel] = do_link if any(
             s.id == do_link for s in catalogo) else catalogo[0].id
 
@@ -77,7 +92,8 @@ def render_pagina(catalogo: list[GraficoSpec], df, key_prefix: str,
         "Selecione a visualização", ids, index=indice, key=f"{key_prefix}_sel",
         format_func=lambda i: next(s.rotulo for s in visiveis if s.id == i),
     )
-    st.session_state[chave_sel] = escolhido
+    if deve_persistir_selecao(ids, atual):
+        st.session_state[chave_sel] = escolhido
     spec = next(s for s in visiveis if s.id == escolhido)
 
     st.subheader(spec.subtitulo)
@@ -86,6 +102,7 @@ def render_pagina(catalogo: list[GraficoSpec], df, key_prefix: str,
     render_grafico(spec, df, key=f"{key_prefix}_{spec.id}")
 
     if st.button("🔗 Copiar link deste gráfico", key=f"{key_prefix}_link"):
-        st.query_params["g"] = spec.id
-        st.code(f"?g={spec.id}", language=None)
+        param = nome_param_url(key_prefix)
+        st.query_params[param] = spec.id
+        st.code(f"?{param}={spec.id}", language=None)
         st.caption("Link atualizado na barra de endereço.")
