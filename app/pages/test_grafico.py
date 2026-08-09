@@ -4,7 +4,14 @@ import inspect
 import pandas as pd
 import plotly.graph_objects as go
 
-from components.grafico import FILTROS_VALIDOS, GraficoSpec, _aplicar_filtros, _kwargs_aceitos, tabela_da_figura
+from components.grafico import (
+    FILTROS_VALIDOS,
+    GraficoSpec,
+    _aplicar_filtros,
+    _fn_aceita_ambiente,
+    _kwargs_aceitos,
+    tabela_da_figura,
+)
 
 
 def _fig_duas_series() -> go.Figure:
@@ -138,6 +145,29 @@ def test_kwargs_aceitos_com_funcao_que_so_recebe_df():
     def fn(df):
         return None
     assert _kwargs_aceitos(fn, {"show_values": False}) == {}
+
+
+def test_filtro_com_lista_vazia_zera_o_resultado():
+    # [] é "oferecido, nada selecionado" — diferente de filtro não oferecido
+    # (chave ausente). Destico tudo num multiselect deve mostrar zero linhas,
+    # não a tabela inteira.
+    out = _aplicar_filtros(_df(), {"classe": []})
+    assert out.empty
+
+
+def test_filtro_ausente_ou_de_coluna_ausente_nao_altera_o_dataframe():
+    df = _df()
+    assert len(_aplicar_filtros(df, {})) == len(df)
+    assert len(_aplicar_filtros(df, {"desfecho": None})) == len(df)
+
+
+def test_fn_aceita_ambiente_detecta_parametro_na_assinatura():
+    def com_ambiente(df, ambiente="Plenário Virtual"):
+        return None
+    def sem_ambiente(df, show_values=True):
+        return None
+    assert _fn_aceita_ambiente(com_ambiente) is True
+    assert _fn_aceita_ambiente(sem_ambiente) is False
 
 
 if __name__ == "__main__":

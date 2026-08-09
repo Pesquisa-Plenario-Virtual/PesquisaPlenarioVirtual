@@ -100,14 +100,20 @@ def tabela_da_figura(fig: go.Figure) -> pd.DataFrame:
 
 
 def _aplicar_filtros(df, escolhas: dict):
-    """Recorta o dataframe pelas escolhas. Filtro sem coluna correspondente é ignorado."""
+    """Recorta o dataframe pelas escolhas. Filtro sem coluna correspondente é ignorado.
+
+    `None` (chave ausente) significa "filtro não oferecido" — mantém o
+    dataframe intacto. `[]` significa "oferecido, nada selecionado" — deve
+    zerar o resultado (isin([]) já faz isso), em vez de ser tratado como
+    "sem filtro" e devolver tudo.
+    """
     out = df
     periodo = escolhas.get("periodo")
     if periodo and "ano" in out.columns:
         out = out[out["ano"].between(periodo[0], periodo[1])]
     for nome, coluna in _COLUNA_DO_FILTRO.items():
         valores = escolhas.get(nome)
-        if valores and coluna in out.columns:
+        if valores is not None and coluna in out.columns:
             out = out[out[coluna].isin(valores)]
     return out
 
@@ -122,6 +128,17 @@ def _kwargs_aceitos(fn: Callable, candidatos: dict) -> dict:
     if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()):
         return dict(candidatos)
     return {k: v for k, v in candidatos.items() if k in params}
+
+
+def _fn_aceita_ambiente(fn: Callable) -> bool:
+    """True se fn declara um parâmetro `ambiente` — nesse caso ela filtra
+    internamente por um único ambiente (ex.: g12_concluidos_filtravel), e o
+    controle correspondente precisa ser seleção única, não multiseleção,
+    senão marcar os dois ambientes e o gráfico mostrar só um vira possível."""
+    try:
+        return "ambiente" in inspect.signature(fn).parameters
+    except (TypeError, ValueError):
+        return False
 
 
 def _controles(spec: GraficoSpec, df, key: str) -> dict:
@@ -162,6 +179,11 @@ def _controles(spec: GraficoSpec, df, key: str) -> dict:
                 if coluna not in df.columns:
                     continue
                 opcoes = sorted(str(v) for v in df[coluna].dropna().unique())
+                if nome == "ambiente" and _fn_aceita_ambiente(spec.fn):
+                    opcoes = sorted(opcoes, key=lambda v: v != "Plenário Virtual")
+                    escolhas[nome] = [st.selectbox(
+                        "Âmbito", opcoes, index=0, key=f"{key}_{nome}")]
+                    continue
                 escolhas[nome] = st.multiselect(
                     coluna.replace("_", " ").capitalize(), opcoes,
                     default=opcoes, key=f"{key}_{nome}")
@@ -197,7 +219,7 @@ def render_grafico(spec: GraficoSpec, df, key: str) -> None:
     tema_atual = st.session_state.get("tema_visual", "novo")
     dark = st.session_state.get("modo_noturno", False)
 
-    for aba, fig in pares:
+    for i, (aba, fig) in enumerate(pares):
         contexto = aba if aba is not None else st.container()
         with contexto:
             fig = converter_tipo(fig, estado["tipo"])
@@ -205,7 +227,7 @@ def render_grafico(spec: GraficoSpec, df, key: str) -> None:
             fig.update_layout(showlegend=estado["legenda"] and len(fig.data) > 1)
             if not estado["show_values"]:
                 fig.update_traces(text=None, texttemplate=None)
-            st.plotly_chart(fig, width="stretch", key=f"{key}_fig_{id(fig)}")
+            st.plotly_chart(fig, width="stretch", key=f"{key}_fig_{i}")
             with st.expander("📊 Dados da visualização"):
                 tab = tabela_da_figura(fig)
                 if tab.empty:
