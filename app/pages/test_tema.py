@@ -204,6 +204,63 @@ def test_aplicar_tema_limpa_titulo_anotacao_e_texto_de_barra():
     assert fig.layout.annotations[0].text == "nota"
 
 
+from tema import TIPOS, converter_tipo
+
+
+def _fig_barras() -> go.Figure:
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=["2020", "2021"], y=[10, 20],
+                         name="Plenário Virtual", marker_color="#2a78d6",
+                         text=["10", "20"]))
+    fig.add_trace(go.Bar(x=["2020", "2021"], y=[5, 8],
+                         name="Plenário Presencial", marker_color="#eb6834",
+                         text=["5", "8"]))
+    fig.update_layout(barmode="group")
+    return fig
+
+
+def test_barra_para_linha_preserva_dado_nome_e_cor():
+    fig = converter_tipo(_fig_barras(), "linha")
+    assert all(tr.type == "scatter" for tr in fig.data)
+    assert fig.data[0].mode == "lines+markers"
+    assert list(fig.data[0].x) == ["2020", "2021"]
+    assert list(fig.data[0].y) == [10, 20]
+    assert fig.data[0].name == "Plenário Virtual"
+    assert fig.data[0].line.color == "#2a78d6"
+    assert fig.data[1].line.color == "#eb6834"
+
+
+def test_barra_para_area_empilha():
+    fig = converter_tipo(_fig_barras(), "area")
+    assert all(tr.type == "scatter" for tr in fig.data)
+    assert fig.data[0].stackgroup == "um"
+    assert fig.data[0].fill == "tonexty"
+
+
+def test_barra_para_horizontal_troca_os_eixos():
+    fig = converter_tipo(_fig_barras(), "barra_h")
+    assert all(tr.type == "bar" for tr in fig.data)
+    assert fig.data[0].orientation == "h"
+    assert list(fig.data[0].x) == [10, 20]
+    assert list(fig.data[0].y) == ["2020", "2021"]
+
+
+def test_barra_para_barra_devolve_igual():
+    original = _fig_barras()
+    fig = converter_tipo(original, "barra")
+    assert all(tr.type == "bar" for tr in fig.data)
+    assert list(fig.data[0].y) == [10, 20]
+
+
+def test_tipo_desconhecido_devolve_a_figura_intacta():
+    fig = converter_tipo(_fig_barras(), "sanfona")
+    assert all(tr.type == "bar" for tr in fig.data)
+
+
+def test_pizza_nao_e_um_tipo_oferecido():
+    assert "pizza" not in TIPOS
+
+
 if __name__ == "__main__":
     for nome, fn in sorted(globals().items()):
         if nome.startswith("test_"):

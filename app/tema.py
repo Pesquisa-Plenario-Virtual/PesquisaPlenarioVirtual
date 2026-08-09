@@ -179,3 +179,53 @@ def aplicar_tema(fig: go.Figure, tema: str = "novo", dark: bool = False) -> go.F
     _normalizar_anotacoes(fig, dark)
     _normalizar_texto_livre(fig)
     return fig
+
+
+TIPOS = ("barra", "linha", "area", "barra_h")
+
+
+def _cor_do_trace(tr) -> str | None:
+    marker = getattr(tr, "marker", None)
+    c = getattr(marker, "color", None) if marker is not None else None
+    if isinstance(c, (list, tuple)):
+        return None
+    if c:
+        return c
+    linha = getattr(tr, "line", None)
+    return getattr(linha, "color", None) if linha is not None else None
+
+
+def converter_tipo(fig: go.Figure, tipo: str = "barra") -> go.Figure:
+    """Reconstrói os traces na forma pedida preservando x, y, nome, cor e texto.
+
+    Tipo desconhecido devolve a figura como está — o seletor da casca só oferece
+    as formas declaradas em GraficoSpec.tipos, então isso é rede de segurança.
+    """
+    if tipo not in TIPOS or tipo == "barra" or not fig.data:
+        return fig
+
+    novos = []
+    for tr in fig.data:
+        c = _cor_do_trace(tr)
+        base = dict(x=tr.x, y=tr.y, name=tr.name, text=tr.text,
+                    hovertemplate=tr.hovertemplate, legendgroup=tr.legendgroup,
+                    showlegend=tr.showlegend)
+        if tipo == "linha":
+            novos.append(go.Scatter(mode="lines+markers",
+                                    line=dict(color=c, width=2),
+                                    marker=dict(color=c, size=8),
+                                    textposition="top center", **base))
+        elif tipo == "area":
+            novos.append(go.Scatter(mode="lines", stackgroup="um", fill="tonexty",
+                                    line=dict(color=c, width=2), **base))
+        elif tipo == "barra_h":
+            trocado = dict(base, x=tr.y, y=tr.x)
+            novos.append(go.Bar(orientation="h", marker=dict(color=c), **trocado))
+
+    layout = fig.layout
+    nova = go.Figure(data=novos, layout=layout)
+    if tipo == "barra_h":
+        titulo_x = layout.xaxis.title.text
+        titulo_y = layout.yaxis.title.text
+        nova.update_layout(xaxis_title=titulo_y, yaxis_title=titulo_x)
+    return nova
