@@ -83,6 +83,49 @@ def test_modo_escuro_troca_fundo_e_tinta():
     assert fig.layout.font.color == "#fafafa"
 
 
+def _fig_com_plenario_fisico_por_toda_parte() -> go.Figure:
+    """'Plenário Físico' vazando em título, eixo (inclusive subplot),
+    anotação e valor categórico — o cenário do replace() em plots.py."""
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=["Plenário Físico", "Plenário Virtual"], y=[5, 10]))
+    fig.update_layout(
+        title="Inclusões no Plenário Físico por ano",
+        xaxis=dict(title="Ambiente"),
+        xaxis2=dict(title="Comparativo Plenário Físico x Virtual"),
+    )
+    fig.add_annotation(x=0, y=12, text="Predomínio do Plenário Físico em 2020")
+    return fig
+
+
+def test_titulo_com_plenario_fisico_no_meio_da_frase_e_corrigido():
+    fig = aplicar_tema(_fig_com_plenario_fisico_por_toda_parte())
+    assert fig.layout.title.text == "Inclusões no Plenário Presencial por ano"
+
+
+def test_titulo_de_eixo_x_com_plenario_fisico_e_corrigido():
+    fig = aplicar_tema(_fig_com_plenario_fisico_por_toda_parte())
+    assert "Plenário Físico" not in fig.layout.xaxis2.title.text
+    assert "Plenário Presencial" in fig.layout.xaxis2.title.text
+
+
+def test_anotacao_com_plenario_fisico_e_corrigida():
+    fig = aplicar_tema(_fig_com_plenario_fisico_por_toda_parte())
+    assert fig.layout.annotations[0].text == "Predomínio do Plenário Presencial em 2020"
+
+
+def test_valor_categorico_plenario_fisico_vira_presencial():
+    fig = aplicar_tema(_fig_com_plenario_fisico_por_toda_parte())
+    assert fig.data[0].x == ("Plenário Presencial", "Plenário Virtual")
+
+
+def test_tema_empirico_e_byte_identico_mesmo_com_plenario_fisico():
+    original = _fig_com_plenario_fisico_por_toda_parte()
+    antes = original.to_json()
+    devolvida = aplicar_tema(original, tema="empirico")
+    assert devolvida.to_json() == antes
+    assert "Plenário Físico" in devolvida.to_json()
+
+
 if __name__ == "__main__":
     for nome, fn in sorted(globals().items()):
         if nome.startswith("test_"):

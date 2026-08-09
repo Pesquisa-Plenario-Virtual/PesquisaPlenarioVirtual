@@ -31,6 +31,17 @@ TINTA_ESCURA = "#fafafa"
 FUNDO_CLARO = "#ffffff"
 FUNDO_ESCURO = "#0e1117"
 
+_PLENARIO_FISICO = "Plenário Físico"
+_PLENARIO_PRESENCIAL = "Plenário Presencial"
+
+
+def _sem_plenario_fisico(texto):
+    """"Plenário Físico" não pode sobreviver em nenhum texto renderizado —
+    troca a substring onde quer que apareça, sozinha ou dentro de uma frase."""
+    if not isinstance(texto, str) or _PLENARIO_FISICO not in texto:
+        return texto
+    return texto.replace(_PLENARIO_FISICO, _PLENARIO_PRESENCIAL)
+
 
 def _fonte(size_key: str, dark: bool) -> dict:
     return dict(
@@ -73,6 +84,32 @@ def _normalizar_anotacoes(fig: go.Figure, dark: bool) -> None:
                         color=cor_original or anotacao["color"])
 
 
+def _normalizar_texto_livre(fig: go.Figure) -> None:
+    """Título, título de eixo (inclusive subplots), anotação e tick categórico:
+    "Plenário Físico" não pode aparecer em nenhum desses lugares."""
+    if fig.layout.title.text:
+        fig.layout.title.text = _sem_plenario_fisico(fig.layout.title.text)
+
+    for chave in fig.layout:
+        if not (chave.startswith("xaxis") or chave.startswith("yaxis")):
+            continue
+        eixo = fig.layout[chave]
+        if eixo.title.text:
+            eixo.title.text = _sem_plenario_fisico(eixo.title.text)
+        if eixo.ticktext:
+            eixo.ticktext = tuple(_sem_plenario_fisico(t) for t in eixo.ticktext)
+
+    for ann in fig.layout.annotations:
+        if ann.text:
+            ann.text = _sem_plenario_fisico(ann.text)
+
+    for tr in fig.data:
+        if getattr(tr, "x", None) is not None:
+            tr.x = tuple(_sem_plenario_fisico(v) for v in tr.x)
+        if getattr(tr, "y", None) is not None:
+            tr.y = tuple(_sem_plenario_fisico(v) for v in tr.y)
+
+
 def aplicar_tema(fig: go.Figure, tema: str = "novo", dark: bool = False) -> go.Figure:
     """Impõe o padrão visual da Pessoa 2 a uma figura já construída.
 
@@ -94,4 +131,5 @@ def aplicar_tema(fig: go.Figure, tema: str = "novo", dark: bool = False) -> go.F
     _normalizar_eixos(fig, dark)
     _normalizar_traces(fig, dark)
     _normalizar_anotacoes(fig, dark)
+    _normalizar_texto_livre(fig)
     return fig
