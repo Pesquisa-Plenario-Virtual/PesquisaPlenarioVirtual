@@ -1,13 +1,45 @@
 """Casca de renderização de gráfico: controles, filtros e tabela espelhada.
 
-tabela_da_figura é puro (sem Streamlit) para poder ser testado; render_grafico
-usa st.* e é exercido pela execução do app.
+tabela_da_figura, _aplicar_filtros e _kwargs_aceitos são puros (sem Streamlit)
+para poder ser testados sem contexto de execução; render_grafico e _controles
+usam st.* e são exercidos pela execução do app.
 """
 
 from __future__ import annotations
 
+import inspect
+from collections.abc import Callable
+from dataclasses import dataclass, field
+
 import pandas as pd
 import plotly.graph_objects as go
+import streamlit as st
+
+from tema import TIPOS, aplicar_tema, converter_tipo
+
+FILTROS_VALIDOS = ("ambiente", "classe", "tipo_questao", "desfecho", "periodo")
+
+_ROTULO_TIPO = {
+    "barra": "Barra", "linha": "Linha", "area": "Área", "barra_h": "Barra horizontal",
+}
+_COLUNA_DO_FILTRO = {
+    "ambiente": "ambiente", "classe": "classe",
+    "tipo_questao": "tipo_questao", "desfecho": "desfecho",
+}
+
+
+@dataclass
+class GraficoSpec:
+    """Uma entrada de catálogo de página."""
+    id: str
+    rotulo: str
+    subtitulo: str
+    descricao: str
+    fn: Callable
+    tipos: tuple[str, ...] = ("barra",)
+    filtros: tuple[str, ...] = ()
+    percentual: bool = False
+    kwargs_fixos: dict = field(default_factory=dict)
 
 
 def tabela_da_figura(fig: go.Figure) -> pd.DataFrame:
@@ -65,3 +97,118 @@ def tabela_da_figura(fig: go.Figure) -> pd.DataFrame:
     tab = pd.concat([tab, total])
     tab.index.name = nome_eixo
     return tab.reset_index()
+
+
+def _aplicar_filtros(df, escolhas: dict):
+    """Recorta o dataframe pelas escolhas. Filtro sem coluna correspondente é ignorado."""
+    out = df
+    periodo = escolhas.get("periodo")
+    if periodo and "ano" in out.columns:
+        out = out[out["ano"].between(periodo[0], periodo[1])]
+    for nome, coluna in _COLUNA_DO_FILTRO.items():
+        valores = escolhas.get(nome)
+        if valores and coluna in out.columns:
+            out = out[out[coluna].isin(valores)]
+    return out
+
+
+def _kwargs_aceitos(fn: Callable, candidatos: dict) -> dict:
+    """Só entrega à função os kwargs que ela declara — as ~90 funções de gráfico
+    têm assinaturas diferentes e nem todas aceitam show_values ou proporcao."""
+    try:
+        params = inspect.signature(fn).parameters
+    except (TypeError, ValueError):
+        return {}
+    if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()):
+        return dict(candidatos)
+    return {k: v for k, v in candidatos.items() if k in params}
+
+
+def _controles(spec: GraficoSpec, df, key: str) -> dict:
+    """Linha de controles acima da figura. Devolve o estado escolhido."""
+    estado: dict = {}
+    cols = st.columns([1, 1, 1.4, 1.2])
+    with cols[0]:
+        estado["show_values"] = st.checkbox("Exibir valores", value=True, key=f"{key}_sv")
+    with cols[1]:
+        estado["legenda"] = st.checkbox("Exibir legenda", value=True, key=f"{key}_lg")
+    with cols[2]:
+        tipos = [t for t in spec.tipos if t in TIPOS] or ["barra"]
+        estado["tipo"] = st.selectbox(
+            "Tipo de gráfico", tipos, index=0, key=f"{key}_tipo",
+            format_func=lambda t: _ROTULO_TIPO[t],
+            disabled=len(tipos) == 1,
+        )
+    with cols[3]:
+        estado["proporcao"] = spec.percentual and st.selectbox(
+            "Escala", ["Absoluto", "Percentual"], index=0, key=f"{key}_esc",
+        ) == "Percentual"
+
+    escolhas: dict = {}
+    ativos = [f for f in spec.filtros if f in FILTROS_VALIDOS]
+    if ativos:
+        fcols = st.columns(len(ativos))
+        for col, nome in zip(fcols, ativos):
+            with col:
+                if nome == "periodo":
+                    if "ano" not in df.columns or df["ano"].dropna().empty:
+                        continue
+                    lo, hi = int(df["ano"].min()), int(df["ano"].max())
+                    if lo < hi:
+                        escolhas["periodo"] = st.slider(
+                            "Período", lo, hi, (lo, hi), step=1, key=f"{key}_per")
+                    continue
+                coluna = _COLUNA_DO_FILTRO[nome]
+                if coluna not in df.columns:
+                    continue
+                opcoes = sorted(str(v) for v in df[coluna].dropna().unique())
+                escolhas[nome] = st.multiselect(
+                    coluna.replace("_", " ").capitalize(), opcoes,
+                    default=opcoes, key=f"{key}_{nome}")
+    estado["escolhas"] = escolhas
+    return estado
+
+
+def render_grafico(spec: GraficoSpec, df, key: str) -> None:
+    """Renderiza um gráfico do catálogo com controles, tema e tabela espelhada."""
+    estado = _controles(spec, df, key)
+    recortado = _aplicar_filtros(df, estado["escolhas"])
+    if recortado.empty:
+        st.info("Sem dados para o recorte selecionado.")
+        return
+
+    candidatos = dict(spec.kwargs_fixos,
+                      show_values=estado["show_values"],
+                      proporcao=estado["proporcao"])
+    for nome in ("ambiente",):
+        valores = estado["escolhas"].get(nome)
+        if valores and len(valores) == 1:
+            candidatos[nome] = valores[0]
+
+    figuras = spec.fn(recortado, **_kwargs_aceitos(spec.fn, candidatos))
+    if isinstance(figuras, dict):
+        abas = st.tabs(list(figuras.keys()))
+        pares = [(aba, fig) for aba, fig in zip(abas, figuras.values())]
+    elif isinstance(figuras, (tuple, list)):
+        pares = [(None, fig) for fig in figuras]
+    else:
+        pares = [(None, figuras)]
+
+    tema_atual = st.session_state.get("tema_visual", "novo")
+    dark = st.session_state.get("modo_noturno", False)
+
+    for aba, fig in pares:
+        contexto = aba if aba is not None else st.container()
+        with contexto:
+            fig = converter_tipo(fig, estado["tipo"])
+            fig = aplicar_tema(fig, tema=tema_atual, dark=dark)
+            fig.update_layout(showlegend=estado["legenda"] and len(fig.data) > 1)
+            if not estado["show_values"]:
+                fig.update_traces(text=None, texttemplate=None)
+            st.plotly_chart(fig, width="stretch", key=f"{key}_fig_{id(fig)}")
+            with st.expander("📊 Dados da visualização"):
+                tab = tabela_da_figura(fig)
+                if tab.empty:
+                    st.caption("Esta visualização não produz tabela.")
+                else:
+                    st.dataframe(tab, width="stretch", height=280)

@@ -1,7 +1,10 @@
 """Testes das partes puras de components/grafico.py."""
+import inspect
+
+import pandas as pd
 import plotly.graph_objects as go
 
-from components.grafico import tabela_da_figura
+from components.grafico import FILTROS_VALIDOS, GraficoSpec, _aplicar_filtros, _kwargs_aceitos, tabela_da_figura
 
 
 def _fig_duas_series() -> go.Figure:
@@ -76,6 +79,65 @@ def test_categoria_real_chamada_total_nao_e_sobrescrita():
     linhas_total = tab[tab.iloc[:, 0] == "Total"]
     # a categoria real "Total" (valor 20) e a linha de soma (30) coexistem
     assert list(linhas_total["A"]) == [20, 30]
+
+
+def _df() -> pd.DataFrame:
+    return pd.DataFrame({
+        "ano": [2019, 2020, 2020, 2021],
+        "classe": ["ADI", "ADI", "ADPF", "ADC"],
+        "ambiente": ["Plenário Virtual", "Plenário Presencial",
+                     "Plenário Virtual", "Plenário Virtual"],
+        "tipo_questao": ["PR", "RC", "PR", "QI"],
+        "desfecho": ["Concluído - decisão unânime", "Não concluído - destaque",
+                     "Concluído - decisão unânime", "Não concluído - destaque"],
+    })
+
+
+def test_spec_tem_barra_como_forma_padrao():
+    spec = GraficoSpec(id="X1", rotulo="X1 — teste", subtitulo="s",
+                       descricao="d", fn=lambda df: None)
+    assert spec.tipos == ("barra",)
+    assert spec.filtros == ()
+    assert spec.percentual is False
+
+
+def test_filtros_validos_cobrem_os_recortes_pedidos():
+    assert set(FILTROS_VALIDOS) == {
+        "ambiente", "classe", "tipo_questao", "desfecho", "periodo",
+    }
+
+
+def test_filtro_de_periodo_recorta_pelos_anos():
+    out = _aplicar_filtros(_df(), {"periodo": (2020, 2020)})
+    assert sorted(out["ano"].unique()) == [2020]
+
+
+def test_filtro_de_classe_recorta_pelos_valores():
+    out = _aplicar_filtros(_df(), {"classe": ["ADI"]})
+    assert set(out["classe"]) == {"ADI"}
+
+
+def test_filtros_combinam():
+    out = _aplicar_filtros(_df(), {"periodo": (2020, 2021), "classe": ["ADI", "ADC"]})
+    assert len(out) == 2
+
+
+def test_filtro_de_coluna_inexistente_e_ignorado():
+    out = _aplicar_filtros(pd.DataFrame({"x": [1]}), {"classe": ["ADI"]})
+    assert len(out) == 1
+
+
+def test_kwargs_aceitos_filtra_pelo_que_a_funcao_declara():
+    def fn(df, show_values=True, ambiente="Plenário Virtual"):
+        return None
+    aceitos = _kwargs_aceitos(fn, {"show_values": False, "ambiente": "X", "proporcao": True})
+    assert aceitos == {"show_values": False, "ambiente": "X"}
+
+
+def test_kwargs_aceitos_com_funcao_que_so_recebe_df():
+    def fn(df):
+        return None
+    assert _kwargs_aceitos(fn, {"show_values": False}) == {}
 
 
 if __name__ == "__main__":
