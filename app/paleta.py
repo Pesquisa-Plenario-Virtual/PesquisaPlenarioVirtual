@@ -47,3 +47,67 @@ def canonico(nome: str) -> str:
     if achado is not None:
         return achado
     return sentence_case(texto)
+
+
+CINZA_OUTROS = "#898781"
+
+# Rótulo canônico -> (cor no modo claro, cor no modo escuro).
+# Validado com dataviz/scripts/validate_palette.js contra #ffffff e #0e1117.
+# Não alterar sem revalidar — ver §4 da spec.
+CORES: dict[str, tuple[str, str]] = {
+    # Ambiente — a espinha da narrativa
+    "Plenário Virtual":    ("#2a78d6", "#3987e5"),
+    "Plenário Presencial": ("#eb6834", "#d95926"),
+    # Tramitação — ecoa o par de ambiente
+    "Só Virtual":         ("#2a78d6", "#3987e5"),
+    "Ambos os ambientes": ("#1baf7a", "#199e70"),
+    "Só Presencial":      ("#eb6834", "#d95926"),
+    # Classe processual — aprovado na lista de pares adjacentes nos dois modos
+    "ADI":  ("#2a78d6", "#3987e5"),
+    "ADPF": ("#eb6834", "#d95926"),
+    "ADC":  ("#1baf7a", "#199e70"),
+    "ADO":  ("#eda100", "#c98500"),
+    # Macro-desfecho — reusa o par de ambiente: azul decide, laranja trava
+    "Concluído":     ("#2a78d6", "#3987e5"),
+    "Não concluído": ("#eb6834", "#d95926"),
+    # Desfecho detalhado — matiz é a família, tom é o degrau (ordenado por volume)
+    "Concluído - decisão unânime":                   ("#184f95", "#184f95"),
+    "Concluído - decisão maioria com o relator":     ("#2a78d6", "#3987e5"),
+    "Concluído - decisão maioria, vencido o relator": ("#86b6ef", "#9ec5f4"),
+    "Não concluído - motivos diversos":  ("#9c3d13", "#c9541d"),
+    "Não concluído - retirado de pauta": ("#c9541d", "#eb6834"),
+    "Não concluído - pedido de vista":   ("#eb6834", "#f5a184"),
+    "Não concluído - destaque":          ("#f5a184", "#fac7b6"),
+    # Tipo de questão
+    "PR": ("#2a78d6", "#3987e5"),
+    "RC": ("#eb6834", "#d95926"),
+    "QI": ("#1baf7a", "#199e70"),
+    # Binários — presença tem cor, ausência é cinza reservado
+    "Com sustentação oral": ("#1baf7a", "#199e70"),
+    "Com reajuste de voto": ("#1baf7a", "#199e70"),
+    "Sem sustentação oral": (CINZA_OUTROS, CINZA_OUTROS),
+    "Sem reajuste de voto": (CINZA_OUTROS, CINZA_OUTROS),
+}
+
+# Degraus de reserva para valores fora do vocabulário, atribuídos de forma
+# determinística. Ordem validada como categórica na lista de pares adjacentes.
+_RESERVA = (
+    ("#4a3aa7", "#9085e9"),
+    ("#e87ba4", "#d55181"),
+    ("#008300", "#008300"),
+    ("#e34948", "#e66767"),
+)
+
+
+def cor(nome: str, dark: bool = False) -> str:
+    """Cor de um valor semântico. Desconhecido recebe um degrau de reserva fixo."""
+    canon = canonico(nome)
+    par = CORES.get(canon)
+    if par is None:
+        par = _RESERVA[sum(canon.encode("utf-8")) % len(_RESERVA)]
+    return par[1] if dark else par[0]
+
+
+def cores(nomes, dark: bool = False) -> dict[str, str]:
+    """Mapa {rótulo canônico: cor} para uma lista de valores."""
+    return {canonico(n): cor(n, dark) for n in nomes}
