@@ -38,16 +38,6 @@ def sumario_por_bloco(catalogo: list[GraficoSpec]) -> dict[str, list[GraficoSpec
     return blocos
 
 
-def deve_persistir_selecao(ids_visiveis: list[str], persistido: str) -> bool:
-    """Diz se a seleção do selectbox deve substituir a seleção persistida.
-
-    Falso quando a busca excluiu o id persistido: nesse caso o selectbox está
-    mostrando um fallback forçado (index=0), não uma escolha real do usuário,
-    e persisti-lo apagaria a seleção real assim que a busca fosse limpa.
-    """
-    return persistido in ids_visiveis
-
-
 def nome_param_url(key_prefix: str) -> str:
     """Nome do query param de compartilhamento, isolado por página."""
     return f"g_{key_prefix}"
@@ -64,51 +54,40 @@ def render_pagina(catalogo: list[GraficoSpec], df, key_prefix: str,
         st.session_state[chave_sel] = do_link if any(
             s.id == do_link for s in catalogo) else catalogo[0].id
 
-    with st.expander(sumario_titulo, expanded=True):
-        blocos = sumario_por_bloco(catalogo)
-        cols = st.columns(min(len(blocos), 2) or 1)
-        for i, (bloco, specs) in enumerate(blocos.items()):
-            with cols[i % len(cols)]:
-                st.markdown(f"**Bloco {bloco}**")
-                for spec in specs:
-                    if st.button(spec.rotulo, key=f"{key_prefix}_ir_{spec.id}",
-                                 width="stretch"):
-                        st.session_state[chave_sel] = spec.id
-                        st.rerun()
-
-    st.markdown("---")
-
+    # A busca filtra só o sumário (os botões), nunca as opções do selectbox.
+    # O selectbox sempre carrega o catálogo inteiro com uma key fixa, então
+    # suas opções nunca mudam e seu estado nunca precisa ser invalidado —
+    # nenhum jogo de key por valor é necessário.
     busca = st.text_input("🔎 Buscar gráfico", key=f"{key_prefix}_busca",
                           placeholder="id, título ou palavra da descrição")
     visiveis = filtrar_por_busca(catalogo, busca)
-    if not visiveis:
-        st.warning(f"Nenhum gráfico corresponde a “{busca}”.")
-        return
 
-    ids = [s.id for s in visiveis]
+    with st.expander(sumario_titulo, expanded=True):
+        if not visiveis:
+            st.warning(f"Nenhum gráfico corresponde a “{busca}”.")
+        else:
+            blocos = sumario_por_bloco(visiveis)
+            cols = st.columns(min(len(blocos), 2) or 1)
+            for i, (bloco, specs) in enumerate(blocos.items()):
+                with cols[i % len(cols)]:
+                    st.markdown(f"**Bloco {bloco}**")
+                    for spec in specs:
+                        if st.button(spec.rotulo, key=f"{key_prefix}_ir_{spec.id}",
+                                     width="stretch"):
+                            st.session_state[chave_sel] = spec.id
+                            st.rerun()
+
+    st.markdown("---")
+
+    ids = [s.id for s in catalogo]
     atual = st.session_state[chave_sel]
     indice = ids.index(atual) if atual in ids else 0
-    # index= só se aplica no primeiro render de uma dada key — depois disso o
-    # selectbox ignora index= e mantém seu próprio valor em session_state.
-    # Pré-semear session_state[chave_widget] não escapa disso: quando o
-    # usuário acabou de clicar no próprio selectbox, o clique pendente perde
-    # para a pré-semeadura e o clique real é engolido. A forma que funciona é
-    # dar ao widget uma key nova sempre que ele precisa "esquecer" o valor
-    # antigo: quando a busca exclui `atual`, usamos uma key própria para esse
-    # fallback descartável; quando `atual` volta a aparecer (busca limpa, ou
-    # botão do sumário trocou a seleção persistida), a key volta a ser a de
-    # `atual` — que ou é totalmente nova (primeiro render, index= aplicado) ou
-    # é uma key antiga que nunca foi tocada durante a exclusão (valor intacto).
-    chave_widget = (
-        f"{key_prefix}_sel_{atual}" if atual in ids else f"{key_prefix}_sel_fora"
-    )
     escolhido = st.selectbox(
-        "Selecione a visualização", ids, index=indice, key=chave_widget,
-        format_func=lambda i: next(s.rotulo for s in visiveis if s.id == i),
+        "Selecione a visualização", ids, index=indice, key=f"{key_prefix}_sel",
+        format_func=lambda i: next(s.rotulo for s in catalogo if s.id == i),
     )
-    if deve_persistir_selecao(ids, atual):
-        st.session_state[chave_sel] = escolhido
-    spec = next(s for s in visiveis if s.id == escolhido)
+    st.session_state[chave_sel] = escolhido
+    spec = next(s for s in catalogo if s.id == escolhido)
 
     st.subheader(spec.subtitulo)
     st.caption(spec.descricao)
