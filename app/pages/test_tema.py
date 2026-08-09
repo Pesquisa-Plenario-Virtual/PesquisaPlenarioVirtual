@@ -126,6 +126,42 @@ def test_tema_empirico_e_byte_identico_mesmo_com_plenario_fisico():
     assert "Plenário Físico" in devolvida.to_json()
 
 
+from paleta import cor as cor_paleta
+
+
+def test_recolore_serie_conhecida_pelo_nome():
+    fig = aplicar_tema(_fig_suja())
+    assert fig.data[0].marker.color == cor_paleta("Plenário Virtual")
+    assert fig.data[1].marker.color == cor_paleta("Plenário Presencial")
+
+
+def test_recolore_no_modo_escuro_com_o_degrau_escuro():
+    fig = aplicar_tema(_fig_suja(), dark=True)
+    assert fig.data[0].marker.color == cor_paleta("Plenário Virtual", dark=True)
+
+
+def test_nao_recolore_serie_fora_do_vocabulario_com_cor_explicita():
+    fig = go.Figure(go.Bar(x=[1], y=[2], name="Série sem vocabulário",
+                           marker_color="#123456"))
+    aplicar_tema(fig)
+    assert fig.data[0].marker.color == "#123456"
+
+
+def test_recolore_linha_alem_de_barra():
+    fig = go.Figure(go.Scatter(x=[1, 2], y=[3, 4], mode="lines",
+                               name="Plenário Virtual"))
+    aplicar_tema(fig)
+    assert fig.data[0].line.color == cor_paleta("Plenário Virtual")
+
+
+def test_nao_quebra_com_marker_color_vetorial():
+    """acervo/plots.py e bloco1 passam uma lista de cores por barra."""
+    fig = go.Figure(go.Bar(x=[1, 2], y=[3, 4], name="Variação",
+                           marker_color=["#aaaaaa", "#bbbbbb"]))
+    aplicar_tema(fig)
+    assert list(fig.data[0].marker.color) == ["#aaaaaa", "#bbbbbb"]
+
+
 if __name__ == "__main__":
     for nome, fn in sorted(globals().items()):
         if nome.startswith("test_"):

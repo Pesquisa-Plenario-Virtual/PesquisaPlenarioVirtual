@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import plotly.graph_objects as go
 
-from paleta import canonico
+from paleta import CORES, canonico, cor
 
 FONTE = "Times New Roman, Times, serif"
 
@@ -66,13 +66,27 @@ def _normalizar_eixos(fig: go.Figure, dark: bool) -> None:
 
 
 def _normalizar_traces(fig: go.Figure, dark: bool) -> None:
-    """Nome de série em rótulo canônico e textfont padronizado."""
+    """Nome canônico, textfont padronizado e cor semântica por nome de série.
+
+    Só recolore o que está no vocabulário da paleta: uma série fora dele mantém
+    a cor que a função de gráfico escolheu. Cor vetorial (uma por barra, como em
+    acervo/plots.py) é preservada — recolorir destruiria a codificação.
+    """
     valor = _fonte("valor", dark)
     for tr in fig.data:
-        if getattr(tr, "name", None):
-            tr.name = canonico(tr.name)
+        nome = getattr(tr, "name", None)
+        if nome:
+            tr.name = canonico(nome)
         if hasattr(tr, "textfont"):
             tr.textfont = valor
+        if not nome or canonico(nome) not in CORES:
+            continue
+        nova = cor(nome, dark)
+        marker = getattr(tr, "marker", None)
+        if marker is not None and not isinstance(getattr(marker, "color", None), (list, tuple)):
+            tr.marker.color = nova
+        if hasattr(tr, "line") and tr.type in ("scatter", "scattergl"):
+            tr.line.color = nova
 
 
 def _normalizar_anotacoes(fig: go.Figure, dark: bool) -> None:
