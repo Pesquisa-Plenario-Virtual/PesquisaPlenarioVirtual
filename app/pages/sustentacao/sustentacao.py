@@ -26,7 +26,7 @@ if df.empty:
 st.title("Sustentação Oral")
 st.markdown("""
 Esta seção analisa a ocorrência de **sustentação oral** nas inclusões em pauta de
-Controle Concentrado (ADI, ADC, ADO e ADPF) no STF entre **2020 e 2025**.
+Controle Concentrado (ADI, ADC, ADO e ADPF) no STF entre **2016 e 2025**.
 
 A unidade de análise é a **inclusão em pauta** — cada vez que um processo foi colocado
 em pauta, verificou-se se houve sustentação oral realizada naquela ocasião.

@@ -4,7 +4,10 @@ from __future__ import annotations
 import plotly.graph_objects as go
 import pandas as pd
 
-from estilo import aplicar_padrao, add_er_marker, add_espin_shade, br, AZUL, AZUL_CLARO, CINZA, VERDE, ROXO, VERMELHO
+from estilo import (
+    aplicar_padrao, add_er_marker, add_espin_shade, br,
+    AZUL, AZUL_CLARO, CINZA, VERDE, ROXO, VERMELHO, ER_DATAS,
+)
 
 CORES_SUST = {
     "Com sustentação oral": "#0891b2",
@@ -48,15 +51,24 @@ def _periodo(df: pd.DataFrame) -> str:
     return f" ({int(anos.min())}–{int(anos.max())})" if not anos.empty else ""
 
 
-def _marcos_temporais(fig: go.Figure, y_max: float) -> go.Figure:
-    """ER 53 e sombreamento ESPIN — o dataset de sustentação oral cobre 2020–2025,
-    então ER 51/52 (2016/2019) nunca entram no eixo e ficam de fora."""
+def _marcos_temporais(fig: go.Figure, y_max: float, ano_min: int = 2016, ano_max: int = 2025) -> go.Figure:
+    """ER 51/52/53 e sombreamento ESPIN em gráficos anuais, só quando a data cai
+    dentro do intervalo de anos efetivamente plotado (eixo x = ano, ano_base=0).
+
+    Mesmo padrão de pages/inclusoes/plots.py — a regra é sobre o eixo
+    plotado, não sobre uma suposição fixa de cobertura do dataset (essa
+    suposição já se mostrou falsa uma vez: sustentacao_oral.parquet cobre
+    2016–2025, não 2020–2025).
+    """
     if y_max <= 0:
         return fig
     y1 = y_max * 1.15
     y_label = y_max * 1.22
-    add_er_marker(fig, 0, 53, 0, y1, y_label)
-    add_espin_shade(fig, 0, 0, y1, y_label)
+    for er, (ano, _mes, _dia) in ER_DATAS.items():
+        if ano_min <= ano <= ano_max:
+            add_er_marker(fig, 0, er, 0, y1, y_label)
+    if ano_min <= 2022 and ano_max >= 2020:
+        add_espin_shade(fig, 0, 0, y1, y_label)
     return fig
 
 
@@ -116,7 +128,7 @@ def _barras_anuais(df_amb: pd.DataFrame, titulo: str, show_values: bool = True,
     aplicar_padrao(fig, titulo, height=700, margin=dict(t=130, b=140, l=120, r=60),
                    xaxis=dict(dtick=1, title="Ano"),
                    yaxis_title=y_title)
-    _marcos_temporais(fig, tab["y"].max())
+    _marcos_temporais(fig, tab["y"].max(), anos[0], anos[-1])
     return fig
 
 
@@ -150,7 +162,7 @@ def _barras_grupo(df_sub: pd.DataFrame, col_grupo: str,
                    xaxis=dict(dtick=1, title=x_title),
                    yaxis_title=y_title)
     if not tab.empty:
-        _marcos_temporais(fig, tab["y"].max())
+        _marcos_temporais(fig, tab["y"].max(), int(tab["ano"].min()), int(tab["ano"].max()))
     return fig
 
 
@@ -233,5 +245,5 @@ def gs8_taxa_ambiente(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
                    xaxis=dict(dtick=1, title="Ano"),
                    yaxis_title="% de inclusões com sustentação")
     if not tab.empty:
-        _marcos_temporais(fig, tab["n"].max())
+        _marcos_temporais(fig, tab["n"].max(), int(tab["ano"].min()), int(tab["ano"].max()))
     return fig
