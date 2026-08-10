@@ -20,7 +20,39 @@ _APELIDOS: dict[str, tuple[str, ...]] = {
     "Só Virtual":          ("só virtual", "so virtual", "virtual"),
     "Só Presencial":       ("só presencial", "só físico", "so fisico", "físico", "presencial"),
     "Ambos os ambientes":  ("ambos os ambientes", "ambos"),
+
+    # Vocabulários derivados. As páginas rotulam as mesmas categorias de formas
+    # diferentes ("1 - Unânime" em Inclusões, "Concluído - decisão unânime" no
+    # dado). Sem estes apelidos o nome não casa com CORES e a cor antiga
+    # sobrevive ao tema — foi assim que o dashboard acabou com dois azuis para
+    # conceitos vizinhos. Estes mapeamentos são o que faz "mesma variável,
+    # mesma cor" valer de verdade.
+    "Concluído":     ("concluído", "concluídos", "concluido", "concluidos"),
+    "Não concluído": ("não concluído", "não concluídos", "nao concluido",
+                      "nao concluidos", "4 - não concluído (bloco)"),
+    "Concluído - decisão unânime":                    ("1 - unânime",),
+    "Concluído - decisão maioria com o relator":      ("2 - maioria (relator vencedor)",),
+    "Concluído - decisão maioria, vencido o relator": ("3 - maioria (relator vencido)",),
+    "Não concluído - pedido de vista":   ("1 - pedido de vista",),
+    "Não concluído - destaque":          ("2 - destaque",),
+    "Não concluído - retirado de pauta": ("3 - retirado de pauta",),
+    "Não concluído - motivos diversos":  ("4 - motivos diversos",),
+    "Com sustentação oral": ("com sustentação", "com sustentacao"),
+    "Sem sustentação oral": ("sem sustentação", "sem sustentacao"),
+    "Com reajuste de voto": ("com reajuste",),
+    "Sem reajuste de voto": ("sem reajuste",),
+    "1 sessão":    ("1 sessão", "1 sessao"),
+    "2–3 sessões": ("2–3 sessões", "2-3 sessões", "2-3 sessoes"),
+    "4–5 sessões": ("4–5 sessões", "4-5 sessões", "4-5 sessoes"),
+    "6+ sessões":  ("6+ sessões", "6+ sessoes"),
+    "Sessões virtuais":        ("sessões virtuais", "sessoes virtuais"),
+    "Inclusões em pauta (PV)": ("inclusões em pauta (pv)", "inclusoes em pauta (pv)"),
 }
+
+# Rótulos que começam com "Total" são agregados de qualquer métrica
+# ("Total geral (processos ativos)", "Total geral (processos baixados)", …).
+# Todos recebem a cor de "Total" em vez de cada página inventar a sua.
+_PREFIXO_AGREGADO = "total"
 
 _MAPA_APELIDO = {ap: canon for canon, aps in _APELIDOS.items() for ap in aps}
 
@@ -87,6 +119,22 @@ CORES: dict[str, tuple[str, str]] = {
     "Com reajuste de voto": ("#1baf7a", "#199e70"),
     "Sem sustentação oral": (CINZA_OUTROS, CINZA_OUTROS),
     "Sem reajuste de voto": (CINZA_OUTROS, CINZA_OUTROS),
+    # Faixas de nº de sessões — rampa ordinal azul: são todas sessões virtuais,
+    # então a família é a do Plenário Virtual e o tom cresce com a contagem.
+    # Degraus da rampa sequencial azul documentada na §4 da spec, respeitando o
+    # piso ordinal (nada mais claro que o degrau 250 no modo claro).
+    # ponytail: não revalidado com o script — o diretório da skill sumiu no meio
+    # da sessão. Revalidar como ordinal antes de considerar fechado.
+    "1 sessão":     ("#184f95", "#184f95"),
+    "2–3 sessões":  ("#256abf", "#3987e5"),
+    "4–5 sessões":  ("#3987e5", "#6da7ec"),
+    "6+ sessões":   ("#86b6ef", "#b7d3f6"),
+    # Agregados. "Total" não é uma variável do domínio, é a soma das que são —
+    # fica no azul da paleta para não introduzir um segundo azul no dashboard.
+    "Total": ("#2a78d6", "#3987e5"),
+    # Séries do G0, que contrapõe duas unidades de contagem no mesmo eixo.
+    "Sessões virtuais":      ("#2a78d6", "#3987e5"),
+    "Inclusões em pauta (PV)": ("#1baf7a", "#199e70"),
 }
 
 # Degraus de reserva para valores fora do vocabulário, atribuídos de forma
@@ -103,9 +151,21 @@ def cor(nome: str, dark: bool = False) -> str:
     """Cor de um valor semântico. Desconhecido recebe um degrau de reserva fixo."""
     canon = canonico(nome)
     par = CORES.get(canon)
+    if par is None and canon.lower().startswith(_PREFIXO_AGREGADO):
+        par = CORES["Total"]
     if par is None:
         par = _RESERVA[sum(canon.encode("utf-8")) % len(_RESERVA)]
     return par[1] if dark else par[0]
+
+
+def conhecido(nome: str) -> bool:
+    """Se o nome tem cor própria na paleta — inclui apelidos e agregados.
+
+    `tema.aplicar_tema` usa isto para decidir se recolore um trace: uma série
+    fora do vocabulário mantém a cor que a função de gráfico escolheu.
+    """
+    canon = canonico(nome)
+    return canon in CORES or canon.lower().startswith(_PREFIXO_AGREGADO)
 
 
 def cores(nomes, dark: bool = False) -> dict[str, str]:

@@ -14,7 +14,7 @@ import re
 
 import plotly.graph_objects as go
 
-from paleta import CORES, canonico, cor
+from paleta import canonico, conhecido, cor
 
 FONTE = "Times New Roman, Times, serif"
 
@@ -26,6 +26,25 @@ TAMANHOS = {
     "legenda": 14,
     "valor": 13,
     "anotacao": 12,
+}
+
+# Hex da paleta antiga (estilo.py) -> equivalente na paleta validada.
+# estilo.py continua como está porque os Blocos Empíricos o importam e mantêm o
+# visual original; a troca acontece só aqui, na camada que as oito páginas usam.
+_EQUIVALENTE_LEGADO = {
+    "#2563EB": "#2a78d6",  # AZUL
+    "#93C5FD": "#86b6ef",  # AZUL_CLARO
+    "#9CA3AF": "#898781",  # CINZA
+    "#059669": "#1baf7a",  # VERDE
+    "#7C3AED": "#4a3aa7",  # ROXO
+    "#C00000": "#e34948",  # VERMELHO
+}
+_EQUIVALENTE_LEGADO_ESCURO = {
+    "#2A78D6": "#3987e5",
+    "#86B6EF": "#9ec5f4",
+    "#1BAF7A": "#199e70",
+    "#4A3AA7": "#9085e9",
+    "#E34948": "#e66767",
 }
 
 TINTA_CLARA = "#0b0b0b"
@@ -105,12 +124,28 @@ def _normalizar_traces(fig: go.Figure, dark: bool) -> None:
             tr.text = limpar_html_de_fonte(texto)
         elif isinstance(texto, (list, tuple)):
             tr.text = [limpar_html_de_fonte(t) if isinstance(t, str) else t for t in texto]
-        if not nome or canonico(nome) not in CORES:
-            continue
-        nova = cor(nome, dark)
         marker = getattr(tr, "marker", None)
         cor_atual = getattr(marker, "color", None) if marker is not None else None
         vetorial = hasattr(cor_atual, "__len__") and not isinstance(cor_atual, str)
+
+        if nome and conhecido(nome):
+            nova = cor(nome, dark)
+        else:
+            # Série sem nome, ou fora do vocabulário: não dá para recolorir pelo
+            # significado. Ainda assim, se ela carrega um hex da paleta antiga de
+            # estilo.py, trocar pelo equivalente novo — senão o dashboard fica com
+            # dois azuis para o mesmo papel. estilo.py não pode mudar: os Blocos
+            # Empíricos o importam e mantêm o visual original de propósito.
+            nova = _EQUIVALENTE_LEGADO.get(str(cor_atual).upper()) if not vetorial else None
+            if nova is None:
+                linha = getattr(tr, "line", None)
+                cor_linha = getattr(linha, "color", None) if linha is not None else None
+                nova = _EQUIVALENTE_LEGADO.get(str(cor_linha).upper())
+            if nova is not None and dark:
+                nova = _EQUIVALENTE_LEGADO_ESCURO.get(str(nova).upper(), nova)
+        if nova is None:
+            continue
+
         if marker is not None and hasattr(marker, "color") and not vetorial:
             tr.marker.color = nova
         if hasattr(tr, "line") and tr.type in ("scatter", "scattergl"):

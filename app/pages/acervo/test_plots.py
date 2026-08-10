@@ -28,9 +28,11 @@ def test_total_usa_azul_e_tem_er_espin():
     fig = aplicar_tema(fig, tema="novo", dark=False)
     assert fig.layout.height == 650
     assert fig.layout.margin.t == 150 and fig.layout.margin.b == 70
-    # "TOTAL GERAL (...)" não canonicaliza para nenhuma chave de paleta.CORES —
-    # a tema não recolore, a cor inicial de estilo.py sobrevive.
-    assert fig.data[0].marker.color == AZUL
+    # Agregado recebe o azul da paleta validada, não o AZUL de estilo.py.
+    # Antes o nome "Total geral (...)" não casava com nenhuma chave e a cor
+    # antiga sobrevivia ao tema, deixando dois azuis diferentes no dashboard.
+    assert fig.data[0].marker.color == cor("Total")
+    assert fig.data[0].marker.color != AZUL
     # eixo categórico por ano (igual 1.b2), não numérico contínuo
     assert list(fig.data[0].x) == [str(a) for a in range(2016, 2026)]
     # linhas ER (51/52/53) + vrect ESPIN + anotações "ER" e "ESPIN"
