@@ -77,7 +77,10 @@ def plotar_grafico_stf(
     else:
         d = df[df["classe"] == classe_nome].sort_values("ano")
         cor = _CORES_CLASSE.get(classe_nome, AZUL)
-        nome = f"CLASSE: {classe_nome.upper()}"
+        # Nome = código puro da classe (não "CLASSE: ADI") para que a camada de
+        # tema recolore pela paleta nova via nome de série (tema.py:_normalizar_traces
+        # só recolore quando canonico(nome) está em paleta.CORES).
+        nome = classe_nome.upper()
 
     anos_int = sorted(d["ano"].unique().tolist())
     anos = [str(a) for a in anos_int]
@@ -154,6 +157,5 @@ def plotar_grafico_stf(
         showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=0.95, x=0.5, xanchor="center"),
         height=650, margin=dict(t=150, b=70, l=60, r=40),
     )
-    fig.update_yaxes(showline=True, tickfont=dict(size=22), title_font=dict(size=22))
-    fig.update_xaxes(tickfont=dict(size=22), title_font=dict(size=22))
+    fig.update_yaxes(showline=True)
     return fig
