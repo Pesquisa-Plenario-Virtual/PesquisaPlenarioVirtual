@@ -3,6 +3,8 @@
 from __future__ import annotations
 import streamlit as st
 import pandas as pd
+from components.catalogo import render_pagina
+from components.grafico import GraficoSpec
 from .plots import (
     g0_sessoes_vs_inclusoes,
     g3_1_distribuicao_sessoes, g3_2_faixa_sessoes_classe,
@@ -11,7 +13,7 @@ from .plots import (
     g4_4_macro_ano_classe, g4_5_taxa_conclusao_classe_tipo,
     g5_1_distribuicao_duracao, g5_2_duracao_mediana_classe,
     g5_3_duracao_mediana_tipo,
-    prep_duracao, ORDEM_FAIXA, ORDEM_DUR, _prep_sessoes_por_processo,
+    prep_duracao,
 )
 from pages.tramitacao.plots import gt10_tabulador
 
@@ -23,7 +25,6 @@ _DIMS_SV = {
     "Ano":              "ano",
     "Relator":          "relator",
 }
-_DIMS_LABEL = list(_DIMS_SV.keys())
 
 _PREDEFINIDOS = [
     ("Ano × Classe (sessões, agrupado)",              "ano",      "classe",         "sessoes", "group"),
@@ -35,257 +36,166 @@ _PREDEFINIDOS = [
     ("Relator × Classe (sessões, agrupado)",          "relator",  "classe",         "sessoes", "group"),
     ("Relator × Macro-desfecho (sessões, agrupado)",  "relator",  "macro_desfecho", "sessoes", "group"),
 ]
-_LABELS_PRE = [p[0] for p in _PREDEFINIDOS]
-
-_CATALOGO = [
-    (
-        "G0 — Sessões virtuais vs Inclusões em pauta (PV)",
-        "Sessões Virtuais vs Inclusões em Pauta (PV)",
-        "Comparação anual entre o volume de sessões virtuais iniciadas e o total de "
-        "inclusões em pauta no Plenário Virtual.",
-        g0_sessoes_vs_inclusoes,
-    ),
-    (
-        "G3.1 — Distribuição de sessões por processo",
-        "Distribuição de Sessões por Processo (2020–2025)",
-        "Quantos processos tiveram 1, 2–3, 4–5 ou 6+ sessões virtuais.",
-        g3_1_distribuicao_sessoes,
-    ),
-    (
-        "G3.2 — Faixa de sessões por classe",
-        "Número de Sessões por Processo e Classe (2020–2025)",
-        "Distribuição das faixas de sessões por classe processual.",
-        g3_2_faixa_sessoes_classe,
-    ),
-    (
-        "G3.3 — Taxa de conclusão: 1ª vs posteriores",
-        "Taxa de Conclusão: 1ª Sessão vs Sessões Posteriores (2020–2025)",
-        "Comparação da taxa de conclusão entre a primeira sessão e as sessões seguintes.",
-        g3_3_taxa_conclusao_primeira,
-    ),
-    (
-        "G3.4 — Taxa de conclusão por posição da sessão",
-        "Taxa de Conclusão por Posição da Sessão (2020–2025)",
-        "Taxa de conclusão para a 1ª, 2ª, 3ª e 4ª+ sessão no histórico do processo.",
-        g3_4_taxa_conclusao_posicao,
-    ),
-    (
-        "G4.1 — Classe × tipo de questão (tabela)",
-        "Classe × Tipo de Questão — Tabela",
-        "Tabela de referência com o volume de sessões por classe e tipo de questão.",
-        "tabela_classe_tipo",
-    ),
-    (
-        "G4.2 — Sessões por classe e tipo de questão",
-        "Sessões por Classe e Tipo de Questão (2020–2025)",
-        "Barras agrupadas por tipo de questão (PR/RC/QI) com linha do total.",
-        g4_2_sessoes_classe_tipo,
-    ),
-    (
-        "G4.3 — Macro-desfecho por ano e tipo de questão",
-        "Macro-Desfecho por Ano e Tipo de Questão",
-        "Barras empilhadas (Concluído/Não concluído) com linha do total. "
-        "Um sub-gráfico por tipo: PR, RC e QI.",
-        g4_3_macro_ano_tipo,
-    ),
-    (
-        "G4.4 — Macro-desfecho por ano e classe",
-        "Macro-Desfecho por Ano e Classe (ADI e ADPF)",
-        "Barras empilhadas por ano para ADI e ADPF. ADC (79) e ADO (40) omitidos por base pequena.",
-        g4_4_macro_ano_classe,
-    ),
-    (
-        "G4.5 — Taxa de conclusão: classe × tipo de questão",
-        "Taxa de Conclusão por Classe e Tipo de Questão (2020–2025)",
-        "Percentual de sessões concluídas, agrupado por classe e tipo de questão.",
-        g4_5_taxa_conclusao_classe_tipo,
-    ),
-    (
-        "G5.1 — Distribuição de duração até conclusão",
-        "Tempo até Conclusão (2020–2025)",
-        "Distribuição do tempo decorrido entre a primeira inclusão em pauta e a sessão de "
-        "conclusão, em faixas. Selecione o âmbito.",
-        g5_1_distribuicao_duracao,
-    ),
-    (
-        "G5.2 — Duração mediana por classe",
-        "Tempo Mediano até Conclusão por Classe (dias)",
-        "Mediana de dias entre a primeira pauta e a conclusão, por classe. Selecione o âmbito.",
-        g5_2_duracao_mediana_classe,
-    ),
-    (
-        "G5.3 — Duração mediana por tipo de questão",
-        "Tempo Mediano até Conclusão por Tipo de Questão (dias)",
-        "Mediana de dias entre a primeira pauta e a conclusão, por tipo. Selecione o âmbito.",
-        g5_3_duracao_mediana_tipo,
-    ),
-    (
-        "G6 — Tabulador Interativo",
-        "Tabulador Interativo — Sessões Virtuais (2020–2025)",
-        "Configure livremente os eixos, agrupamento, métrica e modo de barras.",
-        None,
-    ),
-]
-_LABELS = [item[0] for item in _CATALOGO]
-
-_SUMARIO = {
-    "Visão geral (G0)": [
-        "G0 — sessões virtuais vs inclusões em pauta (PV)",
-    ],
-    "Múltiplas sessões (G3.1–G3.4)": [
-        "G3.1 — distribuição de sessões por processo",
-        "G3.2 — faixa de sessões por classe",
-        "G3.3 — taxa de conclusão: 1ª vs posteriores",
-        "G3.4 — taxa de conclusão por posição da sessão",
-    ],
-    "Cruzamentos (G4.1–G4.5)": [
-        "G4.1 — classe × tipo de questão (tabela)",
-        "G4.2 — sessões por classe e tipo de questão",
-        "G4.3 — macro-desfecho por ano e tipo (PR, RC, QI)",
-        "G4.4 — macro-desfecho por ano e classe (ADI, ADPF)",
-        "G4.5 — taxa de conclusão: classe × tipo (%)",
-    ],
-    "Duração (G5.1–G5.3)": [
-        "G5.1 — distribuição de duração até conclusão",
-        "G5.2 — duração mediana por classe (dias)",
-        "G5.3 — duração mediana por tipo de questão (dias)",
-    ],
-    "Tabulador (G6)": [
-        "G6 — tabulador interativo: gráfico + tabela com eixos configuráveis",
-    ],
-}
-
-_BLOCO5_INDICES = {10, 11, 12}
-_DICT_INDICES = {7, 8}
-_TABLE_ONLY = {5}
-_TABULADOR_IDX = 13
 
 
-# ── Helpers de tabela ─────────────────────────────────────────────────────────
+def _dims_disponiveis(colunas) -> dict[str, str]:
+    """Subconjunto de _DIMS_SV cujas colunas existem em `colunas`.
 
-def _build_tabela(df: pd.DataFrame, spec: tuple[str, str | None]) -> pd.DataFrame:
-    col_linha, col_grupo = spec
-    d = df.copy()
-    if col_grupo:
-        tab = d.groupby([col_linha, col_grupo], observed=True).size().reset_index(name="n")
-        pvt = tab.pivot_table(index=col_linha, columns=col_grupo, values="n", fill_value=0)
-        pvt["Total"] = pvt.sum(axis=1)
-        pvt.loc["Total"] = pvt.sum()
-    else:
-        tab = d.groupby(col_linha, observed=True).size().reset_index(name="n")
-        pvt = tab.set_index(col_linha)
-        pvt.columns = ["Total"]
-        pvt.loc["Total"] = pvt["Total"].sum()
-    pvt = pvt.reset_index()
-    pvt[pvt.columns[0]] = pvt[pvt.columns[0]].astype(str)
-    return pvt
+    Mesmo raciocínio de dados.filters.dimensoes_disponiveis, mas aplicado a
+    _DIMS_SV — o dicionário de dimensões desta página, não ao DIMENSOES
+    compartilhado com Tramitação/Inclusões/Reajuste/Sustentação (que tem
+    colunas, como "tramitacao", que sessoes_virtuais.parquet não tem).
+    """
+    disponiveis = set(colunas)
+    return {label: col for label, col in _DIMS_SV.items() if col in disponiveis}
 
 
-def _build_tabela_pct(df: pd.DataFrame, col_linha: str, col_grupo: str) -> pd.DataFrame:
-    """Tabela com percentual de conclusão (para G4.5)."""
-    tab = df.groupby([col_linha, col_grupo])["macro_desfecho"].apply(
-        lambda x: round(100 * (x == "Concluído").mean(), 1)
-    ).reset_index(name="% Concluído")
-    pvt = tab.pivot_table(index=col_linha, columns=col_grupo, values="% Concluído")
-    pvt = pvt.reset_index()
-    pvt[pvt.columns[0]] = pvt[pvt.columns[0]].astype(str)
-    return pvt
+def _montar_catalogo(df_final: pd.DataFrame) -> list[GraficoSpec]:
+    """Monta o catálogo com `df_final` (inclusões em pauta) capturado por closure.
 
+    A casca chama spec.fn(df, **kwargs) com um único dataframe (df_s). G0 e o
+    Bloco 5 (G5.1-G5.3) precisam também de df_final — G0 para comparar sessões
+    com inclusões, o Bloco 5 para prep_duracao calcular a data da primeira
+    pauta. Os wrappers do Bloco 5 declaram `ambiente` na assinatura para a
+    casca oferecer o seletor de âmbito (ver GraficoSpec.filtros abaixo).
+    """
 
-def _tabela_classe_tipo(df_s: pd.DataFrame) -> pd.DataFrame:
-    """Tabela G4.1: classe × tipo de questão."""
-    tab = df_s.groupby(["classe", "tipo_questao"]).size().unstack(fill_value=0)
-    tab["Total"] = tab.sum(axis=1)
-    tab.loc["Total"] = tab.sum()
-    tab.columns.name = None
-    tab = tab.reset_index()
-    tab["classe"] = tab["classe"].astype(str)
-    return tab
+    def _g0(df_s, show_values=True, **kw):
+        return g0_sessoes_vs_inclusoes(df_s, df_final, show_values=show_values)
 
+    def _g5_1(df_s, show_values=True, ambiente="Plenário Virtual", **kw):
+        return g5_1_distribuicao_duracao(prep_duracao(df_s, df_final, ambiente), show_values)
 
-def _render_tabela_comum(df: pd.DataFrame, idx: int) -> None:
-    if idx in _TABLE_ONLY:
-        return  # handled by special renderer
-    if idx == 9:
-        tab = _build_tabela_pct(df, "classe", "tipo_questao")
-        fmt = {c: "{:.1f}%" for c in tab.columns if c != tab.columns[0]}
-    else:
-        specs = {
-            6: ("classe", "tipo_questao"),
-            7: ("ano", "macro_desfecho"),
-            8: ("ano", "macro_desfecho"),
-        }
-        spec = specs.get(idx)
-        if spec is None:
-            return
-        tab = _build_tabela(df, spec)
-        fmt = {c: "{:,.0f}" for c in tab.columns if c != tab.columns[0]}
-    with st.expander("📊 Dados da visualização"):
-        st.dataframe(tab.style.format(fmt, na_rep="—"), width="stretch", height=280)
+    def _g5_2(df_s, show_values=True, ambiente="Plenário Virtual", **kw):
+        return g5_2_duracao_mediana_classe(prep_duracao(df_s, df_final, ambiente), show_values)
 
+    def _g5_3(df_s, show_values=True, ambiente="Plenário Virtual", **kw):
+        return g5_3_duracao_mediana_tipo(prep_duracao(df_s, df_final, ambiente), show_values)
 
-def _render_tabela_bloco3(df_s: pd.DataFrame, idx: int) -> None:
-    """Tabela para gráficos do Bloco 3 (colunas computadas dinamicamente)."""
-    spp, df_ord = _prep_sessoes_por_processo(df_s)
-    if idx == 1:
-        tab = spp["faixa"].value_counts().reindex(ORDEM_FAIXA)
-        tab = tab.reset_index()
-        tab.columns = ["Faixa", "Nº de processos"]
-        fmt = {"Nº de processos": "{:,.0f}"}
-    elif idx == 2:
-        tab = spp.groupby(["classe", "faixa"]).size().reset_index(name="n")
-        pvt = tab.pivot_table(index="classe", columns="faixa", values="n", fill_value=0)
-        pvt = pvt[ORDEM_FAIXA]
-        pvt["Total"] = pvt.sum(axis=1)
-        pvt.loc["Total"] = pvt.sum()
-        pvt = pvt.reset_index()
-        pvt["classe"] = pvt["classe"].astype(str)
-        tab = pvt
-        fmt = {c: "{:,.0f}" for c in tab.columns if c not in ("classe",) and tab[c].dtype.kind in "iuf"}
-    elif idx == 3:
-        df_ord["posicao"] = df_ord["n_sessao"].apply(
-            lambda n: "1ª sessão" if n == 1 else "Sessões posteriores"
-        )
-        tab = df_ord.groupby("posicao")["macro_desfecho"].apply(
-            lambda x: round(100 * (x == "Concluído").mean(), 1)
-        ).reindex(["1ª sessão", "Sessões posteriores"]).reset_index()
-        tab.columns = ["Posição", "% Concluído"]
-        fmt = {"% Concluído": "{:.1f}%"}
-    elif idx == 4:
-        def _pl(n):
-            if n <= 3: return f"{n}ª sessão"
-            return "4ª+ sessão"
-        ORDEM = ["1ª sessão", "2ª sessão", "3ª sessão", "4ª+ sessão"]
-        df_ord["posicao_n"] = df_ord["n_sessao"].apply(_pl)
-        tab = df_ord.groupby("posicao_n")["macro_desfecho"].apply(
-            lambda x: round(100 * (x == "Concluído").mean(), 1)
-        ).reindex(ORDEM).reset_index()
-        tab.columns = ["Posição", "% Concluído"]
-        fmt = {"% Concluído": "{:.1f}%"}
-    else:
-        return
-    with st.expander("📊 Dados da visualização"):
-        st.dataframe(tab.style.format(fmt, na_rep="—"), width="stretch", height=280)
-
-
-def _render_tabela_bloco5(duracao: pd.DataFrame, idx: int) -> None:
-    if idx == 10:
-        tab = duracao["faixa_dur"].value_counts().reindex(ORDEM_DUR)
-        tab = tab.reset_index()
-        tab.columns = ["Duração", "Nº de processos"]
-        fmt = {"Nº de processos": "{:,.0f}"}
-    elif idx == 11:
-        tab = duracao.groupby("classe")["dias"].median().round(0).astype(int).reset_index()
-        tab.columns = ["Classe", "Dias (mediana)"]
-        fmt = {"Dias (mediana)": "{:,.0f}"}
-    elif idx == 12:
-        tab = duracao.groupby("tipo_questao")["dias"].median().round(0).astype(int).reset_index()
-        tab.columns = ["Tipo de questão", "Dias (mediana)"]
-        fmt = {"Dias (mediana)": "{:,.0f}"}
-    else:
-        return
-    with st.expander("📊 Dados da visualização"):
-        st.dataframe(tab.style.format(fmt, na_rep="—"), width="stretch", height=280)
+    return [
+        GraficoSpec(
+            id="G0",
+            rotulo="G0 — Sessões virtuais vs Inclusões em pauta (PV)",
+            subtitulo="Sessões Virtuais vs Inclusões em Pauta (PV)",
+            descricao="Comparação anual entre o volume de sessões virtuais iniciadas e o total de "
+                      "inclusões em pauta no Plenário Virtual.",
+            fn=_g0,
+            tipos=("barra", "linha"),
+        ),
+        GraficoSpec(
+            id="G3.1",
+            rotulo="G3.1 — Distribuição de sessões por processo",
+            subtitulo="Distribuição de Sessões por Processo",
+            descricao="Quantos processos tiveram 1, 2–3, 4–5 ou 6+ sessões virtuais.",
+            fn=g3_1_distribuicao_sessoes,
+            tipos=("barra", "linha"),
+            filtros=("classe", "tipo_questao", "periodo"),
+        ),
+        GraficoSpec(
+            id="G3.2",
+            rotulo="G3.2 — Faixa de sessões por classe",
+            subtitulo="Número de Sessões por Processo e Classe",
+            descricao="Distribuição das faixas de sessões por classe processual.",
+            fn=g3_2_faixa_sessoes_classe,
+            tipos=("barra",),
+            filtros=("tipo_questao", "periodo"),
+        ),
+        GraficoSpec(
+            id="G3.3",
+            rotulo="G3.3 — Taxa de conclusão: 1ª vs posteriores",
+            subtitulo="Taxa de Conclusão: 1ª Sessão vs Sessões Posteriores",
+            descricao="Comparação da taxa de conclusão entre a primeira sessão e as sessões seguintes.",
+            fn=g3_3_taxa_conclusao_primeira,
+            tipos=("barra",),
+            filtros=("classe", "tipo_questao", "periodo"),
+        ),
+        GraficoSpec(
+            id="G3.4",
+            rotulo="G3.4 — Taxa de conclusão por posição da sessão",
+            subtitulo="Taxa de Conclusão por Posição da Sessão",
+            descricao="Taxa de conclusão para a 1ª, 2ª, 3ª e 4ª+ sessão no histórico do processo.",
+            fn=g3_4_taxa_conclusao_posicao,
+            tipos=("barra", "linha"),
+            filtros=("classe", "tipo_questao", "periodo"),
+        ),
+        GraficoSpec(
+            id="G4.1",
+            rotulo="G4.1 — Classe × Tipo de Questão (quadro de referência)",
+            subtitulo="Classe × Tipo de Questão",
+            descricao="Barras agrupadas por tipo de questão (PR/RC/QI) com o volume de sessões por "
+                      "classe — mesma leitura do G4.2, útil como quadro de referência com totais na tabela.",
+            fn=g4_2_sessoes_classe_tipo,
+            tipos=("barra",),
+            filtros=("periodo",),
+        ),
+        GraficoSpec(
+            id="G4.2",
+            rotulo="G4.2 — Sessões por classe e tipo de questão",
+            subtitulo="Sessões por Classe e Tipo de Questão",
+            descricao="Barras agrupadas por tipo de questão (PR/RC/QI) com o volume de sessões por classe.",
+            fn=g4_2_sessoes_classe_tipo,
+            tipos=("barra",),
+            filtros=("periodo",),
+        ),
+        GraficoSpec(
+            id="G4.3",
+            rotulo="G4.3 — Macro-desfecho por ano e tipo de questão",
+            subtitulo="Macro-Desfecho por Ano e Tipo de Questão",
+            descricao="Barras empilhadas (Concluído/Não concluído) por ano. "
+                      "Uma aba por tipo: PR, RC e QI.",
+            fn=g4_3_macro_ano_tipo,
+            tipos=("barra", "linha"),
+            filtros=("classe", "tipo_questao", "periodo"),
+        ),
+        GraficoSpec(
+            id="G4.4",
+            rotulo="G4.4 — Macro-desfecho por ano e classe",
+            subtitulo="Macro-Desfecho por Ano e Classe (ADI e ADPF)",
+            descricao="Barras empilhadas por ano para ADI e ADPF. ADC e ADO omitidos por base pequena.",
+            fn=g4_4_macro_ano_classe,
+            tipos=("barra", "linha"),
+            filtros=("classe", "tipo_questao", "periodo"),
+        ),
+        GraficoSpec(
+            id="G4.5",
+            rotulo="G4.5 — Taxa de conclusão: classe × tipo de questão",
+            subtitulo="Taxa de Conclusão por Classe e Tipo de Questão",
+            descricao="Percentual de sessões concluídas, agrupado por classe e tipo de questão.",
+            fn=g4_5_taxa_conclusao_classe_tipo,
+            tipos=("barra",),
+            filtros=("periodo",),
+        ),
+        GraficoSpec(
+            id="G5.1",
+            rotulo="G5.1 — Distribuição de duração até conclusão",
+            subtitulo="Tempo até Conclusão",
+            descricao="Distribuição do tempo decorrido entre a primeira inclusão em pauta e a sessão de "
+                      "conclusão, em faixas. Selecione o âmbito da primeira pauta.",
+            fn=_g5_1,
+            tipos=("barra", "linha"),
+            filtros=("ambiente", "classe", "tipo_questao", "periodo"),
+        ),
+        GraficoSpec(
+            id="G5.2",
+            rotulo="G5.2 — Duração mediana por classe",
+            subtitulo="Tempo Mediano até Conclusão por Classe (dias)",
+            descricao="Mediana de dias entre a primeira pauta e a conclusão, por classe. "
+                      "Selecione o âmbito da primeira pauta.",
+            fn=_g5_2,
+            tipos=("barra",),
+            filtros=("ambiente", "tipo_questao", "periodo"),
+        ),
+        GraficoSpec(
+            id="G5.3",
+            rotulo="G5.3 — Duração mediana por tipo de questão",
+            subtitulo="Tempo Mediano até Conclusão por Tipo de Questão (dias)",
+            descricao="Mediana de dias entre a primeira pauta e a conclusão, por tipo. "
+                      "Selecione o âmbito da primeira pauta.",
+            fn=_g5_3,
+            tipos=("barra",),
+            filtros=("ambiente", "classe", "periodo"),
+        ),
+    ]
 
 
 # ── Tabulador interativo ──────────────────────────────────────────────────────
@@ -294,11 +204,17 @@ def _render_interactive_tabulador(df_s: pd.DataFrame) -> None:
     st.subheader("Tabulador Interativo")
     st.caption("Configure livremente os eixos, agrupamento e modo de barras.")
 
+    dims = _dims_disponiveis(df_s.columns)
+    dims_label = list(dims.keys())
+    colunas_ok = set(dims.values())
+    presets = [p for p in _PREDEFINIDOS if p[1] in colunas_ok and p[2] in colunas_ok]
+    labels_pre = [p[0] for p in presets]
+
     col_pre, _ = st.columns([2, 1])
     with col_pre:
         pre_escolha = st.selectbox(
             "🔖 Pré-definidos",
-            options=["— ou configure manualmente abaixo —"] + _LABELS_PRE,
+            options=["— ou configure manualmente abaixo —"] + labels_pre,
             index=0,
             key="sv_predefinido",
         )
@@ -306,17 +222,17 @@ def _render_interactive_tabulador(df_s: pd.DataFrame) -> None:
     if pre_escolha.startswith("—"):
         def_x, def_g, def_m, def_bm = 0, 1, 0, 0
     else:
-        _, px, pg, pm, pbm = next(p for p in _PREDEFINIDOS if p[0] == pre_escolha)
-        def_x  = _DIMS_LABEL.index(next(k for k, v in _DIMS_SV.items() if v == px))
-        def_g  = _DIMS_LABEL.index(next(k for k, v in _DIMS_SV.items() if v == pg))
+        _, px, pg, pm, pbm = next(p for p in presets if p[0] == pre_escolha)
+        def_x  = dims_label.index(next(k for k, v in dims.items() if v == px))
+        def_g  = dims_label.index(next(k for k, v in dims.items() if v == pg))
         def_m  = ["sessoes", "processos"].index(pm)
         def_bm = ["group", "stack", "100%"].index(pbm)
 
     c1, c2, c3, c4, c5 = st.columns([2, 2, 2, 2, 1])
     with c1:
-        eixo_x_lbl = st.selectbox("Eixo X",    _DIMS_LABEL, index=def_x, key="sv_tab_x")
+        eixo_x_lbl = st.selectbox("Eixo X",    dims_label, index=def_x, key="sv_tab_x")
     with c2:
-        grupo_lbl  = st.selectbox("Cor/Grupo", _DIMS_LABEL, index=def_g, key="sv_tab_g")
+        grupo_lbl  = st.selectbox("Cor/Grupo", dims_label, index=def_g, key="sv_tab_g")
     with c3:
         metrica = st.selectbox(
             "Métrica", ["sessoes", "processos"], index=def_m, key="sv_tab_m",
@@ -330,8 +246,8 @@ def _render_interactive_tabulador(df_s: pd.DataFrame) -> None:
     with c5:
         show_values = st.checkbox("Exibir valores", value=False, key="sv_tab_sv")
 
-    eixo_x = _DIMS_SV[eixo_x_lbl]
-    grupo  = _DIMS_SV[grupo_lbl]
+    eixo_x = dims[eixo_x_lbl]
+    grupo  = dims[grupo_lbl]
 
     if eixo_x == grupo:
         st.warning("Eixo X e Cor/Grupo não podem ser a mesma dimensão.")
@@ -365,99 +281,8 @@ def _render_interactive_tabulador(df_s: pd.DataFrame) -> None:
 # ── Renderização principal ────────────────────────────────────────────────────
 
 def render_graficos(df_s: pd.DataFrame, df_final: pd.DataFrame) -> None:
-    with st.expander("Sumário — visualizações disponíveis", expanded=True):
-        cols = st.columns(2)
-        for i, (bloco, graficos) in enumerate(_SUMARIO.items()):
-            with cols[i % 2]:
-                st.markdown(f"**{bloco}**")
-                for g in graficos:
-                    st.markdown(f"- {g}")
+    render_pagina(_montar_catalogo(df_final), df_s, key_prefix="sv")
 
     st.markdown("---")
-
-    escolha = st.selectbox(
-        "Selecione a visualização",
-        options=_LABELS,
-        index=0,
-        key="sessoes_selectbox",
-    )
-
-    idx = _LABELS.index(escolha)
-    _, subtitulo, descricao, fn = _CATALOGO[idx]
-
-    # Tabulador
-    if idx == _TABULADOR_IDX:
+    with st.expander("🔧 Tabulador Interativo — eixos livres (G6)"):
         _render_interactive_tabulador(df_s)
-        return
-
-    st.subheader(subtitulo)
-    st.caption(descricao)
-
-    # Table-only items
-    if idx in _TABLE_ONLY:
-        tab = _tabela_classe_tipo(df_s)
-        fmt = {c: "{:,.0f}" for c in tab.columns if tab[c].dtype.kind in "iuf"}
-        with st.expander("📊 Dados da visualização"):
-            st.dataframe(tab.style.format(fmt, na_rep="—"), width="stretch", height=280)
-        return
-
-    show_values = st.checkbox("Exibir valores", value=True, key=f"sv_{idx}")
-
-    # Block 5 — duração (precisa de ambiente + duracao df)
-    if idx in _BLOCO5_INDICES:
-        if df_final.empty or "ambiente" not in df_final.columns:
-            st.warning("Dataset de inclusões em pauta não disponível. Bloco 5 requer "
-                       "ambos os datasets.")
-            return
-        ambiente = st.selectbox(
-            "Âmbito", ["Plenário Virtual", "Plenário Presencial"],
-            key=f"sv_amb_{idx}",
-        )
-        duracao = prep_duracao(df_s, df_final, ambiente)
-        fig = fn(duracao, show_values=show_values)
-        st.plotly_chart(fig, width="stretch")
-        _render_tabela_bloco5(duracao, idx)
-        return
-
-    # Charts that return dict (multiple subtabs)
-    if idx in _DICT_INDICES:
-        result = fn(df_s, show_values=show_values)
-        if not result:
-            st.info("Sem dados para exibir.")
-            return
-        subtabs = st.tabs(list(result.keys()))
-        for tab, fig in zip(subtabs, result.values()):
-            with tab:
-                st.plotly_chart(fig, width="stretch")
-        _render_tabela_comum(df_s, idx)
-        return
-
-    # G0 — needs both dataframes
-    if idx == 0:
-        if df_final.empty or "ambiente" not in df_final.columns:
-            st.warning("Dataset de inclusões em pauta não disponível.")
-            return
-        fig = fn(df_s, df_final, show_values=show_values)
-        st.plotly_chart(fig, width="stretch")
-        # build comparison table
-        sessoes = df_s.groupby("ano").size().reset_index(name="Sessões virtuais")
-        df_pv = df_final[df_final["ambiente"] == "Plenário Virtual"]
-        inclusoes = df_pv.groupby("ano").size().reset_index(name="Inclusões em pauta (PV)")
-        tab = sessoes.merge(inclusoes, on="ano", how="outer").fillna(0).astype(int)
-        tab["ano"] = tab["ano"].astype(str)
-        fmt = {c: "{:,.0f}" for c in tab.columns if c != "ano"}
-        with st.expander("📊 Dados da visualização"):
-            st.dataframe(tab.style.format(fmt, na_rep="—"), width="stretch", height=280)
-        return
-
-    # Block 3 charts (need custom table)
-    if idx in {1, 2, 3, 4}:
-        fig = fn(df_s, show_values=show_values)
-        st.plotly_chart(fig, width="stretch")
-        _render_tabela_bloco3(df_s, idx)
-        return
-
-    # Standard single-chart items
-    fig = fn(df_s, show_values=show_values)
-    st.plotly_chart(fig, width="stretch")
-    _render_tabela_comum(df_s, idx)

@@ -17,9 +17,27 @@ CORES_TIPO = {"PR": AZUL, "RC": "#f59e0b", "QI": VERDE}
 CORES_MACRO = {"Concluído": VERDE, "Não concluído": "#ef4444"}
 _CLASSES = ["ADI", "ADPF", "ADC", "ADO"]
 _TIPOS = ["PR", "RC", "QI"]
-_ANOS = list(range(2020, 2026))
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
+def _periodo(df: pd.DataFrame) -> str:
+    """Trecho ' (ano_min–ano_max)' derivado do próprio df; vazio se não houver como calcular.
+
+    Mesmo padrão de gt10_tabulador (pages/tramitacao/plots.py) e de
+    pages/sustentacao/plots.py: o df recebido já pode vir recortado pelo filtro
+    de período da casca, então o intervalo exibido no título reflete o recorte
+    atual em vez de um texto fixo que mentiria sempre que o recorte mudasse.
+    `duracao` (Bloco 5) não tem coluna `ano` — cai para o ano da sessão de
+    conclusão (`data_sessao_dt`), mesmo caso sem `ano` que gt10_tabulador trata.
+    """
+    if "ano" in df.columns:
+        anos = pd.to_numeric(df["ano"], errors="coerce").dropna()
+    elif "data_sessao_dt" in df.columns:
+        anos = pd.to_datetime(df["data_sessao_dt"], errors="coerce").dropna().dt.year
+    else:
+        anos = pd.Series(dtype="float")
+    return f" ({int(anos.min())}–{int(anos.max())})" if not anos.empty else ""
+
 
 def _faixa_sessoes(n: int) -> str:
     if n == 1: return "1 sessão"
@@ -37,12 +55,16 @@ def g0_sessoes_vs_inclusoes(df_s: pd.DataFrame, df_final: pd.DataFrame,
                               show_values: bool = True) -> go.Figure:
     """Sessões virtuais vs inclusões em pauta (PV) por ano."""
     sessoes = df_s.groupby("ano").size().reset_index(name="Sessões virtuais")
-    df_pv = df_final[df_final["ambiente"] == "Plenário Virtual"].copy()
-    if df_pv.empty:
-        df_pv = df_final[df_final["ambiente"] == "Plenário Virtual"]
+    df_pv = df_final[df_final["ambiente"] == "Plenário Virtual"]
     inclusoes = df_pv.groupby("ano").size().reset_index(name="Inclusões em pauta (PV)")
     tab = sessoes.merge(inclusoes, on="ano", how="outer").fillna(0)
-    tab = tab.set_index("ano").reindex(_ANOS, fill_value=0).reset_index()
+
+    # Anos derivados do próprio dado (não fixos): a casca oferece filtro de
+    # período e o usuário pode estreitar a janela em qualquer um dos dois lados.
+    todos_anos = pd.concat([df_s["ano"], df_pv["ano"]]).dropna()
+    anos = (list(range(int(todos_anos.min()), int(todos_anos.max()) + 1))
+            if not todos_anos.empty else [])
+    tab = tab.set_index("ano").reindex(anos, fill_value=0).reset_index()
     tab["ano_str"] = tab["ano"].astype(str)
     fig = go.Figure()
     for col, cor in [("Sessões virtuais", AZUL), ("Inclusões em pauta (PV)", VERDE)]:
@@ -54,17 +76,19 @@ def g0_sessoes_vs_inclusoes(df_s: pd.DataFrame, df_final: pd.DataFrame,
             textposition="outside", cliponaxis=False,
             textfont=dict(family="Arial, sans-serif", size=17, color="black"),
         ))
+    periodo = f" ({anos[0]}–{anos[-1]})" if anos else ""
     aplicar_padrao(
         fig,
         "Sessões virtuais vs Inclusões em pauta (PV) por ano",
-        "Comparação anual entre sessões virtuais iniciadas e inclusões em pauta (2020–2025)",
+        f"Comparação anual entre sessões virtuais iniciadas e inclusões em pauta{periodo}",
         barmode="group", showlegend=True,
         xaxis=dict(title="Ano"),
         yaxis=dict(title="Quantidade"),
     )
-    ymax = float(tab[["Sessões virtuais", "Inclusões em pauta (PV)"]].to_numpy().max()) * 1.15 + 1
-    add_espin_shade(fig, _ANOS[0], y0=0, y1=ymax, y_label=ymax * 0.97)
-    add_er_marker(fig, _ANOS[0], 53, y0=0, y1=ymax, y_label=ymax * 0.85)
+    if anos:
+        ymax = float(tab[["Sessões virtuais", "Inclusões em pauta (PV)"]].to_numpy().max()) * 1.15 + 1
+        add_espin_shade(fig, anos[0], y0=0, y1=ymax, y_label=ymax * 0.97)
+        add_er_marker(fig, anos[0], 53, y0=0, y1=ymax, y_label=ymax * 0.85)
     return fig
 
 
@@ -99,7 +123,7 @@ def g3_1_distribuicao_sessoes(df_s: pd.DataFrame, show_values: bool = True) -> g
     aplicar_padrao(
         fig,
         "Distribuição de sessões por processo",
-        "Nº de sessões virtuais necessárias por processo (2020–2025)",
+        f"Nº de sessões virtuais necessárias por processo{_periodo(df_s)}",
         xaxis=dict(title="Nº de sessões por processo"),
         yaxis=dict(title="Nº de processos"),
     )
@@ -109,27 +133,22 @@ def g3_1_distribuicao_sessoes(df_s: pd.DataFrame, show_values: bool = True) -> g
 def g3_2_faixa_sessoes_classe(df_s: pd.DataFrame, show_values: bool = True) -> go.Figure:
     spp, _ = _prep_sessoes_por_processo(df_s)
     tab = spp.groupby(["classe", "faixa"]).size().reset_index(name="n")
+    cores_faixa = {"1 sessão": "#2563eb", "2–3 sessões": "#f59e0b",
+                   "4–5 sessões": "#16a34a", "6+ sessões": "#ef4444"}
     fig = go.Figure()
     for faixa in ORDEM_FAIXA:
         d = tab[tab["faixa"] == faixa]
         fig.add_trace(go.Bar(
             x=d["classe"], y=d["n"], name=faixa,
-            marker_color=COR_SESSAO if faixa == ORDEM_FAIXA[0] else None,
+            marker_color=cores_faixa[faixa],
             text=d["n"] if show_values else None,
             textposition="inside",
             textfont=dict(family="Arial, sans-serif", size=16, color="white"),
         ))
-    cores_faixa = {"1 sessão": "#2563eb", "2–3 sessões": "#f59e0b",
-                   "4–5 sessões": "#16a34a", "6+ sessões": "#ef4444"}
-    for i, faixa in enumerate(ORDEM_FAIXA):
-        d = tab[tab["faixa"] == faixa]
-        if d.empty:
-            continue
-        fig.data[i].marker.color = cores_faixa[faixa]
     aplicar_padrao(
         fig,
         "Número de sessões por processo e classe",
-        "Distribuição por faixa de nº de sessões (2020–2025)",
+        f"Distribuição por faixa de nº de sessões{_periodo(df_s)}",
         barmode="stack", showlegend=True,
         xaxis=dict(title="Classe"),
         yaxis=dict(title="Nº de processos"),
@@ -157,7 +176,7 @@ def g3_3_taxa_conclusao_primeira(df_s: pd.DataFrame, show_values: bool = True) -
     aplicar_padrao(
         fig,
         "Taxa de conclusão: 1ª sessão vs sessões posteriores",
-        "Percentual de sessões concluídas por posição (2020–2025)",
+        f"Percentual de sessões concluídas por posição{_periodo(df_s)}",
         xaxis=dict(title=""),
         yaxis=dict(title="% Concluído", range=[0, 105]),
     )
@@ -186,7 +205,7 @@ def g3_4_taxa_conclusao_posicao(df_s: pd.DataFrame, show_values: bool = True) ->
     aplicar_padrao(
         fig,
         "Taxa de conclusão por posição da sessão no processo",
-        "Percentual concluído em cada posição (2020–2025)",
+        f"Percentual concluído em cada posição{_periodo(df_s)}",
         xaxis=dict(title=""),
         yaxis=dict(title="% Concluído", range=[0, 105]),
     )
@@ -212,7 +231,7 @@ def g4_2_sessoes_classe_tipo(df_s: pd.DataFrame, show_values: bool = True) -> go
     aplicar_padrao(
         fig,
         "Sessões por classe e tipo de questão",
-        "Volume de sessões virtuais (2020–2025)",
+        f"Volume de sessões virtuais{_periodo(df_s)}",
         barmode="group", showlegend=True,
         xaxis=dict(title="Classe"),
         yaxis=dict(title="Nº de sessões"),
@@ -252,7 +271,7 @@ def g4_3_macro_ano_tipo(df_s: pd.DataFrame, show_values: bool = True) -> dict[st
     figs = {}
     for tp in _TIPOS:
         sub = df_s[df_s["tipo_questao"] == tp]
-        titulo = f"Macro-desfecho por ano — {tp} — Sessões virtuais (2020–2025)"
+        titulo = f"Macro-desfecho por ano — {tp} — Sessões virtuais{_periodo(sub)}"
         figs[tp] = _barras_macro_ano(sub, titulo, show_values)
     return figs
 
@@ -261,7 +280,7 @@ def g4_4_macro_ano_classe(df_s: pd.DataFrame, show_values: bool = True) -> dict[
     figs = {}
     for cl in ["ADI", "ADPF"]:
         sub = df_s[df_s["classe"] == cl]
-        titulo = f"Macro-desfecho por ano — {cl} — Sessões virtuais (2020–2025)"
+        titulo = f"Macro-desfecho por ano — {cl} — Sessões virtuais{_periodo(sub)}"
         figs[cl] = _barras_macro_ano(sub, titulo, show_values)
     return figs
 
@@ -283,7 +302,7 @@ def g4_5_taxa_conclusao_classe_tipo(df_s: pd.DataFrame, show_values: bool = True
     aplicar_padrao(
         fig,
         "Taxa de conclusão por classe e tipo de questão",
-        "Sessões virtuais (2020–2025)",
+        f"Sessões virtuais{_periodo(df_s)}",
         barmode="group", showlegend=True,
         xaxis=dict(title="Classe"),
         yaxis=dict(title="% Concluído", range=[0, 105]),
@@ -340,7 +359,7 @@ def g5_1_distribuicao_duracao(duracao: pd.DataFrame, show_values: bool = True) -
     aplicar_padrao(
         fig,
         "Tempo até conclusão",
-        "Processos virtuais (2020–2025)",
+        f"Processos virtuais{_periodo(duracao)}",
         xaxis=dict(title="Duração"),
         yaxis=dict(title="Nº de processos concluídos"),
     )
@@ -359,7 +378,7 @@ def g5_2_duracao_mediana_classe(duracao: pd.DataFrame, show_values: bool = True)
     aplicar_padrao(
         fig,
         "Tempo mediano até conclusão por classe",
-        "Dias (2020–2025)",
+        f"Dias{_periodo(duracao)}",
         xaxis=dict(title="Classe"),
         yaxis=dict(title="Dias (mediana)"),
     )
@@ -378,7 +397,7 @@ def g5_3_duracao_mediana_tipo(duracao: pd.DataFrame, show_values: bool = True) -
     aplicar_padrao(
         fig,
         "Tempo mediano até conclusão por tipo de questão",
-        "Dias (2020–2025)",
+        f"Dias{_periodo(duracao)}",
         xaxis=dict(title="Tipo de questão"),
         yaxis=dict(title="Dias (mediana)"),
     )
