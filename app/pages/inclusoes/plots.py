@@ -36,6 +36,11 @@ CORES_NC = {
     "3 - Retirado de pauta": "#f59e0b",
     "4 - Motivos diversos":  "#9ca3af",
 }
+CORES_DESFECHO_CONCLUIDO = {
+    "Concluído - decisão unânime":                    "#184f95",
+    "Concluído - decisão maioria com o relator":      "#2a78d6",
+    "Concluído - decisão maioria, vencido o relator": "#86b6ef",
+}
 CORES_SUST = {
     "Com sustentação oral": "#0891b2",
     "Sem sustentação oral": "#e5e7eb",
@@ -93,7 +98,7 @@ def _pizza(series: pd.Series, titulo: str, buraco: float = 0.4,
     ti = pizza_textinfo if pizza_textinfo else ("percent+value" if show_values else "none")
     ti = "none" if not show_values else ti
     fig = go.Figure(go.Pie(
-        labels=[str(l).upper() for l in series.index], values=series.values, hole=buraco,
+        labels=[str(l) for l in series.index], values=series.values, hole=buraco,
         textinfo=ti,
         textposition="auto",
         insidetextorientation="radial",
@@ -149,13 +154,13 @@ def _barras_grupo(df_amb: pd.DataFrame, col_x: str, col_grupo: str,
         if d.empty:
             continue
         fig.add_trace(go.Bar(
-            x=d[col_x], y=d["y"], name=g.upper(),
+            x=d[col_x], y=d["y"], name=g,
             marker_color=cores[g],
             text=texto[d.index] if isinstance(texto, pd.Series) else texto,
             textposition="outside", cliponaxis=False,
         ))
     aplicar_padrao(fig, titulo, showlegend=True, legend=_LEGEND_BARRAS,
-                    xaxis=dict(title=x_title, dtick=1, tickangle=-45),
+                    xaxis=dict(title=x_title, dtick=1),
                     yaxis_title=y_label)
     if col_x == "ano" and not tab.empty:
         _marcos_temporais(fig, tab["y"].max(), tab[col_x].min(), tab[col_x].max())
@@ -179,7 +184,7 @@ def g5_anual_ambiente(df: pd.DataFrame, show_values: bool = True, proporcao: boo
     aplicar_padrao(fig, "Plenário Virtual concentra a maior parte das inclusões em pauta",
                    "Inclusões por ano e ambiente (Plenário Virtual vs Plenário Presencial)",
                    showlegend=True, legend=_LEGEND_BARRAS,
-                   xaxis=dict(title="Ano", dtick=1, tickangle=-45),
+                   xaxis=dict(title="Ano", dtick=1),
                    yaxis_title="Inclusões")
     if not tab.empty:
         _marcos_temporais(fig, tab["n"].max(), tab["ano"].min(), tab["ano"].max())
@@ -234,10 +239,10 @@ def g10_macro_anual_filtravel(df: pd.DataFrame, show_values: bool = True, propor
 
 
 def g12_concluidos_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
-                             ambiente: str = "Plenário Virtual") -> go.Figure:
+                             ambiente: str = "Plenário Virtual", segmentar: bool = False) -> go.Figure:
     return _concluidos_anual(df[df["ambiente"] == ambiente],
                              f"Concluídos por ano — {ambiente}",
-                             show_values=show_values, proporcao=proporcao)
+                             show_values=show_values, proporcao=proporcao, segmentar=segmentar)
 
 
 def g14_nao_concluidos_classe_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
@@ -283,7 +288,7 @@ def _macro_anual(df_amb: pd.DataFrame, titulo: str,
             textposition="outside", cliponaxis=False,
         ))
     aplicar_padrao(fig, titulo, showlegend=True, legend=_LEGEND_BARRAS,
-                   xaxis=dict(title="Ano", dtick=1, tickangle=-45),
+                   xaxis=dict(title="Ano", dtick=1),
                    yaxis_title=y_title)
     if not tab.empty:
         _marcos_temporais(fig, tab["y"].max(), tab["ano"].min(), tab["ano"].max())
@@ -291,8 +296,14 @@ def _macro_anual(df_amb: pd.DataFrame, titulo: str,
 
 
 def _concluidos_anual(df_amb: pd.DataFrame, titulo: str,
-                      show_values: bool = True, proporcao: bool = False) -> go.Figure:
+                      show_values: bool = True, proporcao: bool = False,
+                      segmentar: bool = False) -> go.Figure:
     sub = df_amb[df_amb["macro_desfecho"] == "Concluído"]
+    if segmentar:
+        return _barras_grupo(sub, "ano", "desfecho", CORES_DESFECHO_CONCLUIDO,
+                             titulo, "Inclusões concluídas", "Total (linha)",
+                             show_values=show_values, proporcao=proporcao)
+
     tab = sub.groupby("ano").size().reset_index(name="n")
     if proporcao:
         total_ano = df_amb.groupby("ano").size().reset_index(name="t")
@@ -311,7 +322,7 @@ def _concluidos_anual(df_amb: pd.DataFrame, titulo: str,
         marker_color=CORES_MACRO["Concluído"],
         text=texto, textposition="outside", cliponaxis=False,
     ))
-    aplicar_padrao(fig, titulo, xaxis=dict(title="Ano", dtick=1, tickangle=-45),
+    aplicar_padrao(fig, titulo, xaxis=dict(title="Ano", dtick=1),
                    yaxis_title=y_title)
     if not tab.empty:
         _marcos_temporais(fig, tab["y"].max(), tab["ano"].min(), tab["ano"].max())
@@ -476,7 +487,7 @@ def g24_cat_anual_filtravel(df: pd.DataFrame, show_values: bool = True, proporca
     sub = _prep_cat(df[df["ambiente"] == ambiente])
     return _barras_grupo(sub, "ano", "categoria", CORES_CATEGORIA,
                          f"Desfecho por categoria e ano — {ambiente}",
-                         "Inclusões em pauta", "Total (linha)",
+                         "Quantidade de processos incluídos em pauta", "Total (linha)",
                          show_values=show_values, proporcao=proporcao)
 
 
