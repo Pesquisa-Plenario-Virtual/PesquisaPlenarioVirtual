@@ -1,8 +1,8 @@
 """Casca de renderização de gráfico: controles, filtros e tabela espelhada.
 
-tabela_da_figura, _aplicar_filtros e _kwargs_aceitos são puros (sem Streamlit)
-para poder ser testados sem contexto de execução; render_grafico e _controles
-usam st.* e são exercidos pela execução do app.
+tabela_da_figura, _aplicar_filtros, _kwargs_aceitos e _opcoes_filtro são puros
+(sem Streamlit) para poder ser testados sem contexto de execução; render_grafico
+e _controles usam st.* e são exercidos pela execução do app.
 """
 
 from __future__ import annotations
@@ -40,6 +40,7 @@ class GraficoSpec:
     filtros: tuple[str, ...] = ()
     percentual: bool = False
     kwargs_fixos: dict = field(default_factory=dict)
+    opcoes_filtro: dict = field(default_factory=dict)
 
 
 def tabela_da_figura(fig: go.Figure) -> pd.DataFrame:
@@ -141,6 +142,22 @@ def _fn_aceita_ambiente(fn: Callable) -> bool:
         return False
 
 
+def _opcoes_filtro(spec: GraficoSpec, df, nome: str, coluna: str) -> list[str]:
+    """Opções de um filtro: `spec.opcoes_filtro[nome]` tem prioridade; sem
+    entrada, deriva dos valores presentes em `df[coluna]` como antes.
+
+    Existe porque algumas páginas recebem só um dos dataframes relevantes
+    (ex.: Sessões Virtuais passa à casca apenas o dataframe de sessões, que é
+    só Plenário Virtual; a opção "Plenário Presencial" do filtro de âmbito do
+    Bloco 5 vive só no dataframe de inclusões, capturado por closure no
+    wrapper da página, nunca visto por `_controles`).
+    """
+    declaradas = spec.opcoes_filtro.get(nome)
+    if declaradas:
+        return list(declaradas)
+    return sorted(str(v) for v in df[coluna].dropna().unique())
+
+
 def _controles(spec: GraficoSpec, df, key: str) -> dict:
     """Linha de controles acima da figura. Devolve o estado escolhido."""
     estado: dict = {}
@@ -178,7 +195,7 @@ def _controles(spec: GraficoSpec, df, key: str) -> dict:
                 coluna = _COLUNA_DO_FILTRO[nome]
                 if coluna not in df.columns:
                     continue
-                opcoes = sorted(str(v) for v in df[coluna].dropna().unique())
+                opcoes = _opcoes_filtro(spec, df, nome, coluna)
                 if nome == "ambiente" and _fn_aceita_ambiente(spec.fn):
                     opcoes = sorted(opcoes, key=lambda v: v != "Plenário Virtual")
                     escolhas[nome] = [st.selectbox(
@@ -194,7 +211,16 @@ def _controles(spec: GraficoSpec, df, key: str) -> dict:
 def render_grafico(spec: GraficoSpec, df, key: str) -> None:
     """Renderiza um gráfico do catálogo com controles, tema e tabela espelhada."""
     estado = _controles(spec, df, key)
-    recortado = _aplicar_filtros(df, estado["escolhas"])
+    escolhas_df = estado["escolhas"]
+    if spec.opcoes_filtro.get("ambiente"):
+        # spec declarou opções de âmbito próprias porque a coluna "ambiente"
+        # de `df` não é a fonte confiável desse recorte (ex.: Sessões
+        # Virtuais/Bloco 5 — `df` é o dataframe de sessões, só "Plenário
+        # Virtual"; o âmbito escolhido filtra um dataframe diferente dentro
+        # de fn, via kwarg, mais abaixo). Pré-filtrar `df` por um valor que
+        # ele pode nunca ter zeraria o recorte antes de fn ser chamada.
+        escolhas_df = {k: v for k, v in escolhas_df.items() if k != "ambiente"}
+    recortado = _aplicar_filtros(df, escolhas_df)
     if recortado.empty:
         st.info("Sem dados para o recorte selecionado.")
         return

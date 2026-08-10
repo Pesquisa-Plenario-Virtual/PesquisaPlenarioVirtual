@@ -72,6 +72,14 @@ def _montar_catalogo(df_final: pd.DataFrame) -> list[GraficoSpec]:
     def _g5_3(df_s, show_values=True, ambiente="Plenário Virtual", **kw):
         return g5_3_duracao_mediana_tipo(prep_duracao(df_s, df_final, ambiente), show_values)
 
+    # Opções reais do seletor de âmbito do Bloco 5: df_s (sessões) só tem
+    # "Plenário Virtual", então a casca (que deriva opções do dataframe que
+    # recebe) nunca ofereceria "Plenário Presencial". A opção que importa
+    # vive em df_final — declarada via GraficoSpec.opcoes_filtro nas três
+    # entradas do Bloco 5, abaixo.
+    opcoes_ambiente = (sorted(df_final["ambiente"].dropna().unique().tolist())
+                       if "ambiente" in df_final.columns else ["Plenário Virtual"])
+
     return [
         GraficoSpec(
             id="G0",
@@ -174,6 +182,7 @@ def _montar_catalogo(df_final: pd.DataFrame) -> list[GraficoSpec]:
             fn=_g5_1,
             tipos=("barra", "linha"),
             filtros=("ambiente", "classe", "tipo_questao", "periodo"),
+            opcoes_filtro={"ambiente": opcoes_ambiente},
         ),
         GraficoSpec(
             id="G5.2",
@@ -184,6 +193,7 @@ def _montar_catalogo(df_final: pd.DataFrame) -> list[GraficoSpec]:
             fn=_g5_2,
             tipos=("barra",),
             filtros=("ambiente", "tipo_questao", "periodo"),
+            opcoes_filtro={"ambiente": opcoes_ambiente},
         ),
         GraficoSpec(
             id="G5.3",
@@ -194,6 +204,7 @@ def _montar_catalogo(df_final: pd.DataFrame) -> list[GraficoSpec]:
             fn=_g5_3,
             tipos=("barra",),
             filtros=("ambiente", "classe", "periodo"),
+            opcoes_filtro={"ambiente": opcoes_ambiente},
         ),
     ]
 

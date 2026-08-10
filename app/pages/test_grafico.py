@@ -10,6 +10,7 @@ from components.grafico import (
     _aplicar_filtros,
     _fn_aceita_ambiente,
     _kwargs_aceitos,
+    _opcoes_filtro,
     tabela_da_figura,
 )
 
@@ -159,6 +160,21 @@ def test_filtro_ausente_ou_de_coluna_ausente_nao_altera_o_dataframe():
     df = _df()
     assert len(_aplicar_filtros(df, {})) == len(df)
     assert len(_aplicar_filtros(df, {"desfecho": None})) == len(df)
+
+
+def test_opcoes_filtro_declaradas_tem_prioridade_sobre_o_dataframe():
+    spec = GraficoSpec(id="X1", rotulo="X1 — teste", subtitulo="s", descricao="d",
+                       fn=lambda df: None,
+                       opcoes_filtro={"ambiente": ["Plenário Virtual", "Plenário Presencial"]})
+    df = pd.DataFrame({"ambiente": ["Plenário Virtual"]})  # só uma opção no dado
+    assert _opcoes_filtro(spec, df, "ambiente", "ambiente") == [
+        "Plenário Virtual", "Plenário Presencial"]
+
+
+def test_opcoes_filtro_sem_declaracao_deriva_do_dataframe():
+    spec = GraficoSpec(id="X1", rotulo="X1 — teste", subtitulo="s", descricao="d",
+                       fn=lambda df: None)
+    assert _opcoes_filtro(spec, _df(), "classe", "classe") == ["ADC", "ADI", "ADPF"]
 
 
 def test_fn_aceita_ambiente_detecta_parametro_na_assinatura():
