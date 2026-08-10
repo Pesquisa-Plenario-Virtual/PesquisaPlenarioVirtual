@@ -395,9 +395,12 @@ def gt10_tabulador(
     # rótulos legíveis para título
     inv = {v: k for k, v in DIMENSOES.items()}
     titulo = f"{inv.get(eixo_x, eixo_x)} × {inv.get(grupo, grupo)}"
-    subtitulo = (
-        f"{'Processos' if metrica == 'processos' else 'Inclusões'} (2020–2025)"
-    )
+    # Período derivado do próprio dado: gt10_tabulador é compartilhado por seis
+    # páginas cujos datasets cobrem intervalos diferentes (inclusões 2016–2025,
+    # sessões virtuais 2020–2025). Um período fixo no rótulo mentiria na maioria.
+    unidade = "Processos" if metrica == "processos" else "Inclusões"
+    anos = pd.to_numeric(d.get("ano"), errors="coerce").dropna() if "ano" in d.columns else pd.Series(dtype="float")
+    subtitulo = f"{unidade} ({int(anos.min())}–{int(anos.max())})" if not anos.empty else unidade
 
     aplicar_padrao(
         fig, titulo, subtitulo,

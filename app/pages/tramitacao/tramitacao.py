@@ -28,7 +28,7 @@ if df.empty:
 st.title("Tramitação por Ambiente")
 st.markdown("""
 Esta seção analisa em quais **ambientes de julgamento** os processos de Controle Concentrado
-(ADI, ADC, ADO e ADPF) tramitaram entre **2020 e 2025**.
+(ADI, ADC, ADO e ADPF) tramitaram entre **2016 e 2025**.
 
 Os processos podem ter sido julgados exclusivamente no **Plenário Virtual** (PV), exclusivamente
 no **Plenário Presencial** (PP), ou em **ambos os ambientes** em inclusões distintas. A análise
