@@ -87,15 +87,6 @@ def _widget_classe(df: pd.DataFrame, col: str = "classe") -> list[str]:
     return st.sidebar.multiselect("Classe processual", options=opcoes, default=opcoes)
 
 
-def _widget_show_values() -> bool:
-    """Checkbox global de exibição de valores nos gráficos. Retorna bool."""
-    return st.sidebar.checkbox(
-        "Exibir valores nos gráficos",
-        value=False,
-        help="Mostra os valores totais sobre barras e pontos nos gráficos.",
-    )
-
-
 def _widget_class_selector_with_geral(
     df: pd.DataFrame, col: str = "classe"
 ) -> dict[str, Any]:
@@ -145,7 +136,6 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict[str, Any]:
             "periodo":     (ano_inicio, ano_fim),
             "classes":     ["ADI", "ADC", ...],
             "class_sel":   {"selected": [...], "use_geral": bool},
-            "show_values": bool,
         }
 
     Uso na página:
@@ -160,19 +150,16 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict[str, Any]:
         df_filtrado = prepare_class_or_geral(
             df_filtrado, value_col="quantidade_ativos", selection=filtros["class_sel"]
         )
-        show_values = filtros["show_values"]
     """
     with st.sidebar:
         st.header("Filtros")
         periodo = _widget_periodo_ano(df)
         class_sel = _widget_class_selector_with_geral(df)
-        show_values = _widget_show_values()
 
     return {
         "periodo": periodo,
         "classes": class_sel["selected"],
         "class_sel": class_sel,
-        "show_values": show_values,
     }
 
 

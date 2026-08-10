@@ -6,6 +6,9 @@ import plotly.graph_objects as go
 import streamlit as st
 import pandas as pd
 
+from estilo import VERMELHO
+from tema import aplicar_tema
+
 _CORES_FASES = {
     1: "#7f8c8d",
     2: "#3498db",
@@ -53,20 +56,8 @@ _FAIXAS_FASE = {
 _CENTRO_FASE = {f: (y0 + y1) / 2 for f, (y0, y1) in _FAIXAS_FASE.items()}
 
 
-def render_timeline() -> None:
-    st.subheader("Linha do Tempo — Evolução do Plenário Virtual")
-    st.caption(
-        "Marcos normativos que moldaram o Plenário Virtual do STF desde sua criação em 2007 "
-        "até 2025, organizados em quatro etapas de expansão."
-    )
-    with st.expander("Critério / Fonte"):
-        st.markdown(
-            "- **Fonte:** Emendas Regimentais (ER), Resoluções e Portarias do STF/MS  \n"
-            "- **Etapas:** Restrita (2007–2015) → Ampliativa 1 (2016–2018) → "
-            "Ampliativa 2 (2019) → Ampliativa 3 (2020–2025)  \n"
-            "- **Zona verde:** período da ESPIN (Portaria MS 188/2020 a Portaria MS 913/2022)"
-        )
-
+def _build_timeline_figure() -> go.Figure:
+    """Monta a figura da linha do tempo, sem tocar em Streamlit — testável isolada."""
     total = len(_DADOS_TIMELINE)
     y_max = total + 1
     fig = go.Figure()
@@ -90,13 +81,19 @@ def render_timeline() -> None:
 
     # Zona ESPIN (eventos 9 a 15 = índices 8..14 → y = total-8 .. total-14)
     # Portaria MS 188 (idx 8) → y=12, Portaria MS 913 (idx 15) → y=5
-    fig.add_hrect(y0=4.5, y1=12.5, fillcolor="green", opacity=0.08,
+    # Mesma família visual do add_espin_shade (rosa claro + linhas vermelhas
+    # tracejadas): eixo x aqui não é temporal, então as faixas ficam
+    # horizontais em vez de verticais.
+    fig.add_hrect(y0=4.5, y1=12.5, fillcolor="#FCE7F3", opacity=0.55,
                   line_width=0, layer="below")
+    for y in (4.5, 12.5):
+        fig.add_shape(type="line", x0=-0.15, x1=1.0, y0=y, y1=y,
+                      line=dict(color=VERMELHO, width=1.5, dash="dash"))
     fig.add_annotation(
         x=0.97, y=8.5,
-        text="<b>ESPIN</b>",
+        text="<b>↔ ESPIN</b>",
         showarrow=False, xanchor="right", yanchor="middle",
-        font=dict(color="green", size=10),
+        font=dict(color=VERMELHO, size=10),
     )
 
     # Eventos
@@ -129,8 +126,27 @@ def render_timeline() -> None:
     )
     fig.update_xaxes(range=[-0.15, 1.0], visible=False, fixedrange=True)
     fig.update_yaxes(range=[0, y_max], visible=False, fixedrange=True)
+    return fig
 
-    st.plotly_chart(fig, width="stretch")
+
+def render_timeline() -> None:
+    st.subheader("Linha do Tempo — Evolução do Plenário Virtual")
+    st.caption(
+        "Marcos normativos que moldaram o Plenário Virtual do STF desde sua criação em 2007 "
+        "até 2025, organizados em quatro etapas de expansão."
+    )
+    with st.expander("Critério / Fonte"):
+        st.markdown(
+            "- **Fonte:** Emendas Regimentais (ER), Resoluções e Portarias do STF/MS  \n"
+            "- **Etapas:** Restrita (2007–2015) → Ampliativa 1 (2016–2018) → "
+            "Ampliativa 2 (2019) → Ampliativa 3 (2020–2025)  \n"
+            "- **Zona rosa:** período da ESPIN (Portaria MS 188/2020 a Portaria MS 913/2022)"
+        )
+
+    fig = _build_timeline_figure()
+    tema_atual = st.session_state.get("tema_visual", "novo")
+    dark = st.session_state.get("modo_noturno", False)
+    st.plotly_chart(aplicar_tema(fig, tema=tema_atual, dark=dark), width="stretch")
 
 
 def render_metricas(df: pd.DataFrame) -> None:
