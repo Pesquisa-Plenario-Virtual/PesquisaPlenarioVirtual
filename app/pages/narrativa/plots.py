@@ -1,34 +1,35 @@
 """Plotly figures for narrative graphics NA–NF.
 
-Values hardcoded per verification against inclusoes_em_pauta_mestre.parquet.
-ponytail: hardcoded — compute from parquet if underlying data changes.
+Calculadas a partir de inclusoes_em_pauta (2020–2025); ver pages/narrativa/test_plots.py
+para o portão de regressão que reproduz os 12 números publicados a partir do parquet.
+NB, NE e NF reproduzem a lógica validada de bloco2_inclusoes/plots.py
+(fig_2l_pauta_vs_concluidos, fig_2q_media_por_processo, fig_2r_pct_concluidos).
 """
 
 from __future__ import annotations
+import pandas as pd
 import plotly.graph_objects as go
 
-from estilo import aplicar_padrao, COR_PV, COR_PP, COR_AMBOS, VERMELHO as COR_ESPIN
+from estilo import aplicar_padrao, add_espin_shade, br, COR_PV, COR_PP, COR_AMBOS
 
 _LAYOUT_EXTRA = dict(height=650, margin=dict(t=130, b=80, l=60, r=60), hovermode="x unified")
 
 
-def plot_na(show_values: bool = True) -> go.Figure:
-    anos = ['2020', '2021', '2022', '2023', '2024', '2025']
-    valores = [59.8, 68.0, 64.1, 66.8, 59.0, 66.6]
+def plot_na(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    tab = df.groupby(["ano", "ambiente"]).size().unstack(fill_value=0)
+    pct = 100 * tab["Plenário Virtual"] / tab.sum(axis=1)
+    anos = [str(a) for a in pct.index]
+    anos_int = list(pct.index)
 
     fig = go.Figure(data=[
-        go.Bar(x=anos, y=valores, marker_color=COR_PV,
-               text=[f'{v}%' for v in valores] if show_values else None,
+        go.Bar(x=anos, y=pct.values, marker_color=COR_PV,
+               text=[f'{br(v, 1)}%' for v in pct.values] if show_values else None,
                textposition='outside',
                cliponaxis=False, showlegend=False)
     ])
 
-    fig.add_shape(type="line", x0=2.5, x1=2.5, y0=0, y1=85,
-                  line=dict(color=COR_ESPIN, width=2, dash="dash"),
-                  xref="x", yref="y")
-    fig.add_annotation(x=2.5, y=80, text="ESPIN",
-                       showarrow=False, font=dict(color=COR_ESPIN, size=17),
-                       xref="x", yref="y")
+    if anos_int:
+        add_espin_shade(fig, anos_int[0], y0=0, y1=85, y_label=80)
 
     aplicar_padrao(
         fig,
@@ -41,13 +42,21 @@ def plot_na(show_values: bool = True) -> go.Figure:
     return fig
 
 
-def plot_nb(show_values: bool = True) -> go.Figure:
+def plot_nb(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    pauta_pv = (df["ambiente"] == "Plenário Virtual").sum()
+    pauta_total = len(df)
+    pct_pauta = 100 * pauta_pv / pauta_total
+    concl = df[df["desfecho"].str.startswith("Concluído")]
+    concl_pv = (concl["ambiente"] == "Plenário Virtual").sum()
+    concl_total = len(concl)
+    pct_concl = 100 * concl_pv / concl_total
+
     categorias = ['Participação na pauta', 'Participação nos julgamentos concluídos']
-    valores = [63.9, 91.3]
+    valores = [pct_pauta, pct_concl]
 
     fig = go.Figure(data=[
         go.Bar(x=categorias, y=valores, marker_color=COR_PV,
-               text=[f'{v}%' for v in valores] if show_values else None,
+               text=[f'{br(v, 1)}%' for v in valores] if show_values else None,
                textposition='outside',
                cliponaxis=False, showlegend=False)
     ])
@@ -55,7 +64,7 @@ def plot_nb(show_values: bool = True) -> go.Figure:
     aplicar_padrao(
         fig,
         "O Plenário Virtual concentra os julgamentos concluídos",
-        "Participação do ambiente virtual na pauta e nos 3.187 julgamentos concluídos (2020–2025)",
+        "Participação do ambiente virtual na pauta e nos julgamentos concluídos (2020–2025)",
         yaxis=dict(range=[0, 110]),
         xaxis=dict(title=""),
         **_LAYOUT_EXTRA,
@@ -63,69 +72,90 @@ def plot_nb(show_values: bool = True) -> go.Figure:
     return fig
 
 
-def plot_nc(show_values: bool = True) -> go.Figure:
+def plot_nc(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    amb = df.groupby("incidente")["ambiente"].apply(set)
+
+    def classif(s):
+        pv, pp = "Plenário Virtual" in s, "Plenário Presencial" in s
+        if pv and pp:
+            return "Ambos"
+        return "Somente Virtual" if pv else "Somente Presencial"
+
+    tram = amb.apply(classif)
+    vc = tram.value_counts().reindex(["Somente Presencial", "Ambos", "Somente Virtual"], fill_value=0)
+    total = vc.sum()
+    pct = 100 * vc / total
+
+    # Construída como barra vertical canônica: o toggle "Tipo de gráfico" (tipos=
+    # ("barra_h", "barra")) converte para horizontal por padrão via converter_tipo,
+    # que espera x=categorias / y=valores em qualquer figura de entrada.
     categorias = ['Somente Plenário Presencial', 'Ambos os ambientes', 'Somente Plenário Virtual']
-    valores = [5.6, 16.9, 77.5]
-    processos = [159, 478, 2197]
     cores = [COR_PP, COR_AMBOS, COR_PV]
-    textos = [f'{v}%  ({p} processos)' for v, p in zip(valores, processos)]
+    textos = [f'{br(v, 1)}%  ({br(p)} processos)' for v, p in zip(pct.values, vc.values)]
 
     fig = go.Figure(data=[
-        go.Bar(y=categorias, x=valores, orientation='h', marker_color=cores,
+        go.Bar(x=categorias, y=pct.values, marker_color=cores,
                text=textos if show_values else None,
-               textposition='outside', cliponaxis=False,
-               showlegend=False)
+               textposition='outside', cliponaxis=False, showlegend=False)
     ])
 
     aplicar_padrao(
         fig,
         "Três de cada quatro processos nunca passam pelo Plenário Presencial",
-        "Tramitação em pauta dos 2.834 processos de controle concentrado (2020–2025)",
-        xaxis=dict(range=[0, 110], title="%"),
-        yaxis=dict(title=""),
+        "Tramitação em pauta dos processos de controle concentrado (2020–2025)",
+        yaxis=dict(range=[0, 110], title="%"),
+        xaxis=dict(title=""),
         **_LAYOUT_EXTRA,
     )
     return fig
 
 
-def plot_nd(show_values: bool = True) -> go.Figure:
+def plot_nd(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    rc = df[df["tipo_questao"] == "RC"]
+    vc = rc["ambiente"].value_counts()
+    total = vc.sum()
+    pv_n, pp_n = int(vc.get("Plenário Virtual", 0)), int(vc.get("Plenário Presencial", 0))
+    pv_pct, pp_pct = 100 * pv_n / total, 100 * pp_n / total
+
+    # Barra vertical canônica (ver nota em plot_nc) — tipos=("barra_h", "barra").
     fig = go.Figure()
 
     fig.add_trace(go.Bar(
-        y=['Recursos'], x=[94.3], name='Plenário Virtual', orientation='h',
+        x=['Recursos'], y=[pv_pct], name='Plenário Virtual',
         marker_color=COR_PV,
-        text="Plenário Virtual: 94,3% (1.048 recursos)" if show_values else None,
+        text=f"Plenário Virtual: {br(pv_pct, 1)}% ({br(pv_n)} recursos)" if show_values else None,
         textposition='inside', insidetextanchor='middle',
     ))
 
     fig.add_trace(go.Bar(
-        y=['Recursos'], x=[5.7], name='Plenário Presencial', orientation='h',
+        x=['Recursos'], y=[pp_pct], name='Plenário Presencial',
         marker_color=COR_PP,
-        text="PP: 5,7% (63)" if show_values else None,
+        text=f"PP: {br(pp_pct, 1)}% ({br(pp_n)})" if show_values else None,
         textposition='outside',
     ))
 
     aplicar_padrao(
         fig,
         "A atividade recursal migrou quase integralmente para o ambiente virtual",
-        "Destino das 1.111 inclusões em pauta de recursos (AgR, ED e afins) (2020–2025)",
+        "Destino das inclusões em pauta de recursos (AgR, ED e afins) (2020–2025)",
         barmode='stack',
-        xaxis=dict(title="%"),
-        yaxis=dict(title=""),
+        yaxis=dict(title="%"),
+        xaxis=dict(title=""),
         showlegend=False,
         **_LAYOUT_EXTRA,
     )
     return fig
 
 
-def plot_ne(show_values: bool = True) -> go.Figure:
+def plot_ne(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    medias = df.groupby("ambiente").apply(lambda d: len(d) / d["incidente"].nunique())
     categorias = ['Plenário Virtual', 'Plenário Presencial']
-    valores = [1.8, 4.3]
+    valores = [medias.get(c, 0) for c in categorias]
     cores = [COR_PV, COR_PP]
 
     fig = go.Figure(data=[
         go.Bar(x=categorias, y=valores, marker_color=cores,
-               text=[str(v).replace('.', ',') for v in valores] if show_values else None,
+               text=[br(v, 1) for v in valores] if show_values else None,
                textposition='outside', cliponaxis=False, showlegend=False)
     ])
 
@@ -140,14 +170,20 @@ def plot_ne(show_values: bool = True) -> go.Figure:
     return fig
 
 
-def plot_nf(show_values: bool = True) -> go.Figure:
+def plot_nf(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    def pct_por_processo(d):
+        return d.groupby("incidente")["desfecho"].apply(lambda s: s.str.startswith("Concluído").any())
+
     categorias = ['Plenário Virtual', 'Plenário Presencial']
-    valores = [86.0, 39.2]
     cores = [COR_PV, COR_PP]
+    valores = []
+    for amb in categorias:
+        concl = pct_por_processo(df[df["ambiente"] == amb])
+        valores.append(100 * concl.mean() if len(concl) else 0)
 
     fig = go.Figure(data=[
         go.Bar(x=categorias, y=valores, marker_color=cores,
-               text=[f'{str(v).replace(".", ",")}%' for v in valores] if show_values else None,
+               text=[f'{br(v, 1)}%' for v in valores] if show_values else None,
                textposition='outside', cliponaxis=False, showlegend=False)
     ])
 
