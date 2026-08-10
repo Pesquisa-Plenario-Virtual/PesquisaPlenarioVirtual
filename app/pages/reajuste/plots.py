@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 import pandas as pd
 
 from estilo import aplicar_padrao, add_er_marker, add_espin_shade, AZUL, CINZA, VERDE, ROXO, VERMELHO
+from pages.tramitacao.plots import gt10_tabulador
 
 CORES_CLASSE = {
     "ADI":  AZUL,
@@ -19,7 +20,6 @@ CORES_TRAM = {
 }
 CORES_TIPO = {"PR": AZUL, "RC": "#f59e0b", "QI": VERDE}
 _CLASSES = ["ADI", "ADPF", "ADC", "ADO"]
-_ANOS    = list(range(2020, 2026))
 
 
 # ── G-R1 — % de inclusões com reajuste de voto, por ambiente ───────────────────
@@ -53,10 +53,11 @@ def gr3_anual_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: b
         show_values=show_values,
     )
 def _barras_anuais(df_amb: pd.DataFrame, titulo: str, show_values: bool = True) -> go.Figure:
+    anos = list(range(int(df_amb["ano"].min()), int(df_amb["ano"].max()) + 1))
     tab = (df_amb[df_amb["teve_reajuste"]]
            .groupby("ano").size().reset_index(name="n"))
     tab = (tab.set_index("ano")
-              .reindex(_ANOS, fill_value=0)
+              .reindex(anos, fill_value=0)
               .reset_index())
     y_max = float(tab["n"].max() or 1)
     fig = go.Figure(go.Bar(
@@ -70,7 +71,7 @@ def _barras_anuais(df_amb: pd.DataFrame, titulo: str, show_values: bool = True) 
     ))
     aplicar_padrao(
         fig, titulo, "Volume anual de inclusões com reajuste de voto",
-        xaxis=dict(dtick=1, title="Ano", tickangle=-45),
+        xaxis=dict(dtick=1, title="Ano"),
         yaxis=dict(title="Inclusões com reajuste de voto", range=[0, y_max * 1.3]),
     )
     add_espin_shade(fig, ano_base=0, y0=0, y1=y_max * 1.25, y_label=y_max * 1.18)
@@ -105,9 +106,47 @@ def _barras_classe(df_amb: pd.DataFrame, titulo: str, show_values: bool = True) 
     aplicar_padrao(
         fig, titulo, "Distribuição por classe processual (ADI, ADPF, ADC, ADO)",
         barmode="group", showlegend=True,
-        xaxis=dict(dtick=1, title="Ano", tickangle=-45),
+        xaxis=dict(dtick=1, title="Ano"),
         yaxis=dict(title="Inclusões com reajuste de voto", range=[0, y_max * 1.3]),
     )
     add_espin_shade(fig, ano_base=0, y0=0, y1=y_max * 1.25, y_label=y_max * 1.18)
     add_er_marker(fig, ano_base=0, er=53, y0=0, y1=y_max * 1.25, y_label=y_max * 1.05)
+    return fig
+# ── G-R7 — Tipo de questão × reajuste (delega ao tabulador T10) ────────────────
+
+def gr7_tipo_vs_reajuste(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False):
+    return gt10_tabulador(df, "tipo_questao", "teve_reajuste", "inclusoes", "group", show_values)
+# ── G-R8 — Desfecho detalhado × reajuste (delega ao tabulador T10) ─────────────
+
+def gr8_desfecho_vs_reajuste(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False):
+    """R8: desfecho vs reajuste — labels e título como annotations."""
+    import re
+    fig = gt10_tabulador(df, "desfecho", "teve_reajuste", "inclusoes", "group", show_values)
+    fig.update_xaxes(showticklabels=False, tickangle=0, title="")
+    seen: set = set()
+    vals: list[str] = []
+    for tr in fig.data:
+        for v in tr.x:
+            if isinstance(v, str) and v not in seen:
+                seen.add(v)
+                vals.append(v)
+    for i, v in enumerate(vals):
+        s = str(v)
+        if "decisão " in s and s.startswith("Concluído"):
+            s = s.replace("decisão ", "decisão<br>", 1)
+        else:
+            s = re.sub(r"\s*-\s*", "<br>", s, count=1)
+        fig.add_annotation(
+            x=i, y=0, xref="x", yref="paper", yshift=-25,
+            text=s, showarrow=False,
+            font=dict(family="Arial, sans-serif", size=17, color="black"),
+            xanchor="center", yanchor="top",
+        )
+    fig.add_annotation(
+        x=0.5, y=-0.2, xref="paper", yref="paper",
+        text="Desfecho detalhado", showarrow=False,
+        font=dict(family="Arial, sans-serif", size=18, color="black"),
+        xanchor="center", yanchor="top",
+    )
+    fig.update_layout(margin=dict(b=240), legend=dict(y=-0.28))
     return fig
