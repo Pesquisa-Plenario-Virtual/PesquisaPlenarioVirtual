@@ -19,7 +19,19 @@ from .plots import (
 )
 from pages.tramitacao.plots import gt10_tabulador, DIMENSOES
 
-_DIMS_LABEL = list(DIMENSOES.keys())
+
+def dimensoes_disponiveis(colunas) -> dict[str, str]:
+    """Subconjunto de DIMENSOES cujas colunas existem em `colunas`.
+
+    DIMENSOES é compartilhado com a página de Tramitação (9 dimensões);
+    inclusoes_em_pauta.parquet não tem `tramitacao`, `teve_reajuste` nem
+    `teve_sustentacao` — oferecer essas três no tabulador quebra o groupby
+    de gt10_tabulador. Pura (sem Streamlit/pandas) para poder ser testada
+    só com uma lista de nomes de coluna.
+    """
+    disponiveis = set(colunas)
+    return {label: col for label, col in DIMENSOES.items() if col in disponiveis}
+
 
 _PREDEFINIDOS_TAB = [
     ("Ano × Ambiente (inclusões, agrupado)",           "ano",      "ambiente",       "inclusoes", "group"),
@@ -32,7 +44,6 @@ _PREDEFINIDOS_TAB = [
     ("Tipo de Questão × Macro-Desfecho (inclusões)",    "tipo_questao", "macro_desfecho", "inclusoes", "group"),
     ("Tipo de Questão × Desfecho Detalhado (inclusões)","tipo_questao", "desfecho",     "inclusoes", "group"),
 ]
-_LABELS_PRE_TAB = [p[0] for p in _PREDEFINIDOS_TAB]
 
 # ── Catálogo G5–G36 ──────────────────────────────────────────────────────────
 _CATALOGO: list[GraficoSpec] = [
@@ -238,30 +249,36 @@ def _render_interactive_tabulador(df: pd.DataFrame) -> None:
     st.subheader("Tabulador Gráfico Interativo")
     st.caption("Configure livremente os eixos, agrupamento e modo de barras.")
 
+    dims = dimensoes_disponiveis(df.columns)
+    dims_label = list(dims.keys())
+    colunas_ok = set(dims.values())
+    presets = [p for p in _PREDEFINIDOS_TAB if p[1] in colunas_ok and p[2] in colunas_ok]
+    labels_pre = [p[0] for p in presets]
+
     col_pre, _ = st.columns([2, 1])
     with col_pre:
         pre_escolha = st.selectbox(
             "🔖 Pré-definidos",
-            options=["— ou configure manualmente abaixo —"] + _LABELS_PRE_TAB,
+            options=["— ou configure manualmente abaixo —"] + labels_pre,
             index=0,
             key="inc_tab_predef",
         )
 
-    # Sem pré-definido escolhido, cai no primeiro item de _PREDEFINIDOS_TAB
+    # Sem pré-definido escolhido, cai no primeiro item de `presets`
     # (Ano × Ambiente) em vez de índice 0 fixo: DIMENSOES é compartilhado com a
     # página de Tramitação e seu índice 0 ("tramitacao") não existe nesta base.
-    escolha_dims = pre_escolha if not pre_escolha.startswith("—") else _LABELS_PRE_TAB[0]
-    _, px, pg, pm, pbm = next(p for p in _PREDEFINIDOS_TAB if p[0] == escolha_dims)
-    def_x  = _DIMS_LABEL.index(next(k for k, v in DIMENSOES.items() if v == px))
-    def_g  = _DIMS_LABEL.index(next(k for k, v in DIMENSOES.items() if v == pg))
+    escolha_dims = pre_escolha if not pre_escolha.startswith("—") else labels_pre[0]
+    _, px, pg, pm, pbm = next(p for p in presets if p[0] == escolha_dims)
+    def_x  = dims_label.index(next(k for k, v in dims.items() if v == px))
+    def_g  = dims_label.index(next(k for k, v in dims.items() if v == pg))
     def_m  = ["inclusoes", "processos"].index(pm)
     def_bm = ["group", "stack", "100%"].index(pbm)
 
     c1, c2, c3, c4, c5 = st.columns([2, 2, 2, 2, 1])
     with c1:
-        eixo_x_lbl = st.selectbox("Eixo X", _DIMS_LABEL, index=def_x, key="inc_tab_x")
+        eixo_x_lbl = st.selectbox("Eixo X", dims_label, index=def_x, key="inc_tab_x")
     with c2:
-        eixo_y_lbl = st.selectbox("Eixo Y (cor/grupo)", _DIMS_LABEL, index=def_g, key="inc_tab_y")
+        eixo_y_lbl = st.selectbox("Eixo Y (cor/grupo)", dims_label, index=def_g, key="inc_tab_y")
     with c3:
         metrica = st.selectbox(
             "Métrica", ["inclusoes", "processos"], index=def_m, key="inc_tab_m",
@@ -275,8 +292,8 @@ def _render_interactive_tabulador(df: pd.DataFrame) -> None:
     with c5:
         show_values_tab = st.checkbox("Exibir valores", value=False, key="inc_tab_sv")
 
-    eixo_x = DIMENSOES[eixo_x_lbl]
-    eixo_y = DIMENSOES[eixo_y_lbl]
+    eixo_x = dims[eixo_x_lbl]
+    eixo_y = dims[eixo_y_lbl]
 
     if eixo_x == eixo_y:
         st.warning("Eixo X e Eixo Y não podem ser a mesma dimensão.")
