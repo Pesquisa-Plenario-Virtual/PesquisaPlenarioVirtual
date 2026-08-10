@@ -38,8 +38,27 @@ def sumario_por_bloco(catalogo: list[GraficoSpec]) -> dict[str, list[GraficoSpec
     return blocos
 
 
+def distribuir_em_colunas(specs: list[GraficoSpec], n: int = 3) -> list[list[GraficoSpec]]:
+    """Reparte o catálogo em `n` colunas de altura parecida, preservando a ordem.
+
+    Uma coluna por bloco não serve: páginas como Inclusões têm 18 entradas com o
+    mesmo prefixo, então tudo caía numa coluna só e o sumário ficava mais alto
+    que o resto da página.
+    """
+    if not specs:
+        return []
+    n = max(1, min(n, len(specs)))
+    por_coluna, resto = divmod(len(specs), n)
+    colunas, inicio = [], 0
+    for i in range(n):
+        fim = inicio + por_coluna + (1 if i < resto else 0)
+        colunas.append(specs[inicio:fim])
+        inicio = fim
+    return colunas
+
+
 def nome_param_url(key_prefix: str) -> str:
-    """Nome do query param de compartilhamento, isolado por página."""
+    """Nome do query param que semeia a seleção, isolado por página."""
     return f"g_{key_prefix}"
 
 
@@ -62,15 +81,12 @@ def render_pagina(catalogo: list[GraficoSpec], df, key_prefix: str,
                           placeholder="id, título ou palavra da descrição")
     visiveis = filtrar_por_busca(catalogo, busca)
 
-    with st.expander(sumario_titulo, expanded=True):
+    with st.expander(f"{sumario_titulo} ({len(catalogo)})", expanded=False):
         if not visiveis:
             st.warning(f"Nenhum gráfico corresponde a “{busca}”.")
         else:
-            blocos = sumario_por_bloco(visiveis)
-            cols = st.columns(min(len(blocos), 2) or 1)
-            for i, (bloco, specs) in enumerate(blocos.items()):
-                with cols[i % len(cols)]:
-                    st.markdown(f"**Bloco {bloco}**")
+            for coluna, specs in zip(st.columns(3), distribuir_em_colunas(visiveis, 3)):
+                with coluna:
                     for spec in specs:
                         if st.button(spec.rotulo, key=f"{key_prefix}_ir_{spec.id}",
                                      width="stretch"):
@@ -92,10 +108,10 @@ def render_pagina(catalogo: list[GraficoSpec], df, key_prefix: str,
     st.subheader(spec.subtitulo)
     st.caption(spec.descricao)
 
-    render_grafico(spec, df, key=f"{key_prefix}_{spec.id}")
-
-    if st.button("🔗 Copiar link deste gráfico", key=f"{key_prefix}_link"):
-        param = nome_param_url(key_prefix)
-        st.query_params[param] = spec.id
-        st.code(f"?{param}={spec.id}", language=None)
-        st.caption("Link atualizado na barra de endereço.")
+    # Uma entrada pode trazer o próprio renderizador — é assim que o tabulador
+    # de eixos livres entra no catálogo em vez de ficar fixo no rodapé de toda
+    # página, aparecendo embaixo de qualquer gráfico selecionado.
+    if spec.renderer is not None:
+        spec.renderer(df, f"{key_prefix}_{spec.id}")
+    else:
+        render_grafico(spec, df, key=f"{key_prefix}_{spec.id}")

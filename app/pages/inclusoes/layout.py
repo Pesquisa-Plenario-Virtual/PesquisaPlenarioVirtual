@@ -234,8 +234,6 @@ _CATALOGO: list[GraficoSpec] = [
 
 
 def _render_interactive_tabulador(df: pd.DataFrame) -> None:
-    st.subheader("Tabulador Gráfico Interativo")
-    st.caption("Configure livremente os eixos, agrupamento e modo de barras.")
 
     dims = dimensoes_disponiveis(df.columns)
     dims_label = list(dims.keys())
@@ -309,11 +307,18 @@ def _render_interactive_tabulador(df: pd.DataFrame) -> None:
     st.dataframe(pvt.style.format(fmt, na_rep="—"), width="stretch", height=280)
 
 
+
+_CATALOGO.append(GraficoSpec(
+    id="G36",
+    rotulo="G36 — Tabulador interativo (eixos livres)",
+    subtitulo="Tabulador interativo — eixos, agrupamento e métrica livres",
+    descricao="Configure o eixo X, a cor/grupo, a métrica e o modo de barras. "
+              "A tabela abaixo acompanha os mesmos eixos.",
+    fn=None,
+    renderer=lambda df, key: _render_interactive_tabulador(df),
+))
+
 def render_graficos(df: pd.DataFrame, df_dec: pd.DataFrame | None = None) -> None:
     df = _refinar_motivos_diversos(df, df_dec if df_dec is not None else pd.DataFrame())
 
     render_pagina(_CATALOGO, df, key_prefix="inc")
-
-    st.markdown("---")
-    with st.expander("🔧 Tabulador Interativo — eixos livres (G36)"):
-        _render_interactive_tabulador(df)

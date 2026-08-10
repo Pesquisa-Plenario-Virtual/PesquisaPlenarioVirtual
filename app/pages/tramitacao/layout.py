@@ -226,9 +226,16 @@ def _render_tabulador(df: pd.DataFrame, key_suffix: str) -> None:
     st.dataframe(pvt.style.format(fmt, na_rep="—"), width="stretch", height=280)
 
 
+_CATALOGO.append(GraficoSpec(
+    id="T10",
+    rotulo="T10 — Tabulador interativo (eixos livres)",
+    subtitulo="Tabulador interativo — eixos, agrupamento e métrica livres",
+    descricao="Configure o eixo X, a cor/grupo, a métrica e o modo de barras. "
+              "A tabela abaixo acompanha os mesmos eixos.",
+    fn=None,
+    renderer=lambda df, key: _render_tabulador(df, key_suffix=key),
+))
+
+
 def render_graficos(df: pd.DataFrame) -> None:
     render_pagina(_CATALOGO, df, key_prefix="tram")
-
-    st.markdown("---")
-    with st.expander("🔧 Tabulador Interativo — eixos livres (T10)"):
-        _render_tabulador(df, key_suffix="main")

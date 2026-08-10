@@ -167,11 +167,6 @@ def test_apptest_link_compartilhado_ida_e_volta_semeia_uma_vez_so():
     assert at.session_state["pageA_selecionado"] == "G24"
     assert at.selectbox[0].value == "G24"
 
-    # link copiado usa o mesmo nome de param namespaced.
-    at.button(key="pageA_link").click()
-    at.run()
-    assert any(f"?{param}=G24" in c.value for c in at.code)
-
     # o seed só roda uma vez: uma escolha nova do usuário não é revertida
     # pelo query param, mesmo que ele continue presente na sessão.
     at.selectbox[0].select("G5 rótulo")

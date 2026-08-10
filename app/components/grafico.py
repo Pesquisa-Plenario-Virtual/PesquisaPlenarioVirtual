@@ -41,6 +41,10 @@ class GraficoSpec:
     percentual: bool = False
     kwargs_fixos: dict = field(default_factory=dict)
     opcoes_filtro: dict = field(default_factory=dict)
+    # Entrada que renderiza a si mesma, com assinatura (df, key). Usada pelo
+    # tabulador de eixos livres, cujos controles não cabem no conjunto fixo da
+    # casca. Quando presente, render_pagina chama isto em vez de render_grafico.
+    renderer: Callable | None = None
 
 
 def tabela_da_figura(fig: go.Figure) -> pd.DataFrame:

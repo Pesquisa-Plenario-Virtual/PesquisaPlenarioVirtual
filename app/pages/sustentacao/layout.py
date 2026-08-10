@@ -80,8 +80,6 @@ _CATALOGO = [
 
 
 def _render_interactive_tabulador(df: pd.DataFrame) -> None:
-    st.subheader("Tabulador Gráfico Interativo")
-    st.caption("Configure livremente os eixos, agrupamento e modo de barras.")
 
     dims = dimensoes_disponiveis(df.columns)
     dims_label = list(dims.keys())
@@ -154,9 +152,16 @@ def _render_interactive_tabulador(df: pd.DataFrame) -> None:
     st.dataframe(pvt.style.format(fmt, na_rep="—"), width="stretch", height=280)
 
 
+
+_CATALOGO.append(GraficoSpec(
+    id="S9",
+    rotulo="S9 — Tabulador interativo (eixos livres)",
+    subtitulo="Tabulador interativo — eixos, agrupamento e métrica livres",
+    descricao="Configure o eixo X, a cor/grupo, a métrica e o modo de barras. "
+              "A tabela abaixo acompanha os mesmos eixos.",
+    fn=None,
+    renderer=lambda df, key: _render_interactive_tabulador(df),
+))
+
 def render_graficos(df: pd.DataFrame) -> None:
     render_pagina(_CATALOGO, df, key_prefix="sust")
-
-    st.markdown("---")
-    with st.expander("🔧 Tabulador Interativo — eixos livres (S9)"):
-        _render_interactive_tabulador(df)

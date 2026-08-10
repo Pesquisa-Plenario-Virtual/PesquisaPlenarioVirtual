@@ -148,10 +148,17 @@ def _render_interactive_tabulador() -> None:
     )
 
 
+
+_CATALOGO.append(GraficoSpec(
+    id="A6",
+    rotulo="A6 — Tabulador interativo (eixos livres)",
+    subtitulo="Tabulador interativo — eixos, agrupamento e métrica livres",
+    descricao="Configure o eixo X, a cor/grupo, a métrica e o modo de barras. "
+              "A tabela abaixo acompanha os mesmos eixos.",
+    fn=None,
+    renderer=lambda df, key: _render_interactive_tabulador(),
+))
+
 def render_graficos(df: pd.DataFrame) -> None:
     """Ponto de entrada: catálogo A1-A5 + Tabulador Gráfico livre (A6)."""
     render_pagina(_CATALOGO, df, key_prefix="acervo")
-
-    st.markdown("---")
-    with st.expander("🔧 Tabulador Gráfico Interativo — eixos livres (A6)"):
-        _render_interactive_tabulador()
