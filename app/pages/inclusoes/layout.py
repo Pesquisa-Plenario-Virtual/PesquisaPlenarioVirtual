@@ -17,20 +17,8 @@ from .plots import (
     _refinar_motivos_diversos,
     g_pauta_concluidos,
 )
-from pages.tramitacao.plots import gt10_tabulador, DIMENSOES
-
-
-def dimensoes_disponiveis(colunas) -> dict[str, str]:
-    """Subconjunto de DIMENSOES cujas colunas existem em `colunas`.
-
-    DIMENSOES é compartilhado com a página de Tramitação (9 dimensões);
-    inclusoes_em_pauta.parquet não tem `tramitacao`, `teve_reajuste` nem
-    `teve_sustentacao` — oferecer essas três no tabulador quebra o groupby
-    de gt10_tabulador. Pura (sem Streamlit/pandas) para poder ser testada
-    só com uma lista de nomes de coluna.
-    """
-    disponiveis = set(colunas)
-    return {label: col for label, col in DIMENSOES.items() if col in disponiveis}
+from pages.tramitacao.plots import gt10_tabulador
+from dados.filters import dimensoes_disponiveis
 
 
 _PREDEFINIDOS_TAB = [

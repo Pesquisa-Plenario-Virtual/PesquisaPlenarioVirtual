@@ -10,7 +10,7 @@ from .plots import (
     gr7_tipo_vs_reajuste, gr8_desfecho_vs_reajuste,
 )
 from pages.tramitacao.plots import gt10_tabulador
-from pages.inclusoes.layout import dimensoes_disponiveis
+from dados.filters import dimensoes_disponiveis
 
 _PREDEFINIDOS_TAB = [
     ("Ano × Reajuste (inclusões, empilhado 100%)",    "ano",          "teve_reajuste",  "inclusoes", "100%"),
