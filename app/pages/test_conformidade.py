@@ -11,6 +11,8 @@ não os blocos.
 
 from __future__ import annotations
 
+import re
+
 import plotly.graph_objects as go
 
 import paleta
@@ -206,6 +208,33 @@ def test_numero_no_padrao_brasileiro_sem_abreviacao_si():
                 faltando.append(f"{onde} {chave} (max {int(max(valores)):,}) = {eixo.tickformat!r}")
     assert not faltando, "eixo grande sem separador de milhar:\n  " + "\n  ".join(faltando)
     assert not anos_quebrados, "eixo de ano com formato errado:\n  " + "\n  ".join(anos_quebrados)
+
+
+_ROTULO_SEM_SEPARADOR = re.compile(r"^-?\d{4,}$")
+_PERCENTUAL_COM_PONTO = re.compile(r"^-?[\d.]+\.\d+\s*%$")
+
+
+def test_rotulo_de_valor_no_padrao_brasileiro():
+    """Milhar com ponto e decimal com vírgula em TODO rótulo de valor.
+
+    As páginas montavam esse rótulo de três jeitos — já formatado, `str(int(v))`
+    cru e float para o Plotly formatar — então uns gráficos mostravam 2.168 e
+    outros 4230, uns 63,9% e outros 63.9%.
+    """
+    sem_milhar, pct_com_ponto = [], []
+    for pagina, gid, tipo, fig in _todas_as_figuras():
+        for tr in fig.data:
+            texto = getattr(tr, "text", None)
+            if texto is None:
+                continue
+            for v in ([texto] if isinstance(texto, str) else list(texto)):
+                s = str(v).strip()
+                if _ROTULO_SEM_SEPARADOR.match(s):
+                    sem_milhar.append(f"{pagina}/{gid} [{tipo}]: {s}")
+                elif _PERCENTUAL_COM_PONTO.match(s):
+                    pct_com_ponto.append(f"{pagina}/{gid} [{tipo}]: {s}")
+    assert not sem_milhar, "rótulo de 4+ dígitos sem ponto de milhar:\n  " + "\n  ".join(sem_milhar[:15])
+    assert not pct_com_ponto, "percentual com ponto decimal:\n  " + "\n  ".join(pct_com_ponto[:15])
 
 
 def _eixos_de(fig: go.Figure):

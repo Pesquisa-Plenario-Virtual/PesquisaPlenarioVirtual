@@ -14,6 +14,7 @@ import re
 
 import plotly.graph_objects as go
 
+from estilo import br
 from paleta import canonico, conhecido, cor
 
 FONTE = "Times New Roman, Times, serif"
@@ -152,6 +153,66 @@ def _normalizar_traces(fig: go.Figure, dark: bool) -> None:
             tr.line.color = nova
 
 
+# Só dígitos: uma string com ponto ou vírgula já foi formatada por quem a
+# produziu, e "2.168" (milhar) é indistinguível de "2.168" (decimal) pela
+# forma — reinterpretar viraria 2,2. Número cru chega como int/float.
+_SO_NUMERO = re.compile(r"^-?\d+$")
+
+# "63.9%" — percentual com ponto decimal. Aqui não há ambiguidade: antes do "%"
+# o ponto só pode ser decimal, porque ninguém escreve milhar em percentual de
+# um dígito. Uns gráficos produziam "63.9%" e outros "63,9%".
+_PERCENTUAL_PONTO = re.compile(r"^(-?\d+)\.(\d+)(\s*%)$")
+
+
+def texto_numerico_br(valor):
+    """Rótulo de valor no padrão brasileiro, deixando o resto intacto.
+
+    As páginas montam esse rótulo de três jeitos: já formatado com `estilo.br`
+    (Acervo, T1), como `str(int(v))` sem separador (R7, R8) e como float cru
+    para o Plotly formatar (a maioria). Daí uns gráficos mostrarem 2.168 e
+    outros 4230. Aqui tudo converge para o mesmo padrão.
+
+    Só toca no que é número puro: `"5,6%  (159 processos)"` e
+    `"Plenário Virtual: 94,3% (1.048 recursos)"` passam batido.
+    """
+    if isinstance(valor, bool) or valor is None:
+        return valor
+    if isinstance(valor, str):
+        texto = valor.strip()
+        pct = _PERCENTUAL_PONTO.match(texto)
+        if pct:
+            inteiro, decimal, sufixo = pct.groups()
+            return f"{br(float(inteiro), 0)},{decimal}{sufixo}"
+        if not _SO_NUMERO.match(texto):
+            return valor
+        numero = float(texto)
+    elif isinstance(valor, (int, float)):
+        numero = float(valor)
+    else:
+        try:
+            numero = float(valor)
+        except (TypeError, ValueError):
+            return valor
+    if numero != numero:  # NaN
+        return valor
+    return br(numero, 0) if numero == int(numero) else br(numero, 1)
+
+
+def _normalizar_texto_de_valor(fig: go.Figure) -> None:
+    """Aplica o padrão brasileiro aos rótulos de valor de cada trace."""
+    for tr in fig.data:
+        texto = getattr(tr, "text", None)
+        if texto is None:
+            continue
+        if isinstance(texto, str):
+            tr.text = texto_numerico_br(texto)
+        else:
+            try:
+                tr.text = [texto_numerico_br(v) for v in texto]
+            except TypeError:
+                continue
+
+
 def _valores_numericos(fig: go.Figure, campo: str) -> list[float]:
     """Valores numéricos plotados num eixo. Dado categórico (strings) fica fora."""
     valores: list[float] = []
@@ -266,6 +327,7 @@ def aplicar_tema(fig: go.Figure, tema: str = "novo", dark: bool = False) -> go.F
     _normalizar_anotacoes(fig, dark)
     _normalizar_texto_livre(fig)
     _normalizar_numeros(fig)
+    _normalizar_texto_de_valor(fig)
     return fig
 
 
