@@ -237,6 +237,37 @@ def test_rotulo_de_valor_no_padrao_brasileiro():
     assert not pct_com_ponto, "percentual com ponto decimal:\n  " + "\n  ".join(pct_com_ponto[:15])
 
 
+def test_tabulador_tambem_recebe_o_tema():
+    """O tabulador é gráfico como qualquer outro e obedece o mesmo padrão.
+
+    Existiam seis cópias do tabulador, uma por página, e nenhuma chamava
+    aplicar_tema — era o único gráfico do dashboard fora do padrão visual, e
+    nenhum teste pegava porque o portão só varria os catálogos.
+    """
+    from components.tabulador import figura_tabulador
+    from dados.filters import dimensoes_disponiveis
+    from dados.loader import load_inclusoes_em_pauta, load_sessoes_virtuais
+
+    casos = [
+        ("inclusoes", load_inclusoes_em_pauta()),
+        ("sessoes_virtuais", load_sessoes_virtuais()),
+    ]
+    for nome, df in casos:
+        dims = list(dimensoes_disponiveis(df.columns).values())
+        assert len(dims) >= 2, f"{nome} sem dimensões para o tabulador"
+        for barmode in ("group", "stack", "100%"):
+            fig = figura_tabulador(df, dims[0], dims[1], "inclusoes", barmode, True)
+            onde = f"tabulador/{nome} [{barmode}]"
+            assert fig.layout.font.family == FONTE, onde
+            assert fig.layout.separators == ",.", onde
+            for chave in _eixos_de(fig):
+                if chave.startswith("xaxis"):
+                    assert fig.layout[chave].tickangle == 0, f"{onde} {chave}"
+                assert fig.layout[chave].tickfont.family == FONTE, f"{onde} {chave}"
+            for tr in fig.data:
+                assert "Plenário Físico" not in (tr.name or ""), onde
+
+
 def _eixos_de(fig: go.Figure):
     return [c for c in fig.layout if c.startswith("xaxis") or c.startswith("yaxis")]
 

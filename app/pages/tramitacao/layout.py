@@ -5,6 +5,8 @@ import streamlit as st
 import pandas as pd
 from components.catalogo import render_pagina
 from components.grafico import GraficoSpec
+from components.tabulador import render_tabulador
+from dados.filters import dimensoes_disponiveis
 from .plots import (
     gt1_tramitacao,
     gt2_tram_por_classe,
@@ -162,68 +164,7 @@ _DIMS_LABEL = list(DIMENSOES.keys())
 
 
 def _render_tabulador(df: pd.DataFrame, key_suffix: str) -> None:
-    col_pre, _ = st.columns([2, 1])
-    with col_pre:
-        pre_escolha = st.selectbox(
-            "🔖 Pré-definidos",
-            options=["— ou configure manualmente abaixo —"] + _LABELS_PRE,
-            index=0,
-            key=f"tab_predefinido_{key_suffix}",
-        )
-
-    if pre_escolha.startswith("—"):
-        def_x, def_g, def_m, def_bm = 0, 1, 0, 0
-    else:
-        _, px, pg, pm, pbm = next(p for p in _PREDEFINIDOS if p[0] == pre_escolha)
-        def_x  = _DIMS_LABEL.index(next(k for k, v in DIMENSOES.items() if v == px))
-        def_g  = _DIMS_LABEL.index(next(k for k, v in DIMENSOES.items() if v == pg))
-        def_m  = ["inclusoes", "processos"].index(pm)
-        def_bm = ["group", "stack", "100%"].index(pbm)
-
-    c1, c2, c3, c4, c5 = st.columns([2, 2, 2, 2, 1])
-    with c1:
-        eixo_x_lbl = st.selectbox("Eixo X",    _DIMS_LABEL, index=def_x, key=f"tab_x_{key_suffix}")
-    with c2:
-        grupo_lbl  = st.selectbox("Cor/Grupo", _DIMS_LABEL, index=def_g, key=f"tab_g_{key_suffix}")
-    with c3:
-        metrica = st.selectbox(
-            "Métrica", ["inclusoes", "processos"], index=def_m, key=f"tab_m_{key_suffix}",
-            format_func=lambda v: "Inclusões em pauta" if v == "inclusoes" else "Processos distintos",
-        )
-    with c4:
-        barmode = st.selectbox(
-            "Modo", ["group", "stack", "100%"], index=def_bm, key=f"tab_bm_{key_suffix}",
-            format_func=lambda v: {"group": "Agrupado", "stack": "Empilhado", "100%": "Empilhado 100%"}[v],
-        )
-    with c5:
-        show_values = st.checkbox("Exibir valores", value=False, key=f"tab_sv_{key_suffix}")
-
-    eixo_x = DIMENSOES[eixo_x_lbl]
-    grupo  = DIMENSOES[grupo_lbl]
-
-    if eixo_x == grupo:
-        st.warning("Eixo X e Cor/Grupo não podem ser a mesma dimensão.")
-        return
-
-    st.plotly_chart(gt10_tabulador(df, eixo_x, grupo, metrica, barmode, show_values), width="stretch")
-
-    st.markdown("---")
-    st.subheader("Tabela — mesmos eixos")
-    d = df.copy()
-    d["tipo_questao"] = d["tipo_questao"].replace({"IJ": "QI"})
-    if metrica == "processos":
-        d = d.drop_duplicates("incidente")
-    tab = d.groupby([eixo_x, grupo], observed=True).size().reset_index(name="n")
-    if barmode == "100%":
-        totais = tab.groupby(eixo_x)["n"].transform("sum")
-        tab["n"] = (tab["n"] / totais * 100).round(1)
-    pvt = tab.pivot_table(index=eixo_x, columns=grupo, values="n", fill_value=0)
-    pvt["Total"] = pvt.sum(axis=1)
-    pvt.loc["Total"] = pvt.sum()
-    pvt = pvt.reset_index()
-    pvt[pvt.columns[0]] = pvt[pvt.columns[0]].astype(str)
-    fmt = {c: "{:,.0f}" for c in pvt.columns if pvt[c].dtype.kind in "iuf"}
-    st.dataframe(pvt.style.format(fmt, na_rep="—"), width="stretch", height=280)
+    render_tabulador(df, key_suffix, dimensoes_disponiveis(df.columns), _PREDEFINIDOS)
 
 
 _CATALOGO.append(GraficoSpec(

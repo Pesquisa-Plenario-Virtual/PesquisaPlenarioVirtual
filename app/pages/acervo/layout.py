@@ -5,6 +5,7 @@ import streamlit as st
 import pandas as pd
 from components.catalogo import render_pagina
 from components.grafico import GraficoSpec
+from components.tabulador import render_tabulador
 from .plots import plotar_grafico_stf
 from pages.tramitacao.plots import gt10_tabulador
 from dados.filters import dimensoes_disponiveis
@@ -85,68 +86,16 @@ _CATALOGO = [
 ]
 
 
-def _render_interactive_tabulador() -> None:
+def _render_interactive_tabulador(_df=None, key: str = "acervo_tab") -> None:
+    # O acervo histórico não tem as dimensões do tabulador (é ano x classe x
+    # métrica agregada), então este bloco trabalha sobre as inclusões em pauta.
     from dados.loader import load_inclusoes_em_pauta
     df_inc = load_inclusoes_em_pauta()
-
-    st.subheader("Tabulador Gráfico Interativo")
     st.caption(
-        "Configure livremente os eixos, agrupamento e modo de barras sobre o dataset "
-        "de inclusões em pauta — diferente dos gráficos de evolução acima, que usam o acervo histórico."
+        "Sobre o dataset de inclusões em pauta — diferente dos gráficos de "
+        "evolução acima, que usam o acervo histórico."
     )
-
-    dims = dimensoes_disponiveis(df_inc.columns)
-    dims_label = list(dims.keys())
-    colunas_ok = set(dims.values())
-    presets = [p for p in _PREDEFINIDOS_ACERVO if p[1] in colunas_ok and p[2] in colunas_ok]
-    labels_pre = [p[0] for p in presets]
-
-    col_pre, _ = st.columns([2, 1])
-    with col_pre:
-        pre_escolha = st.selectbox(
-            "🔖 Pré-definidos",
-            options=["— ou configure manualmente abaixo —"] + labels_pre,
-            index=0,
-            key="acervo_predefinido",
-        )
-
-    escolha_dims = pre_escolha if not pre_escolha.startswith("—") else labels_pre[0]
-    _, px, pg, pm, pbm = next(p for p in presets if p[0] == escolha_dims)
-    def_x  = dims_label.index(next(k for k, v in dims.items() if v == px))
-    def_g  = dims_label.index(next(k for k, v in dims.items() if v == pg))
-    def_m  = ["inclusoes", "processos"].index(pm)
-    def_bm = ["group", "stack", "100%"].index(pbm)
-
-    c1, c2, c3, c4, c5 = st.columns([2, 2, 2, 2, 1])
-    with c1:
-        eixo_x_lbl = st.selectbox("Eixo X",    dims_label, index=def_x, key="acervo_tab_x_v2")
-    with c2:
-        grupo_lbl  = st.selectbox("Cor/Grupo", dims_label, index=def_g, key="acervo_tab_g_v2")
-    with c3:
-        metrica = st.selectbox(
-            "Métrica", ["inclusoes", "processos"], index=def_m, key="acervo_tab_m",
-            format_func=lambda v: "Inclusões em pauta" if v == "inclusoes" else "Processos distintos",
-        )
-    with c4:
-        barmode = st.selectbox(
-            "Modo", ["group", "stack", "100%"], index=def_bm, key="acervo_tab_bm",
-            format_func=lambda v: {"group": "Agrupado", "stack": "Empilhado", "100%": "Empilhado 100%"}[v],
-        )
-    with c5:
-        show_values = st.checkbox("Exibir valores", value=False, key="acervo_tab_sv")
-
-    eixo_x = dims[eixo_x_lbl]
-    grupo  = dims[grupo_lbl]
-
-    if eixo_x == grupo:
-        st.warning("Eixo X e Cor/Grupo não podem ser a mesma dimensão.")
-        return
-
-    st.plotly_chart(
-        gt10_tabulador(df_inc, eixo_x, grupo, metrica, barmode, show_values),
-        width="stretch",
-    )
-
+    render_tabulador(df_inc, key, dimensoes_disponiveis(df_inc.columns), _PREDEFINIDOS_ACERVO)
 
 
 _CATALOGO.append(GraficoSpec(

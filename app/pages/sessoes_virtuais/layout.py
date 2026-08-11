@@ -5,6 +5,7 @@ import streamlit as st
 import pandas as pd
 from components.catalogo import render_pagina
 from components.grafico import GraficoSpec
+from components.tabulador import render_tabulador
 from .plots import (
     g0_sessoes_vs_inclusoes,
     g3_1_distribuicao_sessoes, g3_2_faixa_sessoes_classe,
@@ -220,80 +221,12 @@ def _montar_catalogo(df_final: pd.DataFrame) -> list[GraficoSpec]:
 
 # ── Tabulador interativo ──────────────────────────────────────────────────────
 
-def _render_interactive_tabulador(df_s: pd.DataFrame) -> None:
-
-    dims = _dims_disponiveis(df_s.columns)
-    dims_label = list(dims.keys())
-    colunas_ok = set(dims.values())
-    presets = [p for p in _PREDEFINIDOS if p[1] in colunas_ok and p[2] in colunas_ok]
-    labels_pre = [p[0] for p in presets]
-
-    col_pre, _ = st.columns([2, 1])
-    with col_pre:
-        pre_escolha = st.selectbox(
-            "🔖 Pré-definidos",
-            options=["— ou configure manualmente abaixo —"] + labels_pre,
-            index=0,
-            key="sv_predefinido",
-        )
-
-    if pre_escolha.startswith("—"):
-        def_x, def_g, def_m, def_bm = 0, 1, 0, 0
-    else:
-        _, px, pg, pm, pbm = next(p for p in presets if p[0] == pre_escolha)
-        def_x  = dims_label.index(next(k for k, v in dims.items() if v == px))
-        def_g  = dims_label.index(next(k for k, v in dims.items() if v == pg))
-        def_m  = ["sessoes", "processos"].index(pm)
-        def_bm = ["group", "stack", "100%"].index(pbm)
-
-    c1, c2, c3, c4, c5 = st.columns([2, 2, 2, 2, 1])
-    with c1:
-        eixo_x_lbl = st.selectbox("Eixo X",    dims_label, index=def_x, key="sv_tab_x")
-    with c2:
-        grupo_lbl  = st.selectbox("Cor/Grupo", dims_label, index=def_g, key="sv_tab_g")
-    with c3:
-        metrica = st.selectbox(
-            "Métrica", ["sessoes", "processos"], index=def_m, key="sv_tab_m",
-            format_func=lambda v: "Sessões" if v == "sessoes" else "Processos distintos",
-        )
-    with c4:
-        barmode = st.selectbox(
-            "Modo", ["group", "stack", "100%"], index=def_bm, key="sv_tab_bm",
-            format_func=lambda v: {"group": "Agrupado", "stack": "Empilhado", "100%": "Empilhado 100%"}[v],
-        )
-    with c5:
-        show_values = st.checkbox("Exibir valores", value=False, key="sv_tab_sv")
-
-    eixo_x = dims[eixo_x_lbl]
-    grupo  = dims[grupo_lbl]
-
-    if eixo_x == grupo:
-        st.warning("Eixo X e Cor/Grupo não podem ser a mesma dimensão.")
-        return
-
-    gt_metrica = "processos" if metrica == "processos" else "inclusoes"
-    fig = gt10_tabulador(df_s, eixo_x, grupo, gt_metrica, barmode, show_values)
-    if metrica == "sessoes":
-        fig.update_yaxes(title_text="Nº de sessões")
-    st.plotly_chart(fig, width="stretch")
-
-    st.markdown("---")
-    st.subheader("Tabela — mesmos eixos")
-    d = df_s.copy()
-    d["tipo_questao"] = d["tipo_questao"].replace({"IJ": "QI"})
-    if metrica == "processos":
-        d = d.drop_duplicates("incidente")
-    tab = d.groupby([eixo_x, grupo], observed=True).size().reset_index(name="n")
-    if barmode == "100%":
-        totais = tab.groupby(eixo_x)["n"].transform("sum")
-        tab["n"] = (tab["n"] / totais * 100).round(1)
-    pvt = tab.pivot_table(index=eixo_x, columns=grupo, values="n", fill_value=0)
-    pvt["Total"] = pvt.sum(axis=1)
-    pvt.loc["Total"] = pvt.sum()
-    pvt = pvt.reset_index()
-    pvt[pvt.columns[0]] = pvt[pvt.columns[0]].astype(str)
-    fmt = {c: "{:,.0f}" for c in pvt.columns if pvt[c].dtype.kind in "iuf"}
-    st.dataframe(pvt.style.format(fmt, na_rep="—"), width="stretch", height=280)
+def _render_interactive_tabulador(df_s: pd.DataFrame, key: str = "sv_tab") -> None:
+    render_tabulador(
+        df_s, key, _dims_disponiveis(df_s.columns), _PREDEFINIDOS,
+        metricas={"sessoes": "Sessões", "processos": "Processos distintos"},
+        titulo_y={"sessoes": "Nº de sessões"},
+    )
 
 
 # ── Renderização principal ────────────────────────────────────────────────────
