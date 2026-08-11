@@ -152,6 +152,58 @@ def _normalizar_traces(fig: go.Figure, dark: bool) -> None:
             tr.line.color = nova
 
 
+def _valores_numericos(fig: go.Figure, campo: str) -> list[float]:
+    """Valores numéricos plotados num eixo. Dado categórico (strings) fica fora."""
+    valores: list[float] = []
+    for tr in fig.data:
+        dados = getattr(tr, campo, None)
+        if dados is None:
+            continue
+        for v in dados:
+            if isinstance(v, bool) or isinstance(v, str):
+                continue
+            try:
+                f = float(v)
+            except (TypeError, ValueError):
+                continue
+            if f == f:  # descarta NaN
+                valores.append(f)
+    return valores
+
+
+def _parece_ano(valores: list[float]) -> bool:
+    """Eixo de ano, não de contagem: inteiros dentro de uma faixa plausível.
+
+    Sem isso, agrupar milhar transformaria 2025 em '2.025'. Um eixo de contagem
+    que por acaso caia todo entre 1900 e 2100 perderia o separador — perda
+    pequena e reversível, muito melhor que estragar toda série anual.
+    """
+    return bool(valores) and all(1900 <= v <= 2100 and v == int(v) for v in valores)
+
+
+def _normalizar_numeros(fig: go.Figure) -> None:
+    """Milhar com ponto e decimal com vírgula, no padrão brasileiro.
+
+    Sem isto o Plotly abrevia em SI e o eixo mostra '6k' e '8k' no lugar de
+    6.000 e 8.000. `separators` também acerta o hover; `tickformat=","` liga o
+    agrupamento sem forçar inteiro, então um eixo percentual continua com a
+    casa decimal.
+    """
+    fig.update_layout(separators=",.")
+    for chave in fig.layout:
+        if not (chave.startswith("xaxis") or chave.startswith("yaxis")):
+            continue
+        eixo = fig.layout[chave]
+        if eixo.tickformat:  # formato escolhido pelo gráfico manda
+            continue
+        valores = _valores_numericos(fig, "y" if chave.startswith("yaxis") else "x")
+        if _parece_ano(valores):
+            eixo.tickformat = "d"
+            continue
+        if valores and max(abs(v) for v in valores) >= 1000:
+            eixo.tickformat = ","
+
+
 def _normalizar_anotacoes(fig: go.Figure, dark: bool) -> None:
     anotacao = _fonte("anotacao", dark)
     for ann in fig.layout.annotations:
@@ -213,6 +265,7 @@ def aplicar_tema(fig: go.Figure, tema: str = "novo", dark: bool = False) -> go.F
     _normalizar_traces(fig, dark)
     _normalizar_anotacoes(fig, dark)
     _normalizar_texto_livre(fig)
+    _normalizar_numeros(fig)
     return fig
 
 

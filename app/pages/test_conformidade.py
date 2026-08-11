@@ -182,6 +182,36 @@ def test_nenhum_texto_diz_plenario_fisico():
             assert "Plenário Físico" not in t, f'{pagina}/{gid} [{tipo}]: "{t}"'
 
 
+def test_numero_no_padrao_brasileiro_sem_abreviacao_si():
+    """Eixo mostra 8.000, nunca '8k'; e ano continua 2025, nunca '2.025'.
+
+    Sem tickformat o Plotly abrevia em SI a partir de mil. Com agrupamento
+    aplicado sem cuidado, o eixo de ano viraria '2.025' — daí o guard.
+    """
+    from tema import _parece_ano, _valores_numericos
+
+    faltando, anos_quebrados = [], []
+    for pagina, gid, tipo, fig in _todas_as_figuras():
+        onde = f"{pagina}/{gid} [{tipo}]"
+        assert fig.layout.separators == ",.", f"{onde} sem separators brasileiros"
+        for chave in _eixos_de(fig):
+            eixo = fig.layout[chave]
+            valores = _valores_numericos(fig, "y" if chave.startswith("yaxis") else "x")
+            if not valores:
+                continue
+            if _parece_ano(valores):
+                if eixo.tickformat != "d":
+                    anos_quebrados.append(f"{onde} {chave}={eixo.tickformat!r}")
+            elif max(abs(v) for v in valores) >= 1000 and eixo.tickformat != ",":
+                faltando.append(f"{onde} {chave} (max {int(max(valores)):,}) = {eixo.tickformat!r}")
+    assert not faltando, "eixo grande sem separador de milhar:\n  " + "\n  ".join(faltando)
+    assert not anos_quebrados, "eixo de ano com formato errado:\n  " + "\n  ".join(anos_quebrados)
+
+
+def _eixos_de(fig: go.Figure):
+    return [c for c in fig.layout if c.startswith("xaxis") or c.startswith("yaxis")]
+
+
 def test_cor_de_serie_vem_da_paleta():
     """Cor sólida de série tem que ser um degrau autorizado.
 
