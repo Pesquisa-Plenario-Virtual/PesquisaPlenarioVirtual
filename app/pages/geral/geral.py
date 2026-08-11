@@ -11,25 +11,25 @@ if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
 from dados.loader import load_arquivos_concatenados
-from components.filters import render_sidebar_filters
 from dados.filters import filter_by_values, filter_by_year_range
-from pages.geral.layout import render_metricas, render_timeline, render_tabela_processos
+from pages.geral.layout import render_filtros, render_metricas, render_timeline, render_tabela_processos
 
 df = load_arquivos_concatenados()
 
 st.title("Visão Geral")
 st.markdown(
     "Panorama dos processos do **Plenário Virtual** do STF. "
-    "Use os filtros no sidebar para recortar por classe, tipo e período."
+    "Use os filtros abaixo para recortar por classe e período."
 )
 
 # ── Filtros ───────────────────────────────────────────────────────────────────
-filtros = render_sidebar_filters(df)
-ai, af = filtros["periodo"]
+# Inline, junto do conteúdo que recortam — as outras sete páginas fazem assim.
+# O sidebar fica só para preferências globais do app (tema e modo noturno).
+classes, (ai, af) = render_filtros(df)
 
 df_f = df
-if filtros["classes"]:
-    df_f = filter_by_values(df_f, "classe", filtros["classes"])
+if classes is not None:
+    df_f = filter_by_values(df_f, "classe", classes)
 if ai and af:
     df_f = filter_by_year_range(df_f, start=ai, end=af)
 

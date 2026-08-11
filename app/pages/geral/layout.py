@@ -149,6 +149,38 @@ def render_timeline() -> None:
     st.plotly_chart(aplicar_tema(fig, tema=tema_atual, dark=dark), width="stretch")
 
 
+def render_filtros(df: pd.DataFrame) -> tuple[list[str] | None, tuple[int | None, int | None]]:
+    """Filtros de classe e período, inline, na mesma coluna do conteúdo.
+
+    As outras sete páginas concentram os filtros junto dos gráficos; esta era a
+    única que os punha no sidebar. Devolve (classes, (ano_inicio, ano_fim));
+    `classes` é None quando a coluna não existe, para distinguir "não há filtro"
+    de "nada selecionado" — com a lista vazia o recorte tem que ficar vazio.
+    """
+    col_classe, col_periodo = st.columns([1, 2])
+
+    classes = None
+    if "classe" in df.columns:
+        opcoes = sorted(str(v) for v in df["classe"].dropna().unique())
+        with col_classe:
+            classes = st.multiselect("Classe", opcoes, default=opcoes, key="geral_f_classe")
+
+    anos = pd.to_numeric(df.get("ano"), errors="coerce").dropna() if "ano" in df.columns else pd.Series(dtype="float")
+    if anos.empty and "data_protocolo" in df.columns:
+        anos = pd.to_datetime(df["data_protocolo"], errors="coerce").dt.year.dropna()
+
+    periodo: tuple[int | None, int | None] = (None, None)
+    if not anos.empty:
+        lo, hi = int(anos.min()), int(anos.max())
+        if lo < hi:
+            with col_periodo:
+                periodo = st.slider("Período", lo, hi, (lo, hi), step=1, key="geral_f_periodo")
+        else:
+            periodo = (lo, hi)
+
+    return classes, periodo
+
+
 def render_metricas(df: pd.DataFrame) -> None:
     c1, c2, c3 = st.columns(3)
     c1.metric("Total (filtrado)", len(df))
@@ -194,19 +226,18 @@ def render_tabela_processos(df: pd.DataFrame) -> None:
 
     tab = _build_tabela_processos(df)
 
-    col1, col2, col3 = st.columns(3)
+    # Sem filtro de classe aqui: o filtro no topo da página já recortou o `df`
+    # que chega nesta função. Dois seletores "Classe" na mesma tela, um por
+    # cima do outro, só confundem sobre qual está valendo.
+    col1, col2 = st.columns(2)
     with col1:
-        classes   = st.multiselect("Classe",     sorted(tab["Classe"].unique()),     key="geral_classe")
-    with col2:
         if "Tramitação" in tab.columns and tab["Tramitação"].nunique() > 1:
             ambientes = st.multiselect("Tramitação", sorted(tab["Tramitação"].unique()), key="geral_tram")
         else:
             ambientes = []
-    with col3:
+    with col2:
         busca = st.text_input("Buscar processo", key="geral_busca", placeholder="ex: ADI 3423")
 
-    if classes:
-        tab = tab[tab["Classe"].isin(classes)]
     if ambientes:
         tab = tab[tab["Tramitação"].isin(ambientes)]
     if busca:

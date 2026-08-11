@@ -35,8 +35,14 @@ def filter_by_values(
     column: str,
     values: list | set | None,
 ) -> pd.DataFrame:
-    """Mantém apenas linhas cujo valor da coluna está em values."""
-    if not values or column not in df.columns:
+    """Mantém apenas linhas cujo valor da coluna está em values.
+
+    `None` significa "sem filtro" e devolve o dataframe inteiro; uma lista
+    vazia significa "o usuário desmarcou tudo" e devolve zero linhas. Tratar os
+    dois como a mesma coisa faz o dashboard mostrar tudo justamente quando o
+    usuário pediu nada — o inverso do que ele fez.
+    """
+    if values is None or column not in df.columns:
         return df
     return df[df[column].isin(values)].copy()
 
