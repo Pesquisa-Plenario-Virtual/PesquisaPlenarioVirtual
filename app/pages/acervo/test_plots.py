@@ -63,7 +63,33 @@ def test_classe_usa_cor_do_bloco1_e_titulo_dinamico():
     assert fig.layout.xaxis.tickangle == 0
 
 
+
+def test_recorte_de_periodo_nao_estica_o_eixo():
+    """Marcador fora do recorte esticava o eixo e espremia as barras.
+
+    A posição da ER 51 vinha de _frac_ano(1988, ...), um ano-base fixo. Com o
+    filtro em 2021-2025 (5 categorias, índices 0-4) a linha caía em x=28,5, o
+    Plotly estendia o eixo até lá e as barras ocupavam um sexto da largura.
+    """
+    df = _df_fake()
+    for lo, hi in [(2016, 2025), (2021, 2025), (2016, 2016), (2018, 2020)]:
+        sub = df[df["ano"].between(lo, hi)]
+        if sub.empty:
+            continue
+        fig = plotar_grafico_stf(sub, "TOTAL", "quantidade_ativos", "Processos Ativos")
+        n = sub["ano"].nunique()
+        limite = n - 0.5
+        xs = [float(s.x0) for s in fig.layout.shapes if isinstance(s.x0, (int, float))]
+        xs += [float(s.x1) for s in fig.layout.shapes if isinstance(s.x1, (int, float))]
+        if xs:
+            assert max(xs) <= limite + 0.01, (
+                f"recorte {lo}-{hi}: shape em x={max(xs):.2f} com {n} categorias "
+                f"(limite {limite})")
+
+
 if __name__ == "__main__":
-    test_total_usa_azul_e_tem_er_espin()
-    test_classe_usa_cor_do_bloco1_e_titulo_dinamico()
+    # descoberta automática: chamar por nome deixava teste novo fora da execução
+    for _nome, _fn in sorted(globals().items()):
+        if _nome.startswith("test_"):
+            _fn()
     print("ok")
