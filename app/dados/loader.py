@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 from huggingface_hub import hf_hub_download
 
-from config import HF_REPO_ID, HF_FILES
+from dados.config import HF_REPO_ID, HF_FILES
 
 
 def _try_local_parquet(filename: str) -> pd.DataFrame | None:

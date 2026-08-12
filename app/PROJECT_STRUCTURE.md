@@ -1,213 +1,197 @@
 # Estrutura do Projeto
 
-> Este documento descreve a organização do projeto, a responsabilidade de cada camada e as regras que devem ser seguidas ao adicionar novas funcionalidades. Serve como referência para qualquer pessoa ou modelo que precise trabalhar no código.
+Onde cada coisa mora, por quê, e as regras que mantêm isso verdadeiro. Serve de
+referência para qualquer pessoa ou modelo que precise trabalhar no código.
 
 ---
 
-## Árvore de Arquivos
+## Árvore
 
 ```
 app/
-├── components/
-│   ├── __init__.py
-│   └── filters.py          # Widgets reutilizáveis do sidebar (UI apenas)
+├── app.py                  # entrada: navegação + preferências globais (tema, modo noturno)
 │
-├── data/
-│   ├── __init__.py
-│   ├── filters.py          # Lógica pura de filtragem (sem Streamlit)
-│   └── loader.py           # Carregamento e cache dos datasets
+├── visual/                 # cor, tipografia e mobiliário de gráfico
+│   ├── __init__.py         # API pública — as páginas importam daqui
+│   ├── paleta.py           # qual cor cada variável do domínio tem
+│   ├── tema.py             # o que fazer com a figura já construída
+│   └── base.py             # marcadores ER/ESPIN, formatação brasileira, layout base
 │
-├── pages/
-│   ├── __init__.py
-│   ├── acervo/             # Página: Acervo Histórico
-│   │   ├── acervo.py       # Orquestrador da página
-│   │   ├── plots.py        # Constrói figuras Plotly (sem Streamlit)
-│   │   └── layout.py       # Renderiza figuras e textos com st.*
-│   │
-│   └── visal_geral/        # Página: Visão Geral (mesma estrutura)
+├── components/             # cascas de renderização reutilizáveis
+│   ├── grafico.py          # GraficoSpec + controles + tabela espelhada
+│   ├── catalogo.py         # busca, sumário navegável, seletor de visualização
+│   └── tabulador.py        # tabulador de eixos livres, compartilhado por 6 páginas
 │
-├── app.py                  # Entrada da aplicação
-├── config.py               # Constantes e configurações globais
-└── requirements.txt
+├── dados/                  # carga e filtragem
+│   ├── config.py           # repositório HF e mapa de arquivos
+│   ├── loader.py           # download + cache; devolve dataframe bruto
+│   └── filters.py          # filtragem pura, sem Streamlit
+│
+└── pages/
+    ├── acervo/  inclusoes/  reajuste/  tramitacao/
+    ├── sustentacao/  sessoes_virtuais/  narrativa/     # as oito da Pessoa 2
+    ├── geral/
+    └── bloco1_acervo/  bloco2_inclusoes/  bloco3_pandemia/   # Blocos Empíricos
 ```
 
 ---
 
-## Responsabilidade de Cada Camada
+## A regra que este projeto aprendeu do jeito difícil
 
-### `app.py`
+**O pipeline corrige o dado. O app nunca o remenda.**
 
-Ponto de entrada da aplicação. Define navegação entre páginas e configurações globais que se aplicam a toda a aplicação. Não contém lógica de dados nem construção de gráficos.
+Havia um CSV de 72 linhas dentro de `dados/` que reclassificava `tipo_questao`
+em tempo de carga, contornando um bug de regex no extrator de
+`src/inclusao_pauta.py`. O remendo escondia o problema: o parquet publicado no
+Hugging Face continuava errado, e quem o consumisse fora deste app recebia a
+classificação incorreta sem ter como saber. Nada importava o CSV como módulo —
+ele era lido por caminho de arquivo, então sumia do grafo de dependências e só
+reapareceu quando quebrou.
 
----
-
-### `config.py`
-
-Constantes globais do projeto: nomes de colunas padrão, paletas de cores, intervalos de ano, URLs de datasets, chaves de secrets. Qualquer valor que apareça em mais de um arquivo deve vir daqui.
-
-```python
-# Exemplo do que pertence aqui
-ANO_MIN = 1988
-ANO_MAX = 2025
-CLASSES = ["ADI", "ADC", "ADO", "ADPF"]
-COLUNA_ANO = "ano"
-COLUNA_QUANTIDADE = "quantidade_ativos"
-COLUNA_CLASSE = "classe"
-```
+Se um número está errado, o conserto é no pipeline e o parquet é reprocessado.
+`scripts/reprocessar_inclusoes.py` faz a comparação com portão de regressão.
 
 ---
 
-### `data/loader.py`
+## Camada visual
 
-Responsável por carregar os datasets e aplicar cache. Não filtra, não agrega, não renderiza. Retorna sempre um dataframe bruto.
+Três módulos porque são três papéis, não por acidente.
 
-```python
-# Padrão esperado
-@st.cache_data
-def load_evolucao_acervo() -> pd.DataFrame:
-    ...
-```
+`paleta` responde *de que cor é o Plenário Virtual*. É um dicionário semântico,
+sem Plotly e sem Streamlit, validado para daltonismo em modo claro e escuro.
+Os hex não devem ser alterados sem revalidar com o script da skill `dataviz`.
 
----
+`tema` responde *o que fazer com uma figura pronta*. Percorre a figura e impõe
+fonte, tamanhos, ângulo de tick, rótulo canônico, cor da paleta e formatação
+numérica brasileira. É o que permite padronizar ~90 gráficos sem editar ~90
+funções, e o que o alternador de tema liga e desliga.
 
-### `data/filters.py`
+`base` é o mobiliário de domínio usado *enquanto* a figura é construída:
+marcadores de Emenda Regimental, sombreamento da ESPIN, `br()` e o layout de
+referência. O nome não é `legado` de propósito — tanto a camada nova quanto os
+Blocos Empíricos consomem daqui.
 
-Lógica pura de filtragem. Não importa Streamlit. Recebe dataframes e parâmetros, devolve dataframes. Pode ser usada em notebooks e testes sem nenhuma dependência de UI.
-
-Funções disponíveis:
-
-- `filter_by_values(df, column, values)` — filtra por lista de valores
-- `filter_by_date_range(df, date_col, start, end)` — filtra por intervalo de datas
-- `filter_by_text_search(df, columns, query)` — busca textual em múltiplas colunas
+Fluxo: a função de gráfico monta a figura com `base`; a casca passa o resultado
+por `tema`, que consulta `paleta`.
 
 ---
 
-### `components/filters.py`
-
-Renderiza widgets no sidebar e retorna os valores selecionados. Não filtra dados, não acessa arquivos. A função principal é `render_sidebar_filters(df)`, que retorna um dicionário com todos os valores dos filtros ativos.
-
-```python
-# O que retorna
-{
-    "periodo": (2000, 2025),
-    "classes": ["ADI", "ADPF"],
-}
-```
-
-Funções adicionais disponíveis:
-
-- `class_selector_with_geral(df)` — seletor de classe com opção de visão agregada
-- `show_values_toggle()` — toggle global para exibir valores nos gráficos
-- `prepare_class_or_geral(df, value_col, class_col, selection)` — agrega ou não conforme seleção
-
----
-
-### `pages/<nome_pagina>/`
+## Como uma página funciona
 
 Cada página é uma pasta com três arquivos:
 
-#### `plots.py`
+- **`plots.py`** constrói e devolve `go.Figure`. Não importa Streamlit.
+- **`layout.py`** declara o catálogo (`list[GraficoSpec]`) e chama a casca.
+- **`<pagina>.py`** carrega o dado, aplica o recorte e chama o layout.
 
-Constrói e retorna objetos `go.Figure` do Plotly. Não importa Streamlit. Recebe um dataframe já filtrado e parâmetros de exibição, devolve a figura pronta.
-
-```python
-# Assinatura padrão
-def fig_nome_do_grafico(df: pd.DataFrame, **opcoes) -> go.Figure:
-    ...
-    return fig
-```
-
-#### `layout.py`
-
-Renderiza a página usando `st.*`. Importa as funções de `plots.py` e chama `st.plotly_chart`. Contém também subheaders, captions, expanders e textos analíticos. Não contém lógica de filtragem nem construção de figuras.
+O catálogo é a superfície inteira da página. Cada entrada declara o que oferece:
 
 ```python
-# Assinatura padrão
-def render_graficos(df: pd.DataFrame, show_values: bool) -> None:
-    ...
+GraficoSpec(
+    id="T6",
+    rotulo="T6 — Desfecho detalhado por ambiente de tramitação",
+    subtitulo="...", descricao="...",
+    fn=gt6_desfecho_por_tram,
+    tipos=("barra", "barra_h", "linha"),      # formas alternativas oferecidas
+    filtros=("classe", "tipo_questao", "periodo"),
+    percentual=True,                           # só se o toggle mudar o resultado
+)
 ```
 
-#### `<nome_pagina>.py`
+A casca cuida do resto: controles, filtros, conversão de forma, tema, e a tabela
+— que é **derivada da própria figura**, então não pode divergir do gráfico.
 
-Orquestrador da página. Faz exatamente três coisas: carrega os dados, aplica os filtros e chama o layout. Não constrói gráficos, não renderiza widgets avulsos, não contém lógica de negócio.
+Uma entrada pode trazer o próprio renderizador via `renderer` quando seus
+controles não cabem no conjunto fixo. É assim que o tabulador entra no catálogo.
+
+### Regras de preenchimento que já custaram bug
+
+- `filtros` só aceita nome cuja coluna **existe** no dataframe da página. Um
+  filtro apontando para coluna ausente não faz nada em silêncio — ou derruba a
+  página, se o tabulador tentar usá-la.
+- `percentual=True` só se alternar a escala **mudar o resultado**. Quatro
+  funções declaravam `proporcao` e ignoravam o parâmetro; o toggle aparecia e
+  não fazia nada.
+- Título e subtítulo não devem fixar período. A casca oferece filtro de tempo,
+  então qualquer intervalo escrito à mão vira mentira no primeiro recorte.
+  Derive do dataframe.
+
+---
+
+## Fronteiras
+
+| Arquivo | `st.*` | Plotly | Filtra dado |
+| --- | --- | --- | --- |
+| `dados/filters.py` | não | não | sim |
+| `dados/loader.py` | só `st.cache_data` | não | não |
+| `visual/paleta.py` | não | não | não |
+| `visual/tema.py` | não | sim | não |
+| `visual/base.py` | não | sim | não |
+| `components/*` | sim | só recebe figura | só recorte declarado |
+| `pages/*/plots.py` | não | sim | não |
+| `pages/*/layout.py` | sim | só recebe figura | não |
+| `pages/*/<pagina>.py` | só configuração | não | só orquestração |
+
+Os dados sempre fluem para baixo. Nenhuma camada inferior conhece a superior, e
+**nenhuma página importa de outra página** — se duas precisam do mesmo helper,
+ele sobe para `dados/` ou `components/`.
+
+---
+
+## Os Blocos Empíricos
+
+`bloco1_acervo`, `bloco2_inclusoes` e `bloco3_pandemia` reproduzem as figuras da
+dissertação e são de outra leitora. Eles **não** passam pela casca nem pela
+camada de tema: chamam `st.plotly_chart` direto e mantêm o visual original de
+propósito. O alternador de tema não os afeta.
+
+Ao mexer neles, o padrão de verificação é comparar o JSON das figuras antes e
+depois — igualdade byte a byte, não inspeção visual.
+
+---
+
+## Testes
+
+`assert` puro, sem framework, com bloco `__main__` de descoberta automática:
 
 ```python
-# Estrutura padrão de uma página
-df = load_...()           # 1. Carrega
-filtros = render_sidebar_filters(df)
-df_filtrado = ...         # 2. Filtra
-render_graficos(df_filtrado, ...)  # 3. Renderiza
+if __name__ == "__main__":
+    for _nome, _fn in sorted(globals().items()):
+        if _nome.startswith("test_"):
+            _fn()
+    print("ok")
 ```
 
----
+Chamar os testes por nome nesse bloco já fez teste novo passar despercebido.
 
-## Fluxo de Dados
+Rodar tudo:
 
-```
-loader.py
-    │
-    ▼
-<pagina>.py  ──► data/filters.py ──► df filtrado
-    │
-    ▼
-layout.py  ──► plots.py ──► go.Figure
-    │
-    ▼
-st.plotly_chart(fig)
+```bash
+cd app && for f in $(find . -name "test_*.py" | sort); do
+  PYTHONPATH=. ../.venv/bin/python "$f"
+done
+PYTHONPATH=. .venv/bin/python src/tests/test_inclusao_pauta.py
 ```
 
-Os dados sempre fluem para baixo. Nenhuma camada inferior conhece a camada superior.
+`pages/test_conformidade.py` é o portão de estilo: percorre toda figura de todo
+catálogo em todas as formas declaradas e afirma fonte, escala de tamanhos,
+tickangle, ausência de "Plenário Físico", cor vinda da paleta e formatação
+numérica. É o que impede o padrão de se desfazer aos poucos.
+
+Limitação de ambiente: um segundo `AppTest.run()` na mesma instância segfalha
+nesta venv (pandas + pyarrow). Uma instância por cenário funciona.
 
 ---
 
-## Como Adicionar uma Nova Página
+## Como adicionar
 
-1. Criar a pasta `pages/<nome>/`
-2. Criar `plots.py` com as funções de figura
-3. Criar `layout.py` com `render_graficos(df, ...)`
-4. Criar `<nome>.py` seguindo o padrão de orquestração
-5. Registrar a página em `app.py`
+**Um gráfico**: escreva `fig_*` em `plots.py`, acrescente um `GraficoSpec` ao
+catálogo. Mais nada.
 
-Nenhum outro arquivo precisa ser alterado.
+**Uma página**: crie a pasta com os três arquivos e registre em `app.py`.
 
----
+**Um filtro**: acrescente a `FILTROS_VALIDOS` e ao mapa de colunas em
+`components/grafico.py`; as páginas passam a poder declará-lo.
 
-## Como Adicionar um Novo Filtro
-
-1. Criar o widget em `components/filters.py`
-2. Adicionar o valor retornado ao dicionário de `render_sidebar_filters`
-3. Aplicar o filtro na página usando as funções de `data/filters.py`
-
-Nenhum outro arquivo precisa ser alterado.
-
----
-
-## Como Adicionar um Novo Gráfico a uma Página Existente
-
-1. Criar a função `fig_novo_grafico(df, ...)` em `plots.py`
-2. Chamar a função e renderizar em `layout.py`
-
-O arquivo de orquestração (`<pagina>.py`) não precisa ser alterado.
-
----
-
-## Regras Fundamentais
-
-| Arquivo                 | Pode usar `st.*`   | Pode usar Plotly       | Pode filtrar dados |
-| ----------------------- | ------------------ | ---------------------- | ------------------ |
-| `data/filters.py`       | Não                | Não                    | Sim                |
-| `data/loader.py`        | Só `st.cache_data` | Não                    | Não                |
-| `components/filters.py` | Sim                | Não                    | Não                |
-| `plots.py`              | Não                | Sim                    | Não                |
-| `layout.py`             | Sim                | Só para receber figura | Não                |
-| `<pagina>.py`           | Só configuração    | Não                    | Só orquestração    |
-
----
-
-## O Que Não Fazer
-
-- Não construir figuras Plotly dentro de `<pagina>.py` ou `layout.py`
-- Não importar `streamlit` em `data/filters.py` ou `plots.py`
-- Não filtrar dados dentro de `components/filters.py`
-- Não colocar constantes fixas (anos, nomes de colunas, cores) espalhadas nos arquivos — use `config.py`
-- Não criar fallbacks de `ImportError` nas páginas — se um componente não existe, ele deve ser criado, não simulado inline
+**Um dataset**: registre em `dados/config.py` e crie `load_<nome>()` em
+`loader.py`.
