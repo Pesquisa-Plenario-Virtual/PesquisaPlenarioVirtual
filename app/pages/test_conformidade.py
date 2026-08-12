@@ -15,9 +15,9 @@ import re
 
 import plotly.graph_objects as go
 
-import paleta
+import visual.paleta as paleta
 from components.grafico import _kwargs_aceitos
-from tema import FONTE, TAMANHOS, aplicar_tema, converter_tipo
+from visual.tema import FONTE, TAMANHOS, aplicar_tema, converter_tipo
 
 TAMANHOS_PERMITIDOS = set(TAMANHOS.values())
 
@@ -190,7 +190,7 @@ def test_numero_no_padrao_brasileiro_sem_abreviacao_si():
     Sem tickformat o Plotly abrevia em SI a partir de mil. Com agrupamento
     aplicado sem cuidado, o eixo de ano viraria '2.025' — daí o guard.
     """
-    from tema import _parece_ano, _valores_numericos
+    from visual.tema import _parece_ano, _valores_numericos
 
     faltando, anos_quebrados = [], []
     for pagina, gid, tipo, fig in _todas_as_figuras():

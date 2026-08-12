@@ -7,10 +7,10 @@ na casca de catálogo.
 """
 import pandas as pd
 
-from estilo import AZUL
-from paleta import cor
+from visual.base import AZUL
+from visual.paleta import cor
 from pages.acervo.plots import plotar_grafico_stf
-from tema import aplicar_tema
+from visual.tema import aplicar_tema
 
 
 def _df_fake() -> pd.DataFrame:

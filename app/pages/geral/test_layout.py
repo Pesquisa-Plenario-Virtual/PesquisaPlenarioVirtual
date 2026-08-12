@@ -5,7 +5,7 @@ que chama st.plotly_chart), então dá pra testar aplicar_tema em cima dela sem
 depender de AppTest.
 """
 from pages.geral.layout import _build_timeline_figure
-from tema import FONTE, aplicar_tema
+from visual.tema import FONTE, aplicar_tema
 
 
 def test_apos_aplicar_tema_usa_fonte_padrao_e_nao_menciona_plenario_fisico():

@@ -1,5 +1,5 @@
 """Testes de paleta.py — rótulos canônicos, sentence case e cor semântica."""
-from paleta import sentence_case, canonico
+from visual.paleta import sentence_case, canonico
 
 
 def test_sentence_case_desfaz_upper_preservando_acentos():
@@ -43,7 +43,7 @@ def test_canonico_desconhecido_cai_em_sentence_case():
     assert canonico("ALGUMA COISA NOVA") == "Alguma coisa nova"
 
 
-from paleta import cor, cores, CINZA_OUTROS
+from visual.paleta import cor, cores, CINZA_OUTROS
 
 
 def test_ambiente_tem_cor_fixa_nos_dois_modos():

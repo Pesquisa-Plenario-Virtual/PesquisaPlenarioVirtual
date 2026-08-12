@@ -11,7 +11,7 @@ import math
 import pandas as pd
 import plotly.graph_objects as go
 
-from estilo import aplicar_padrao, br, AZUL, AZUL_CLARO, CINZA, VERDE, ROXO, VERMELHO, ER_DATAS, _frac_ano
+from visual.base import aplicar_padrao, br, AZUL, AZUL_CLARO, CINZA, VERDE, ROXO, VERMELHO, ER_DATAS, _frac_ano
 
 COR_PV, COR_PP = AZUL, CINZA
 _CLASSES = ["ADI", "ADPF", "ADC", "ADO"]

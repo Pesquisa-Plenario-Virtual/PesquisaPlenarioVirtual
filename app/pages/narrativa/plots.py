@@ -10,7 +10,7 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 
-from estilo import aplicar_padrao, add_espin_shade, br, COR_PV, COR_PP, COR_AMBOS
+from visual.base import aplicar_padrao, add_espin_shade, br, COR_PV, COR_PP, COR_AMBOS
 
 _LAYOUT_EXTRA = dict(height=650, margin=dict(t=130, b=80, l=60, r=60), hovermode="x unified")
 

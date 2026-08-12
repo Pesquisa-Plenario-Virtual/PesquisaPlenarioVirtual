@@ -8,7 +8,7 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 
-from estilo import (
+from visual.base import (
     aplicar_padrao, add_er_marker, _frac_ano, br,
     AZUL, CINZA, VERMELHO, VERDE, ER_DATAS,
 )

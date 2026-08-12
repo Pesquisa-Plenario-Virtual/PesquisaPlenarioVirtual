@@ -12,9 +12,9 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from estilo import br
+from visual.base import br
 from pages.tramitacao.plots import gt10_tabulador
-from tema import aplicar_tema
+from visual.tema import aplicar_tema
 
 METRICAS_PADRAO = {
     "inclusoes": "Inclusões em pauta",

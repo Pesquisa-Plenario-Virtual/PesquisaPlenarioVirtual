@@ -8,7 +8,7 @@ from __future__ import annotations
 import plotly.graph_objects as go
 import pandas as pd
 
-from estilo import aplicar_padrao, br, AZUL, VERMELHO, ER_DATAS, _frac_ano
+from visual.base import aplicar_padrao, br, AZUL, VERMELHO, ER_DATAS, _frac_ano
 
 _CORES_CLASSE = {"ADI": "#2563EB", "ADPF": "#93C5FD", "ADC": "#059669", "ADO": "#7C3AED"}
 

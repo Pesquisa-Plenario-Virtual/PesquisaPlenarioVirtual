@@ -6,8 +6,8 @@ import plotly.graph_objects as go
 import streamlit as st
 import pandas as pd
 
-from estilo import VERMELHO
-from tema import aplicar_tema
+from visual.base import VERMELHO
+from visual.tema import aplicar_tema
 
 _CORES_FASES = {
     1: "#7f8c8d",

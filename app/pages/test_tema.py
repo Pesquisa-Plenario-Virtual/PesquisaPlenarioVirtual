@@ -1,7 +1,7 @@
 """Testes de tema.py — pós-processamento de figura."""
 import plotly.graph_objects as go
 
-from tema import FONTE, TAMANHOS, aplicar_tema, limpar_html_de_fonte
+from visual.tema import FONTE, TAMANHOS, aplicar_tema, limpar_html_de_fonte
 
 
 def _fig_suja() -> go.Figure:
@@ -126,7 +126,7 @@ def test_tema_empirico_e_byte_identico_mesmo_com_plenario_fisico():
     assert "Plenário Físico" in devolvida.to_json()
 
 
-from paleta import cor as cor_paleta
+from visual.paleta import cor as cor_paleta
 
 
 def test_recolore_serie_conhecida_pelo_nome():
@@ -204,7 +204,7 @@ def test_aplicar_tema_limpa_titulo_anotacao_e_texto_de_barra():
     assert fig.layout.annotations[0].text == "nota"
 
 
-from tema import TIPOS, converter_tipo
+from visual.tema import TIPOS, converter_tipo
 
 
 def _fig_barras() -> go.Figure:

@@ -15,7 +15,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from tema import TIPOS, aplicar_tema, converter_tipo
+from visual.tema import TIPOS, aplicar_tema, converter_tipo
 
 FILTROS_VALIDOS = ("ambiente", "classe", "tipo_questao", "desfecho", "periodo")
 

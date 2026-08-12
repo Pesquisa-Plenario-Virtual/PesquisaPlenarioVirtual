@@ -14,8 +14,8 @@ import re
 
 import plotly.graph_objects as go
 
-from estilo import br
-from paleta import canonico, conhecido, cor
+from visual.base import br
+from visual.paleta import canonico, conhecido, cor
 
 FONTE = "Times New Roman, Times, serif"
 

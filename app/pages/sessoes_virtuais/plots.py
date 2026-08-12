@@ -4,7 +4,7 @@ from __future__ import annotations
 import plotly.graph_objects as go
 import pandas as pd
 
-from estilo import aplicar_padrao, add_er_marker, add_espin_shade, AZUL, VERDE
+from visual.base import aplicar_padrao, add_er_marker, add_espin_shade, AZUL, VERDE
 
 COR_SESSAO = AZUL
 CORES_CLASSE = {
