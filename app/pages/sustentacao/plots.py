@@ -4,6 +4,7 @@ from __future__ import annotations
 import plotly.graph_objects as go
 import pandas as pd
 
+from visual.paleta import canonico, cor
 from visual.base import (
     aplicar_padrao, add_er_marker, add_espin_shade, br,
     AZUL, AZUL_CLARO, CINZA, VERDE, ROXO, VERMELHO, ER_DATAS,
@@ -73,18 +74,28 @@ def _marcos_temporais(fig: go.Figure, y_max: float, ano_min: int = 2016, ano_max
 
 
 def _pizza(serie: pd.Series, titulo: str, cores: list, show_values: bool = True) -> go.Figure:
-    fig = go.Figure(go.Pie(
-        labels=[str(l).upper() for l in serie.index], values=serie.values,
-        hole=0.4,
-        marker=dict(colors=cores, line=dict(color="white", width=2)),
-        textinfo="percent" if show_values else "none",
-        textfont=dict(family="Arial, sans-serif", size=14, color="black"),
-        textposition="inside",
-        insidetextorientation="radial",
-        showlegend=True,
+    """Com/sem sustentação oral como barra horizontal, com o % na ponta.
+
+    Era pizza. Nome mantido enquanto o chamador migra; não faz mais pizza.
+    """
+    s = serie.sort_values(ascending=True)
+    total = float(s.sum()) or 1.0
+    ordem = {str(i): c for i, c in zip(serie.index, cores or [])}
+    rotulos = [canonico(str(i)) for i in s.index]
+
+    fig = go.Figure(go.Bar(
+        x=s.values, y=rotulos, orientation="h",
+        marker_color=[ordem.get(str(i)) or cor(r) for i, r in zip(s.index, rotulos)],
+        text=[f"{v / total * 100:.1f}%  ({br(v)})" for v in s.values] if show_values else None,
+        textposition="outside", cliponaxis=False,
     ))
-    aplicar_padrao(fig, titulo, height=500, margin=dict(t=110, b=100, l=60, r=60),
-                   showlegend=True, legend=_LEGEND_PIZZA)
+    aplicar_padrao(
+        fig, titulo,
+        height=max(320, 90 + 46 * len(s)),
+        margin=dict(t=110, b=60, l=220, r=120),
+        showlegend=False,
+        xaxis=dict(title="Inclusões em pauta"), yaxis=dict(title=""),
+    )
     return fig
 
 

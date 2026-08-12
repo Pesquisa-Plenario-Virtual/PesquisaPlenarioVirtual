@@ -42,7 +42,7 @@ _CATALOGO: list[GraficoSpec] = [
         rotulo="G5 — Inclusões por Ano e Ambiente (Plenário Virtual vs Plenário Presencial)",
         subtitulo="Inclusões em Pauta por Ano e Ambiente",
         descricao="Comparação anual do volume de inclusões em pauta entre o Plenário Virtual e o Plenário Presencial. "
-                  "Inclui pizza com a proporção acumulada no período.",
+                  "Inclui a composição PV vs PP no período, em barra horizontal com o percentual na ponta.",
         fn=g5_anual_ambiente,
         tipos=("barra", "linha"),
         filtros=("classe", "tipo_questao", "periodo"),
@@ -53,22 +53,20 @@ _CATALOGO: list[GraficoSpec] = [
         subtitulo="Inclusões por Classe",
         descricao="Barras agrupadas por classe (ADI, ADPF, ADC, ADO) com linha do total geral no eixo secundário. "
                   "Selecione o âmbito (Plenário Virtual / Plenário Presencial) e filtre as classes desejadas. "
-                  "Inclui pizza com a distribuição por classe no período.",
+                  "Inclui a composição por classe no período, em barra horizontal com o percentual na ponta.",
         fn=g6_classe_filtravel,
         tipos=("barra",),
         filtros=("ambiente", "tipo_questao", "periodo"),
-        kwargs_fixos={"pizza_textinfo": "percent+value"},
     ),
     GraficoSpec(
         id="G8/G9",
         rotulo="G8/G9 — Desfecho Geral (Plenário Virtual e Plenário Presencial)",
         subtitulo="Desfecho Geral",
-        descricao="Pizza com a proporção de concluídos e não concluídos, mais desfecho detalhado (PV) "
+        descricao="Composição de concluídos e não concluídos em barra horizontal, mais desfecho detalhado (PV) "
                   "ou apenas macro (Plenário Presencial). Selecione o âmbito.",
         fn=g8_desfecho_filtravel,
         tipos=("barra",),
         filtros=("ambiente", "classe", "tipo_questao"),
-        kwargs_fixos={"pizza_textinfo": "percent+value"},
     ),
     GraficoSpec(
         id="G10/G11",
@@ -149,7 +147,7 @@ _CATALOGO: list[GraficoSpec] = [
         id="G22/G23",
         rotulo="G22/G23 — Categoria de Desfecho (Plenário Virtual e Plenário Presencial)",
         subtitulo="Categoria de Desfecho",
-        descricao="Pizza com as 4 categorias: Unânime, Maioria (relator vencedor), Maioria (relator vencido) "
+        descricao="Barra horizontal com as 4 categorias, percentual na ponta: Unânime, Maioria (relator vencedor), Maioria (relator vencido) "
                   "e Não concluído (bloco agregado). Selecione o âmbito.",
         fn=g22_cat_periodo_filtravel,
         tipos=("barra",),
@@ -169,7 +167,7 @@ _CATALOGO: list[GraficoSpec] = [
         id="G26/G27",
         rotulo="G26/G27 — Categoria × Tipo de Questão (Plenário Virtual e Plenário Presencial)",
         subtitulo="Categoria de Desfecho por Tipo de Questão",
-        descricao="Uma pizza por tipo de questão (PR/RC/QI) com as 4 categorias de desfecho. Período total. "
+        descricao="Uma barra horizontal por tipo de questão (PR/RC/QI) com as 4 categorias de desfecho. Período total. "
                   "Processos sem tipo de questão classificados como PR. Selecione o âmbito.",
         fn=g26_cat_tipo_periodo_filtravel,
         tipos=("barra",),

@@ -28,7 +28,7 @@ _CATALOGO = [
         id="S1/S2",
         rotulo="S1/S2 — Proporção com/sem sustentação (Plenário Virtual e Plenário Presencial)",
         subtitulo="Sustentação Oral — período total",
-        descricao="Pizza com a proporção de inclusões que tiveram sustentação oral. "
+        descricao="Barra horizontal com a proporção de inclusões que tiveram sustentação oral, percentual na ponta. "
                   "Selecione o âmbito.",
         fn=gs1_sust_filtravel,
         tipos=("barra",),

@@ -21,16 +21,9 @@ from visual.tema import FONTE, TAMANHOS, aplicar_tema, converter_tipo
 
 TAMANHOS_PERMITIDOS = set(TAMANHOS.values())
 
-# Pizzas que ainda existem, removidas na Fase 2. O teste é uma catraca: nenhuma
-# pizza NOVA pode aparecer. Ao fim da Fase 2 este conjunto vira vazio.
-PIZZAS_CONHECIDAS: set[tuple[str, str]] = {
-    ("inclusoes", "G5"),
-    ("inclusoes", "G6/G7"),
-    ("inclusoes", "G8/G9"),
-    ("inclusoes", "G22/G23"),
-    ("inclusoes", "G26/G27"),
-    ("sustentacao", "S1/S2"),
-}
+# Fase 2 encerrou o pedido "zero gráficos de pizza". Conjunto vazio: nenhuma
+# pizza é aceita em lugar nenhum das oito páginas.
+PIZZAS_CONHECIDAS: set[tuple[str, str]] = set()
 
 
 def _cores_da_paleta() -> set[str]:

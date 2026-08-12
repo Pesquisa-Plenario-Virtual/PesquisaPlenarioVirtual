@@ -8,6 +8,7 @@ from visual.base import (
     aplicar_padrao, add_er_marker, add_espin_shade, br,
     AZUL, AZUL_CLARO, CINZA, VERDE, ROXO, VERMELHO, ER_DATAS,
 )
+from visual.paleta import canonico, cor
 
 CORES_CLASSE = {
     "ADI":  "#2563eb",
@@ -90,23 +91,48 @@ def _marcos_temporais(fig: go.Figure, y_max: float, ano_min: int = 2016, ano_max
     return fig
 
 
-def _pizza(series: pd.Series, titulo: str, buraco: float = 0.4,
-           cores: list | None = None, show_values: bool = True,
-           pizza_textinfo: str | None = None) -> go.Figure:
-    marker = dict(colors=cores, line=dict(color="white", width=2)) if cores \
-             else dict(line=dict(color="white", width=2))
-    ti = pizza_textinfo if pizza_textinfo else ("percent+value" if show_values else "none")
-    ti = "none" if not show_values else ti
-    fig = go.Figure(go.Pie(
-        labels=[str(l) for l in series.index], values=series.values, hole=buraco,
-        textinfo=ti,
-        textposition="auto",
-        insidetextorientation="radial",
-        marker=marker,
+def _composicao(series: pd.Series, titulo: str, cores: list | None = None,
+                show_values: bool = True, **_ignorado) -> go.Figure:
+    """Composição parte-de-um-todo como barra horizontal, com o % na ponta.
+
+    Substitui as pizzas. A Pessoa 2 pediu zero gráficos de pizza, e para
+    composição sem eixo temporal a barra horizontal é o substituto correto —
+    linha responderia outra pergunta. Categoria à esquerda, maior no topo, e o
+    percentual na ponta da barra, que é o formato que ela indicou no G22/G23.
+
+    `**_ignorado` absorve `buraco`, que só fazia sentido em pizza.
+    """
+    s = series.sort_values(ascending=True)          # maior no topo no eixo y invertido
+    total = float(s.sum()) or 1.0
+    pct = s / total * 100
+
+    rotulos = [canonico(str(i)) for i in s.index]
+    if cores is not None:
+        # `cores` vinha na ordem original da série; reordenar junto com ela
+        ordem = {str(i): c for i, c in zip(series.index, cores)}
+        marker_cor = [ordem.get(str(i)) for i in s.index]
+    else:
+        marker_cor = [cor(r) for r in rotulos]
+
+    fig = go.Figure(go.Bar(
+        x=s.values, y=rotulos, orientation="h",
+        marker_color=marker_cor,
+        text=[f"{p:.1f}%  ({br(v)})" for p, v in zip(pct, s.values)] if show_values else None,
+        textposition="outside", cliponaxis=False,
     ))
-    aplicar_padrao(fig, titulo, height=460, margin=dict(t=110, b=130, l=40, r=40),
-                    showlegend=True, legend=_LEGEND_PIZZA)
+    aplicar_padrao(
+        fig, titulo,
+        height=max(320, 90 + 46 * len(s)),
+        margin=dict(t=110, b=60, l=220, r=120),
+        showlegend=False,                            # o rótulo já está no eixo
+        xaxis=dict(title="Inclusões em pauta"),
+        yaxis=dict(title=""),
+    )
     return fig
+
+
+# Nome antigo mantido enquanto os chamadores migram; a função não faz mais pizza.
+_pizza = _composicao
 
 
 def _categoria_desfecho(d: str) -> str:
@@ -199,8 +225,7 @@ def g5_anual_ambiente(df: pd.DataFrame, show_values: bool = True, proporcao: boo
 
 def g6_classe_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
                         ambiente: str = "Plenário Virtual",
-                        classes: list[str] | None = None,
-                        pizza_textinfo: str | None = None) -> tuple[go.Figure, go.Figure]:
+                        classes: list[str] | None = None) -> tuple[go.Figure, go.Figure]:
     d = df[df["ambiente"] == ambiente]
     if classes:
         d = d[d["classe"].isin(classes)]
@@ -211,22 +236,21 @@ def g6_classe_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: b
     fig_p = _pizza(d["classe"].value_counts(),
                    f"Proporção por classe — {ambiente} (período total)",
                    cores=[CORES_CLASSE.get(l, "#999") for l in d["classe"].value_counts().index],
-                   show_values=show_values, pizza_textinfo=pizza_textinfo)
+                   show_values=show_values)
     return fig, fig_p
 
 
 def g8_desfecho_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
-                          ambiente: str = "Plenário Virtual",
-                          pizza_textinfo: str | None = None) -> go.Figure | tuple[go.Figure, go.Figure]:
+                          ambiente: str = "Plenário Virtual") -> go.Figure | tuple[go.Figure, go.Figure]:
     d = df[df["ambiente"] == ambiente]
     vc = d["macro_desfecho"].value_counts()
     fig_macro = _pizza(vc, f"Concluídos e não concluídos — {ambiente} (período total)",
                        cores=[CORES_MACRO.get(l, "#94a3b8") for l in vc.index],
-                       show_values=show_values, pizza_textinfo=pizza_textinfo)
+                       show_values=show_values)
     if ambiente == "Plenário Virtual":
         fig_det = _pizza(d["desfecho"].value_counts(),
                          f"Desfecho detalhado — {ambiente} (período total)", buraco=0.3,
-                         show_values=show_values, pizza_textinfo=pizza_textinfo)
+                         show_values=show_values)
         return fig_macro, fig_det
     return fig_macro
 
@@ -447,17 +471,11 @@ def _prep_cat(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _pizza_categoria(t: str, vc: pd.Series, titulo: str, show_values: bool) -> go.Figure:
-    cores = [CORES_CATEGORIA.get(l, "#999") for l in vc.index]
-    fig = go.Figure(go.Pie(
-        labels=[str(l).upper() for l in vc.index], values=vc.values, hole=0.4,
-        marker=dict(colors=cores, line=dict(color="white", width=1.5)),
-        textinfo="percent" if show_values else "none",
-        textfont=dict(size=11), textposition="inside",
-        insidetextorientation="radial",
-    ))
-    aplicar_padrao(fig, titulo, height=400, margin=dict(t=100, b=140, l=20, r=20),
-                   showlegend=True, legend=_LEGEND_PIZZA)
-    return fig
+    """Composição das categorias de desfecho para um tipo de questão.
+
+    Era pizza; virou barra horizontal pelo mesmo motivo das demais.
+    """
+    return _composicao(vc, titulo, show_values=show_values)
 
 
 def _pizzas_categoria_por_tipo(sub: pd.DataFrame, ambiente_label: str, show_values: bool = True) -> list[go.Figure]:
