@@ -1,5 +1,5 @@
 # ESPECIFICAÇÕES DOS GRÁFICOS — UM POR UM
-### Documento para reprodução (acompanha `Codigos_graficos_completos.py`, que tem o código exato de cada peça)
+### Documento para reprodução (o script matplotlib de referência que acompanhava este documento foi removido; está no histórico do git)
 
 ## PADRÃO GERAL (vale para todos)
 Fontes pretas sólidas (#000000), rótulos e anos em **negrito**; sem grade de
