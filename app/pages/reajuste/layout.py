@@ -22,21 +22,21 @@ _PREDEFINIDOS_TAB = [
     ("Desfecho Detalhado × Reajuste (inclusões)",     "desfecho",       "teve_reajuste",  "inclusoes", "group"),
 ]
 
-# ── Catálogo R1–R8 (R9 é o tabulador livre, fora do catálogo) ──────────────────
+# ── Catálogo R1–R5 (R6 é o tabulador livre, fora do catálogo) ──────────────────
 _CATALOGO = [
     GraficoSpec(
-        id="R1/R2",
-        rotulo="R1/R2 — % com reajuste (Plenário Virtual e Plenário Presencial)",
-        subtitulo="Reajuste de Voto — período total",
+        id="R1",
+        rotulo="R1 — % com reajuste (Plenário Virtual e Plenário Presencial)",
+        subtitulo="Reajuste de voto é raro e na mesma proporção nos dois âmbitos (≈1,5%)",
         descricao="Percentual de inclusões que tiveram ao menos um reajuste de voto, por ambiente.",
         fn=gr1_reajuste_pct,
         tipos=("barra",),
         filtros=("classe", "tipo_questao", "periodo"),
     ),
     GraficoSpec(
-        id="R3/R4",
-        rotulo="R3/R4 — Reajustes por Ano (Plenário Virtual e Plenário Presencial)",
-        subtitulo="Reajuste de Voto por Ano",
+        id="R2",
+        rotulo="R2 — Reajustes por Ano (Plenário Virtual e Plenário Presencial)",
+        subtitulo="Reajustes aparecem só a partir de 2020 e seguem em volume baixo",
         descricao="Volume anual de inclusões que registraram reajuste de voto. "
                   "Anos sem ocorrência aparecem com valor zero. Selecione o âmbito.",
         fn=gr3_anual_filtravel,
@@ -45,9 +45,9 @@ _CATALOGO = [
         percentual=True,
     ),
     GraficoSpec(
-        id="R5/R6",
-        rotulo="R5/R6 — Reajustes por Ano e Classe (Plenário Virtual e Plenário Presencial)",
-        subtitulo="Reajuste de Voto por Ano e Classe",
+        id="R3",
+        rotulo="R3 — Reajustes por Ano e Classe (Plenário Virtual e Plenário Presencial)",
+        subtitulo="ADI concentra os reajustes desde o início",
         descricao="Barras agrupadas por classe (ADI, ADPF, ADC, ADO) mostrando o volume anual "
                   "de reajustes de voto. Selecione o âmbito.",
         fn=gr5_classe_filtravel,
@@ -56,9 +56,9 @@ _CATALOGO = [
         percentual=True,
     ),
     GraficoSpec(
-        id="R7",
-        rotulo="R7 — Tipo de Questão × Reajuste",
-        subtitulo="Tipo de Questão × Reajuste (inclusões)",
+        id="R4",
+        rotulo="R4 — Tipo de Questão × Reajuste",
+        subtitulo="PR responde pela quase totalidade dos reajustes",
         descricao="Distribuição das inclusões com/sem reajuste por tipo de questão (PR/RC/QI).",
         fn=gr7_tipo_vs_reajuste,
         tipos=("barra",),
@@ -66,9 +66,9 @@ _CATALOGO = [
         percentual=True,
     ),
     GraficoSpec(
-        id="R8",
-        rotulo="R8 — Desfecho Detalhado × Reajuste",
-        subtitulo="Desfecho Detalhado × Reajuste (inclusões)",
+        id="R5",
+        rotulo="R5 — Desfecho Detalhado × Reajuste",
+        subtitulo="Unanimidade lidera entre as inclusões com reajuste",
         descricao="Distribuição das inclusões com/sem reajuste por desfecho detalhado.",
         fn=gr8_desfecho_vs_reajuste,
         tipos=("barra", "barra_h"),
@@ -83,8 +83,8 @@ def _render_interactive_tabulador(df: pd.DataFrame, key: str = "reaj_tab") -> No
 
 
 _CATALOGO.append(GraficoSpec(
-    id="R9",
-    rotulo="R9 — Tabulador interativo (eixos livres)",
+    id="R6",
+    rotulo="R6 — Tabulador interativo (eixos livres)",
     subtitulo="Tabulador interativo — eixos, agrupamento e métrica livres",
     descricao="Configure o eixo X, a cor/grupo, a métrica e o modo de barras. "
               "A tabela abaixo acompanha os mesmos eixos.",

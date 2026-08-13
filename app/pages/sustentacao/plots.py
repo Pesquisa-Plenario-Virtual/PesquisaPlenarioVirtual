@@ -69,7 +69,7 @@ def _marcos_temporais(fig: go.Figure, y_max: float, ano_min: int = 2016, ano_max
         if ano_min <= ano <= ano_max:
             add_er_marker(fig, 0, er, 0, y1, y_label)
     if ano_min <= 2022 and ano_max >= 2020:
-        add_espin_shade(fig, 0, 0, y1, y_label)
+        add_espin_shade(fig, 0, 0, y1)
     return fig
 
 

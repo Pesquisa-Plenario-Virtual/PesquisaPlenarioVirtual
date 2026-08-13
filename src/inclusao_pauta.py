@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-ANO_INI, ANO_FIM = 2016, 2025
+ANO_INI, ANO_FIM = 2009, 2025
 
 ANDAMENTOS_PAUTA = [
     'Inclua-se em pauta - minuta extraída',

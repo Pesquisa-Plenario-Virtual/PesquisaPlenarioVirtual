@@ -73,10 +73,7 @@ def render_pagina(catalogo: list[GraficoSpec], df, key_prefix: str,
         st.session_state[chave_sel] = do_link if any(
             s.id == do_link for s in catalogo) else catalogo[0].id
 
-    # A busca filtra só o sumário (os botões), nunca as opções do selectbox.
-    # O selectbox sempre carrega o catálogo inteiro com uma key fixa, então
-    # suas opções nunca mudam e seu estado nunca precisa ser invalidado —
-    # nenhum jogo de key por valor é necessário.
+    # A busca filtra só o sumário (os botões); o gráfico em exibição não muda.
     busca = st.text_input("🔎 Buscar gráfico", key=f"{key_prefix}_busca",
                           placeholder="id, título ou palavra da descrição")
     visiveis = filtrar_por_busca(catalogo, busca)
@@ -95,15 +92,8 @@ def render_pagina(catalogo: list[GraficoSpec], df, key_prefix: str,
 
     st.markdown("---")
 
-    ids = [s.id for s in catalogo]
     atual = st.session_state[chave_sel]
-    indice = ids.index(atual) if atual in ids else 0
-    escolhido = st.selectbox(
-        "Selecione a visualização", ids, index=indice, key=f"{key_prefix}_sel",
-        format_func=lambda i: next(s.rotulo for s in catalogo if s.id == i),
-    )
-    st.session_state[chave_sel] = escolhido
-    spec = next(s for s in catalogo if s.id == escolhido)
+    spec = next((s for s in catalogo if s.id == atual), catalogo[0])
 
     st.subheader(spec.subtitulo)
     st.caption(spec.descricao)

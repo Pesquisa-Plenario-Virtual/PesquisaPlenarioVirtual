@@ -9,8 +9,8 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from visual.base import (
-    aplicar_padrao, add_er_marker, _frac_ano, br,
-    AZUL, CINZA, VERMELHO, VERDE, ER_DATAS,
+    aplicar_padrao, add_er_marker, br,
+    AZUL, CINZA, VERMELHO, VERDE, ER_DATAS, ER_FRONTEIRAS,
 )
 
 _CLASSES = ["ADI", "ADPF", "ADC", "ADO"]
@@ -224,12 +224,9 @@ def _fig_1b2_base(df: pd.DataFrame, esconder_eixo_y: bool = False) -> tuple[go.F
 
     # ER — mesma estrutura do 1.c
     for er in (51, 52, 53):
-        if er in (52, 53):
-            ano_er, _, _ = ER_DATAS[er]
-            x = anos.index(str(ano_er)) - 0.5
-        else:
-            ano, mes, dia = ER_DATAS[er]
-            x = _frac_ano(ANO_MIN, ano, mes, dia)
+        if str(ER_FRONTEIRAS[er]) not in anos:
+            continue
+        x = ER_FRONTEIRAS[er] - ANO_MIN + 0.5
         fig.add_shape(type="line", x0=x, x1=x, y0=0, y1=y_er,
                       line=dict(color="black", width=1.5, dash="dash"), xref="x", yref="y")
         fig.add_annotation(x=x, y=y_er, yanchor="bottom", text=f"<b>ER<br>{er}</b>", showarrow=False,
@@ -319,12 +316,9 @@ def fig_1c_distribuicao_baixa(df: pd.DataFrame, show_values: bool = True) -> go.
     )
     y_er = ymax * 0.95
     for er in (51, 52, 53):
-        if er in (52, 53):
-            ano_er, _, _ = ER_DATAS[er]
-            x = anos.index(str(ano_er)) - 0.5
-        else:
-            ano, mes, dia = ER_DATAS[er]
-            x = _frac_ano(ANO_MIN, ano, mes, dia)
+        if str(ER_FRONTEIRAS[er]) not in anos:
+            continue
+        x = ER_FRONTEIRAS[er] - ANO_MIN + 0.5
         fig.add_shape(type="line", x0=x, x1=x, y0=ymin, y1=y_er,
                       line=dict(color="black", width=1.5, dash="dash"), xref="x", yref="y")
         # Sigla e número empilhados (ER\n51), ancorados no topo da própria linha.
@@ -388,12 +382,9 @@ def fig_1d2_variacao_anual(df: pd.DataFrame, show_values: bool = True) -> go.Fig
         showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=0.98, x=0.5, xanchor="center"),
     )
     for er in (51, 52, 53):
-        if er in (52, 53):
-            ano_er, _, _ = ER_DATAS[er]
-            x = anos.index(str(ano_er)) - 0.5
-        else:
-            ano, mes, dia = ER_DATAS[er]
-            x = _frac_ano(ANO_MIN, ano, mes, dia)
+        if str(ER_FRONTEIRAS[er]) not in anos:
+            continue
+        x = ER_FRONTEIRAS[er] - ANO_MIN + 0.5
         y_er = ymax * 0.82
         fig.add_shape(type="line", x0=x, x1=x, y0=ymin, y1=y_er,
                       line=dict(color="black", width=1.5, dash="dash"), xref="x", yref="y")
@@ -455,12 +446,9 @@ def fig_1d_variacao_anual(df: pd.DataFrame, show_values: bool = True) -> go.Figu
         margin=dict(t=170, b=70, l=60, r=40),
     )
     for er in (51, 52, 53):
-        if er in (52, 53):
-            ano_er, _, _ = ER_DATAS[er]
-            x = anos.index(str(ano_er)) - 0.5
-        else:
-            ano, mes, dia = ER_DATAS[er]
-            x = _frac_ano(ANO_MIN, ano, mes, dia)
+        if str(ER_FRONTEIRAS[er]) not in anos:
+            continue
+        x = ER_FRONTEIRAS[er] - ANO_MIN + 0.5
         fig.add_shape(type="line", x0=x, x1=x, y0=ymin, y1=ymax,
                       line=dict(color="black", width=1.5, dash="dash"), xref="x", yref="y")
         # Sigla e número empilhados (ER\n51), ancorados no topo da própria linha (y=ymax).

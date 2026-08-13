@@ -64,8 +64,18 @@ def _montar_entrada() -> Path:
     return entrada
 
 
-def _comparar(publicado: pd.DataFrame, novo: pd.DataFrame) -> dict:
-    """Diferenças entre o parquet publicado e o regerado, por coluna."""
+def _comparar(publicado: pd.DataFrame, novo: pd.DataFrame, recorte: int | None) -> dict:
+    """Diferenças entre o parquet publicado e o regerado, por coluna.
+
+    `recorte` é o menor ano do publicado. O pipeline cresceu a janela
+    (2009–2015 entrou), então a regra é a do `_conferir_sessoes`: restringir o
+    regerado aos anos do publicado tem que reproduzi-lo exatamente. Linhas do
+    regerado anteriores ao recorte não contam como diferença.
+    """
+    if recorte is not None:
+        ano = pd.to_numeric(novo["data_inclusao"].str[-4:], errors="coerce")
+        novo = novo[ano >= recorte]
+
     p = publicado.set_index(CHAVE).sort_index()
     n = novo.set_index(CHAVE).sort_index()
 
@@ -210,18 +220,26 @@ def main() -> int:
     novo = pd.read_parquet(regerado)
     publicado = pd.read_parquet(PUBLICADO)
 
-    relatorio = _comparar(publicado, novo)
+    recorte = int(pd.to_numeric(publicado["data_inclusao"].str[-4:], errors="coerce").min())
+    relatorio = _comparar(publicado, novo, recorte)
     print(f'\npublicado: {relatorio["linhas_publicado"]:,} linhas')
-    print(f'regerado : {relatorio["linhas_novo"]:,} linhas')
-    if not relatorio["colunas_divergentes"]:
+    print(f'regerado : {relatorio["linhas_novo"]:,} linhas (recorte {recorte}+)')
+    antes_do_recorte = len(novo) - relatorio["linhas_novo"]
+    if antes_do_recorte:
+        print(f'  +{antes_do_recorte:,} linhas anteriores a {recorte} (janela ampliada)')
+    if not relatorio["colunas_divergentes"] and not antes_do_recorte:
         print("\nnenhuma diferença — o parquet publicado já está correto.")
         return 0
 
-    print("\ndiferenças por coluna:")
-    for coluna, info in relatorio["colunas_divergentes"].items():
-        print(f'  {coluna}: {info["n"]} linhas')
-        for (antes, depois), n in info["transicoes"].items():
-            print(f"      {antes!r} -> {depois!r}: {n}")
+    if not relatorio["colunas_divergentes"]:
+        print("\nrecorte publicado reproduzido exatamente; só há o acréscimo da "
+              f"janela ampliada (+{antes_do_recorte} linhas pré-{recorte}).")
+    else:
+        print("\ndiferenças por coluna:")
+        for coluna, info in relatorio["colunas_divergentes"].items():
+            print(f'  {coluna}: {info["n"]} linhas')
+            for (antes, depois), n in info["transicoes"].items():
+                print(f"      {antes!r} -> {depois!r}: {n}")
 
     falhas = _portao(relatorio)
     if falhas:

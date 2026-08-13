@@ -54,8 +54,8 @@ def _dims_disponiveis(colunas) -> dict[str, str]:
 def _montar_catalogo(df_final: pd.DataFrame) -> list[GraficoSpec]:
     """Monta o catálogo com `df_final` (inclusões em pauta) capturado por closure.
 
-    A casca chama spec.fn(df, **kwargs) com um único dataframe (df_s). G0 e o
-    Bloco 5 (G5.1-G5.3) precisam também de df_final — G0 para comparar sessões
+    A casca chama spec.fn(df, **kwargs) com um único dataframe (df_s). V1 e o
+    Bloco 5 (V11-V13) precisam também de df_final — V1 para comparar sessões
     com inclusões, o Bloco 5 para prep_duracao calcular a data da primeira
     pauta. Os wrappers do Bloco 5 declaram `ambiente` na assinatura para a
     casca oferecer o seletor de âmbito (ver GraficoSpec.filtros abaixo).
@@ -83,73 +83,73 @@ def _montar_catalogo(df_final: pd.DataFrame) -> list[GraficoSpec]:
 
     return [
         GraficoSpec(
-            id="G0",
-            rotulo="G0 — Sessões virtuais vs Inclusões em pauta (PV)",
-            subtitulo="Sessões Virtuais vs Inclusões em Pauta (PV)",
+            id="V1",
+            rotulo="V1 — Sessões virtuais vs Inclusões em pauta (PV)",
+            subtitulo="Sessões acompanham de perto o volume de inclusões no PV",
             descricao="Comparação anual entre o volume de sessões virtuais iniciadas e o total de "
                       "inclusões em pauta no Plenário Virtual.",
             fn=_g0,
             tipos=("barra", "linha"),
         ),
         GraficoSpec(
-            id="G3.1",
-            rotulo="G3.1 — Distribuição de sessões por processo",
-            subtitulo="Distribuição de Sessões por Processo",
+            id="V2",
+            rotulo="V2 — Distribuição de sessões por processo",
+            subtitulo="Quase dois terços dos processos são julgados em sessão única (63%)",
             descricao="Quantos processos tiveram 1, 2–3, 4–5 ou 6+ sessões virtuais.",
             fn=g3_1_distribuicao_sessoes,
             tipos=("barra", "linha"),
             filtros=("classe", "tipo_questao", "periodo"),
         ),
         GraficoSpec(
-            id="G3.2",
-            rotulo="G3.2 — Faixa de sessões por classe",
-            subtitulo="Número de Sessões por Processo e Classe",
+            id="V3",
+            rotulo="V3 — Faixa de sessões por classe",
+            subtitulo="ADI domina todas as faixas de sessões",
             descricao="Distribuição das faixas de sessões por classe processual.",
             fn=g3_2_faixa_sessoes_classe,
             tipos=("barra",),
             filtros=("tipo_questao", "periodo"),
         ),
         GraficoSpec(
-            id="G3.3",
-            rotulo="G3.3 — Taxa de conclusão: 1ª vs posteriores",
-            subtitulo="Taxa de Conclusão: 1ª Sessão vs Sessões Posteriores",
+            id="V4",
+            rotulo="V4 — Taxa de conclusão: 1ª vs posteriores",
+            subtitulo="Primeira sessão conclui um pouco mais que as posteriores",
             descricao="Comparação da taxa de conclusão entre a primeira sessão e as sessões seguintes.",
             fn=g3_3_taxa_conclusao_primeira,
             tipos=("barra",),
             filtros=("classe", "tipo_questao", "periodo"),
         ),
         GraficoSpec(
-            id="G3.4",
-            rotulo="G3.4 — Taxa de conclusão por posição da sessão",
-            subtitulo="Taxa de Conclusão por Posição da Sessão",
+            id="V5",
+            rotulo="V5 — Taxa de conclusão por posição da sessão",
+            subtitulo="Taxa de conclusão cai a cada sessão adicional",
             descricao="Taxa de conclusão para a 1ª, 2ª, 3ª e 4ª+ sessão no histórico do processo.",
             fn=g3_4_taxa_conclusao_posicao,
             tipos=("barra", "linha"),
             filtros=("classe", "tipo_questao", "periodo"),
         ),
         GraficoSpec(
-            id="G4.1",
-            rotulo="G4.1 — Classe × Tipo de Questão (quadro de referência)",
-            subtitulo="Classe × Tipo de Questão",
+            id="V6",
+            rotulo="V6 — Classe × Tipo de Questão (quadro de referência)",
+            subtitulo="PR com ADI forma o maior bloco de sessões",
             descricao="Barras agrupadas por tipo de questão (PR/RC/QI) com o volume de sessões por "
-                      "classe — mesma leitura do G4.2, útil como quadro de referência com totais na tabela.",
+                      "classe — mesma leitura do V7, útil como quadro de referência com totais na tabela.",
             fn=g4_2_sessoes_classe_tipo,
             tipos=("barra",),
             filtros=("periodo",),
         ),
         GraficoSpec(
-            id="G4.2",
-            rotulo="G4.2 — Sessões por classe e tipo de questão",
-            subtitulo="Sessões por Classe e Tipo de Questão",
+            id="V7",
+            rotulo="V7 — Sessões por classe e tipo de questão",
+            subtitulo="ADI em PR concentra as sessões; QI não aparece",
             descricao="Barras agrupadas por tipo de questão (PR/RC/QI) com o volume de sessões por classe.",
             fn=g4_2_sessoes_classe_tipo,
             tipos=("barra",),
             filtros=("periodo",),
         ),
         GraficoSpec(
-            id="G4.3",
-            rotulo="G4.3 — Macro-desfecho por ano e tipo de questão",
-            subtitulo="Macro-Desfecho por Ano e Tipo de Questão",
+            id="V8",
+            rotulo="V8 — Macro-desfecho por ano e tipo de questão",
+            subtitulo="Concluídos superam não concluídos em todos os anos",
             descricao="Barras empilhadas (Concluído/Não concluído) por ano. "
                       "Uma aba por tipo: PR, RC e QI.",
             fn=g4_3_macro_ano_tipo,
@@ -157,27 +157,27 @@ def _montar_catalogo(df_final: pd.DataFrame) -> list[GraficoSpec]:
             filtros=("classe", "tipo_questao", "periodo"),
         ),
         GraficoSpec(
-            id="G4.4",
-            rotulo="G4.4 — Macro-desfecho por ano e classe",
-            subtitulo="Macro-Desfecho por Ano e Classe (ADI e ADPF)",
+            id="V9",
+            rotulo="V9 — Macro-desfecho por ano e classe",
+            subtitulo="ADI e ADPF concluem mais do que deixam em aberto em quase todos os anos",
             descricao="Barras empilhadas por ano para ADI e ADPF. ADC e ADO omitidos por base pequena.",
             fn=g4_4_macro_ano_classe,
             tipos=("barra", "linha"),
             filtros=("classe", "tipo_questao", "periodo"),
         ),
         GraficoSpec(
-            id="G4.5",
-            rotulo="G4.5 — Taxa de conclusão: classe × tipo de questão",
-            subtitulo="Taxa de Conclusão por Classe e Tipo de Questão",
+            id="V10",
+            rotulo="V10 — Taxa de conclusão: classe × tipo de questão",
+            subtitulo="RC conclui mais que PR em todas as classes",
             descricao="Percentual de sessões concluídas, agrupado por classe e tipo de questão.",
             fn=g4_5_taxa_conclusao_classe_tipo,
             tipos=("barra",),
             filtros=("periodo",),
         ),
         GraficoSpec(
-            id="G5.1",
-            rotulo="G5.1 — Distribuição de duração até conclusão",
-            subtitulo="Tempo até Conclusão",
+            id="V11",
+            rotulo="V11 — Distribuição de duração até conclusão",
+            subtitulo="Metade das conclusões sai em até 30 dias",
             descricao="Distribuição do tempo decorrido entre a primeira inclusão em pauta e a sessão de "
                       "conclusão, em faixas. Selecione o âmbito da primeira pauta.",
             fn=_g5_1,
@@ -186,9 +186,9 @@ def _montar_catalogo(df_final: pd.DataFrame) -> list[GraficoSpec]:
             opcoes_filtro={"ambiente": opcoes_ambiente},
         ),
         GraficoSpec(
-            id="G5.2",
-            rotulo="G5.2 — Duração mediana por classe",
-            subtitulo="Tempo Mediano até Conclusão por Classe (dias)",
+            id="V12",
+            rotulo="V12 — Duração mediana por classe",
+            subtitulo="Tempo mediano até conclusão é baixo e similar entre classes (15–17 dias)",
             descricao="Mediana de dias entre a primeira pauta e a conclusão, por classe. "
                       "Selecione o âmbito da primeira pauta.",
             fn=_g5_2,
@@ -197,9 +197,9 @@ def _montar_catalogo(df_final: pd.DataFrame) -> list[GraficoSpec]:
             opcoes_filtro={"ambiente": opcoes_ambiente},
         ),
         GraficoSpec(
-            id="G5.3",
-            rotulo="G5.3 — Duração mediana por tipo de questão",
-            subtitulo="Tempo Mediano até Conclusão por Tipo de Questão (dias)",
+            id="V13",
+            rotulo="V13 — Duração mediana por tipo de questão",
+            subtitulo="RC leva muito mais tempo até a conclusão (78 dias)",
             descricao="Mediana de dias entre a primeira pauta e a conclusão, por tipo. "
                       "Selecione o âmbito da primeira pauta.",
             fn=_g5_3,
@@ -208,8 +208,8 @@ def _montar_catalogo(df_final: pd.DataFrame) -> list[GraficoSpec]:
             opcoes_filtro={"ambiente": opcoes_ambiente},
         ),
         GraficoSpec(
-            id="G6",
-            rotulo="G6 — Tabulador interativo (eixos livres)",
+            id="V14",
+            rotulo="V14 — Tabulador interativo (eixos livres)",
             subtitulo="Tabulador interativo — eixos, agrupamento e métrica livres",
             descricao="Configure o eixo X, a cor/grupo, a métrica e o modo de barras. "
                       "A tabela abaixo acompanha os mesmos eixos.",

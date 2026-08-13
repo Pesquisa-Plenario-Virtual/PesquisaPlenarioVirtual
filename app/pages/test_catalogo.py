@@ -78,27 +78,25 @@ def test_nome_param_url_isola_por_prefixo():
     assert nome_param_url("g") == "g_g"
 
 
-def test_apptest_cliques_consecutivos_no_selectbox_registram_na_hora():
+def test_apptest_cliques_consecutivos_nos_botoes_registram_na_hora():
     from streamlit.testing.v1 import AppTest
 
     at = AppTest.from_function(_pagina_de_teste)
     at.run()
-    assert at.selectbox[0].value == "G1"
+    assert at.session_state["pageA_selecionado"] == "G1"
 
-    at.selectbox[0].select("G5 rótulo")
+    at.button(key="pageA_ir_G5").click()
     at.run()
     assert at.session_state["pageA_selecionado"] == "G5"
-    assert at.selectbox[0].value == "G5"
 
     # o clique seguinte, pra um valor diferente, também tem que valer de cara
     # — sem precisar repetir o clique.
-    at.selectbox[0].select("G10 rótulo")
+    at.button(key="pageA_ir_G10").click()
     at.run()
     assert at.session_state["pageA_selecionado"] == "G10"
-    assert at.selectbox[0].value == "G10"
 
 
-def test_apptest_botao_do_sumario_move_o_selectbox_e_clique_seguinte_registra():
+def test_apptest_botao_do_sumario_muda_o_grafico_e_clique_seguinte_registra():
     from streamlit.testing.v1 import AppTest
 
     at = AppTest.from_function(_pagina_de_teste)
@@ -107,26 +105,23 @@ def test_apptest_botao_do_sumario_move_o_selectbox_e_clique_seguinte_registra():
     at.button(key="pageA_ir_G24").click()
     at.run()
     assert at.session_state["pageA_selecionado"] == "G24"
-    assert at.selectbox[0].value == "G24"
 
-    # depois da navegação pelo botão, um clique direto no selectbox também
+    # depois da navegação pelo botão, um clique direto em outro botão também
     # tem que valer na primeira tentativa.
-    at.selectbox[0].select("G5 rótulo")
+    at.button(key="pageA_ir_G5").click()
     at.run()
     assert at.session_state["pageA_selecionado"] == "G5"
-    assert at.selectbox[0].value == "G5"
 
 
-def test_apptest_busca_filtra_sumario_mas_nao_o_selectbox():
+def test_apptest_busca_filtra_sumario_mas_nao_a_selecao_atual():
     from streamlit.testing.v1 import AppTest
 
     at = AppTest.from_function(_pagina_de_teste)
     at.run()
 
-    at.selectbox[0].select("G5 rótulo")
+    at.button(key="pageA_ir_G5").click()
     at.run()
     assert at.session_state["pageA_selecionado"] == "G5"
-    opcoes_antes = list(at.selectbox[0].options)
 
     at.text_input(key="pageA_busca").set_value("G10")
     at.run()
@@ -134,9 +129,7 @@ def test_apptest_busca_filtra_sumario_mas_nao_o_selectbox():
     # sumário só mostra quem bate com a busca — o botão de G5 sumiu.
     assert not any(b.key == "pageA_ir_G5" for b in at.button)
     assert any(b.key == "pageA_ir_G10" for b in at.button)
-    # mas o selectbox continua com o catálogo inteiro e a seleção intacta.
-    assert at.selectbox[0].options == opcoes_antes
-    assert at.selectbox[0].value == "G5"
+    # o gráfico em exibição continua o mesmo.
     assert at.session_state["pageA_selecionado"] == "G5"
 
 
@@ -145,7 +138,7 @@ def test_apptest_busca_sem_resultado_nao_quebra_nem_muda_selecao():
 
     at = AppTest.from_function(_pagina_de_teste)
     at.run()
-    at.selectbox[0].select("G5 rótulo")
+    at.button(key="pageA_ir_G5").click()
     at.run()
 
     at.text_input(key="pageA_busca").set_value("sustentação oral")
@@ -153,7 +146,6 @@ def test_apptest_busca_sem_resultado_nao_quebra_nem_muda_selecao():
 
     assert not at.exception
     assert any("Nenhum gráfico corresponde" in w.value for w in at.warning)
-    assert at.selectbox[0].value == "G5"
     assert at.session_state["pageA_selecionado"] == "G5"
 
 
@@ -165,11 +157,10 @@ def test_apptest_link_compartilhado_ida_e_volta_semeia_uma_vez_so():
     at.query_params[param] = "G24"
     at.run()
     assert at.session_state["pageA_selecionado"] == "G24"
-    assert at.selectbox[0].value == "G24"
 
     # o seed só roda uma vez: uma escolha nova do usuário não é revertida
     # pelo query param, mesmo que ele continue presente na sessão.
-    at.selectbox[0].select("G5 rótulo")
+    at.button(key="pageA_ir_G5").click()
     at.run()
     assert at.session_state["pageA_selecionado"] == "G5"
 

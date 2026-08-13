@@ -7,6 +7,10 @@ from components.catalogo import render_pagina
 from components.grafico import GraficoSpec
 from components.tabulador import render_tabulador
 from dados.filters import dimensoes_disponiveis
+from pages.bloco2_inclusoes.plots import (
+    fig_2i_tramitacao_anual_2016, fig_31_tramitacao_2016,
+    fig_31_tramitacao_alt, fig_32_tramitacao_alt,
+)
 from .plots import (
     gt1_tramitacao,
     gt2_tram_por_classe,
@@ -24,12 +28,12 @@ from .plots import (
     DIMENSOES,
 )
 
-# ── Catálogo T1–T9, T11–T13 (T10 é o tabulador livre, fora do catálogo) ────────
+# ── Catálogo T1–T17 (T17 é o tabulador livre, fora do catálogo) ────────────────
 _CATALOGO = [
     GraficoSpec(
         id="T1",
         rotulo="T1 — Tramitação por ambiente (geral)",
-        subtitulo="Tramitação por Ambiente — Processos CC (2016–2025)",
+        subtitulo="Quase 60% dos processos tramitam só no virtual (2.168 de 3.644)",
         descricao="Distribuição dos processos distintos por ambiente: "
                   "só PV, só PP ou ambos.",
         fn=gt1_tramitacao,
@@ -39,7 +43,7 @@ _CATALOGO = [
     GraficoSpec(
         id="T2",
         rotulo="T2 — Tramitação por ambiente e classe",
-        subtitulo="Tramitação por Ambiente e Classe — Processos CC (2016–2025)",
+        subtitulo="ADI domina a tramitação em todos os ambientes",
         descricao="Barras agrupadas por ambiente de tramitação (só PV / só PP / ambos) "
                   "para cada classe processual (ADI, ADPF, ADC, ADO).",
         fn=gt2_tram_por_classe,
@@ -49,7 +53,7 @@ _CATALOGO = [
     GraficoSpec(
         id="T3",
         rotulo="T3 — Tramitação por ambiente e tipo de questão",
-        subtitulo="Tramitação por Ambiente e Tipo de Questão — Processos CC (2016–2025)",
+        subtitulo="PR domina a tramitação em todos os ambientes",
         descricao="Barras agrupadas por ambiente de tramitação para cada tipo de questão "
                   "(PR / RC / QI). IJ renomeado para QI.",
         fn=gt3_tram_por_tipo,
@@ -59,7 +63,7 @@ _CATALOGO = [
     GraficoSpec(
         id="T4",
         rotulo="T4 — Processos em ambos os ambientes por tipo de questão",
-        subtitulo="Processos em Ambos os Ambientes por Tipo de Questão (2016–2025)",
+        subtitulo="PR também domina os processos que passaram pelos dois ambientes",
         descricao="Recorte dos processos que tramitaram em ambos os ambientes, "
                   "distribuídos por tipo de questão (PR / RC / QI).",
         fn=gt4_ambos_por_tipo,
@@ -69,7 +73,7 @@ _CATALOGO = [
     GraficoSpec(
         id="T5",
         rotulo="T5 — Macro-desfecho por ambiente de tramitação",
-        subtitulo="Macro-Desfecho por Ambiente de Tramitação — Inclusões (2016–2025)",
+        subtitulo="Não conclusão domina os grupos presencial e misto; no virtual, concluídos levam",
         descricao="Volume de inclusões concluídas e não concluídas em cada "
                   "grupo de tramitação (só PV / só PP / ambos).",
         fn=gt5_macro_por_tram,
@@ -79,7 +83,7 @@ _CATALOGO = [
     GraficoSpec(
         id="T6",
         rotulo="T6 — Desfecho detalhado por ambiente de tramitação",
-        subtitulo="Desfecho detalhado por ambiente de tramitação — Inclusões (2016–2025)",
+        subtitulo="Virtual conclui em unanimidade; presencial acumula 'motivos diversos'",
         descricao="Os sete desfechos detalhados (unânime, maioria, pedido de vista "
                   "e os demais) em cada grupo de tramitação.",
         fn=gt6_desfecho_por_tram,
@@ -90,7 +94,7 @@ _CATALOGO = [
     GraficoSpec(
         id="T7",
         rotulo="T7 — Distribuição por classe dentro de cada ambiente",
-        subtitulo="Distribuição por Classe — por Ambiente de Tramitação (2016–2025)",
+        subtitulo="ADI é a maioria esmagadora em qualquer ambiente de tramitação",
         descricao="Barras 100% empilhadas mostrando a composição por classe processual "
                   "dentro de cada ambiente (só PV / só PP / ambos).",
         fn=gt7_classe_por_tram,
@@ -100,7 +104,7 @@ _CATALOGO = [
     GraficoSpec(
         id="T8",
         rotulo="T8 — Distribuição por tipo de questão dentro de cada ambiente",
-        subtitulo="Distribuição por Tipo de Questão — por Ambiente de Tramitação (2016–2025)",
+        subtitulo="QI pesa só no presencial (60%); virtual e misto são quase só PR",
         descricao="Barras 100% empilhadas mostrando a composição por tipo de questão "
                   "dentro de cada ambiente (só PV / só PP / ambos).",
         fn=gt8_tipo_por_tram,
@@ -110,7 +114,7 @@ _CATALOGO = [
     GraficoSpec(
         id="T9",
         rotulo="T9 — Taxa de conclusão por ambiente e classe (%)",
-        subtitulo="Taxa de Conclusão (%) por Ambiente de Tramitação e Classe (2016–2025)",
+        subtitulo="Virtual conclui muito mais que o presencial em toda classe",
         descricao="Percentual de inclusões concluídas para cada combinação de ambiente de "
                   "tramitação e classe processual.",
         fn=gt9_taxa_conclusao,
@@ -118,9 +122,9 @@ _CATALOGO = [
         filtros=("tipo_questao", "periodo"),
     ),
     GraficoSpec(
-        id="T11",
-        rotulo="T11 — Processos por ano e ambiente",
-        subtitulo="Processos distintos por ano e ambiente (2016–2025)",
+        id="T10",
+        rotulo="T10 — Processos por ano e ambiente",
+        subtitulo="Presencial encolhe enquanto o virtual dispara a partir de 2019",
         descricao="Cada processo aparece uma vez por ano-ambiente onde foi pautado. "
                   "Barra por ambiente com total geral no eixo secundário.",
         fn=gt11_proc_ano_ambiente,
@@ -128,9 +132,9 @@ _CATALOGO = [
         filtros=("classe", "tipo_questao", "periodo"),
     ),
     GraficoSpec(
-        id="T12",
-        rotulo="T12 — Processos por tipo de tramitação",
-        subtitulo="Processos por tipo de tramitação, por ano sem repetição (2016–2025)",
+        id="T11",
+        rotulo="T11 — Processos por tipo de tramitação",
+        subtitulo="Virtual substitui o presencial na tramitação de novos processos",
         descricao="Cada processo conta uma única vez: ano da primeira inclusão, "
                   "categoria conforme todo o histórico (Virtual / Físico / Ambos).",
         fn=gt12_proc_tramitacao_primeiro_ano,
@@ -138,9 +142,9 @@ _CATALOGO = [
         filtros=("classe", "tipo_questao", "periodo"),
     ),
     GraficoSpec(
-        id="T13",
-        rotulo="T13 — Processos por tipo de tramitação (período total)",
-        subtitulo="Processos por tipo de tramitação — 2016–2025",
+        id="T12",
+        rotulo="T12 — Processos por tipo de tramitação (período total)",
+        subtitulo="Quase 60% dos processos tramitam exclusivamente no virtual",
         descricao="Cada processo aparece uma única vez, classificado pelo(s) ambiente(s) "
                   "em que tramitou ao longo de todo o período.",
         fn=gt13_tramitacao_periodo,
@@ -167,16 +171,84 @@ def _render_tabulador(df: pd.DataFrame, key_suffix: str) -> None:
     render_tabulador(df, key_suffix, dimensoes_disponiveis(df.columns), _PREDEFINIDOS)
 
 
-_CATALOGO.append(GraficoSpec(
-    id="T10",
-    rotulo="T10 — Tabulador interativo (eixos livres)",
+_TABULADOR = GraficoSpec(
+    id="T17",
+    rotulo="T17 — Tabulador interativo (eixos livres)",
     subtitulo="Tabulador interativo — eixos, agrupamento e métrica livres",
     descricao="Configure o eixo X, a cor/grupo, a métrica e o modo de barras. "
               "A tabela abaixo acompanha os mesmos eixos.",
     fn=None,
     renderer=lambda df, key: _render_tabulador(df, key_suffix=key),
-))
+)
+
+# ── Portados do Bloco 2 (período fixo) ────────────────────────────────────────
+# A página Tramitação trabalha com o dataset de tramitações; as figuras do
+# Bloco 2 precisam das inclusões em pauta, capturadas por closure em
+# _montar_catalogo. Entradas com filtros=(): período é identidade do gráfico.
+def _montar_catalogo(df_inc: pd.DataFrame) -> list[GraficoSpec]:
+    """Monta o catálogo fechando as figuras do Bloco 2 sobre `df_inc`.
+
+    Aplica a convenção do chamador do Bloco 2 (tipo_questao já com IJ→QI) e
+    ignora o dataframe da página — as figuras filtram o ano por dentro.
+    """
+    d_inc = df_inc.assign(tipo_questao=df_inc["tipo_questao"].replace({"IJ": "QI"}))
+
+    def _portado(fn):
+        def _wrap(_df, show_values: bool = True, **_kw):
+            return fn(d_inc, show_values=show_values)
+        return _wrap
+
+    portados = [
+        GraficoSpec(
+            id="T13",
+            rotulo="T13 — Tramitação por ano (2016–2025)",
+            subtitulo="Virtual ultrapassa o presencial em 2020 e o substitui na tramitação",
+            descricao="Ambiente de tramitação de cada processo por ano, 2016–2025: o virtual ultrapassa "
+                      "o presencial em 2020. Período fixo do dado, sem recorte.",
+            fn=_portado(fig_2i_tramitacao_anual_2016),
+            tipos=("barra",),
+            filtros=(),
+            portada=True,
+        ),
+        GraficoSpec(
+            id="T14",
+            rotulo="T14 — Tramitação por período (2016–2019)",
+            subtitulo="2016–2019: quase dois terços dos processos só no presencial (63%)",
+            descricao="Proporção de processos que tramitaram só no virtual, só no presencial ou em ambos, "
+                      "2016–2019. Período fixo do dado, sem recorte.",
+            fn=_portado(fig_31_tramitacao_2016),
+            tipos=("barra",),
+            filtros=(),
+            portada=True,
+        ),
+        GraficoSpec(
+            id="T15",
+            rotulo="T15 — Tramitação por período, vertical (2016–2019)",
+            subtitulo="2016–2019: quase dois terços dos processos só no presencial (63%)",
+            descricao="Mesma leitura do T14 em barras verticais, 2016–2019. Período fixo do dado, sem recorte.",
+            fn=_portado(fig_31_tramitacao_alt),
+            tipos=("barra",),
+            filtros=(),
+            portada=True,
+        ),
+        GraficoSpec(
+            id="T16",
+            rotulo="T16 — Tramitação por período, vertical (2020–2025)",
+            subtitulo="2020–2025: mais de três quartos dos processos só no virtual (78%)",
+            descricao="Mesma leitura do 3.2 em barras verticais, 2020–2025. Período fixo do dado, sem recorte.",
+            fn=_portado(fig_32_tramitacao_alt),
+            tipos=("barra",),
+            filtros=(),
+            portada=True,
+        ),
+    ]
+    # O tabulador fecha a página: entra por último, depois dos portados.
+    return [*_CATALOGO, *portados, _TABULADOR]
 
 
-def render_graficos(df: pd.DataFrame) -> None:
-    render_pagina(_CATALOGO, df, key_prefix="tram")
+def render_graficos(df: pd.DataFrame, df_inc: pd.DataFrame | None = None) -> None:
+    if df_inc is not None:
+        catalogo = _montar_catalogo(df_inc)
+    else:
+        catalogo = [*_CATALOGO, _TABULADOR]
+    render_pagina(catalogo, df, key_prefix="tram")

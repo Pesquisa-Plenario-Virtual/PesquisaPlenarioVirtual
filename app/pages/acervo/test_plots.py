@@ -67,9 +67,11 @@ def test_classe_usa_cor_do_bloco1_e_titulo_dinamico():
 def test_recorte_de_periodo_nao_estica_o_eixo():
     """Marcador fora do recorte esticava o eixo e espremia as barras.
 
-    A posição da ER 51 vinha de _frac_ano(1988, ...), um ano-base fixo. Com o
-    filtro em 2021-2025 (5 categorias, índices 0-4) a linha caía em x=28,5, o
-    Plotly estendia o eixo até lá e as barras ocupavam um sexto da largura.
+    O marcador da ER 51 usava ano-base fixo (1988) e posição fracionária da
+    data. Com o filtro em 2021-2025 (5 categorias, índices 0-4) a linha caía
+    em x=28,5, o Plotly estendia o eixo até lá e as barras ocupavam um sexto da
+    largura. Agora os marcadores ficam nas fronteiras entre anos (recorte
+    relativo), e só existem se a fronteira está no recorte plotado.
     """
     df = _df_fake()
     for lo, hi in [(2016, 2025), (2021, 2025), (2016, 2016), (2018, 2020)]:

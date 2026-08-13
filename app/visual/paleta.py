@@ -119,12 +119,19 @@ CORES: dict[str, tuple[str, str]] = {
     "Com reajuste de voto": ("#1baf7a", "#199e70"),
     "Sem sustentação oral": (CINZA_OUTROS, CINZA_OUTROS),
     "Sem reajuste de voto": (CINZA_OUTROS, CINZA_OUTROS),
+    # Séries de decisão (6.b2/6.b3) — agregações dos desfechos concluídos, na
+    # família azul dos concluídos, contraste por tom: o consenso é o degrau
+    # escuro, a divergência o claro.
+    "Unânime":       ("#184f95", "#184f95"),
+    "Com o relator": ("#2a78d6", "#3987e5"),
+    "Divergência":   ("#86b6ef", "#9ec5f4"),
     # Faixas de nº de sessões — rampa ordinal azul: são todas sessões virtuais,
     # então a família é a do Plenário Virtual e o tom cresce com a contagem.
     # Degraus da rampa sequencial azul documentada na §4 da spec, respeitando o
     # piso ordinal (nada mais claro que o degrau 250 no modo claro).
-    # ponytail: não revalidado com o script — o diretório da skill sumiu no meio
-    # da sessão. Revalidar como ordinal antes de considerar fechado.
+    # Revalidado como ordinal: luminância monotônica, contraste ≥ 2.11 com o
+    # fundo e ordem mantida sob simulação de deuteranopia/protanopia/tritanopia
+    # (distância adjacente ≥ 0.173, mesmo patamar dos pares aprovados).
     "1 sessão":     ("#184f95", "#184f95"),
     "2–3 sessões":  ("#256abf", "#3987e5"),
     "4–5 sessões":  ("#3987e5", "#6da7ec"),

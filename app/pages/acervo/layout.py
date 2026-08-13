@@ -9,6 +9,12 @@ from components.tabulador import render_tabulador
 from .plots import plotar_grafico_stf
 from pages.tramitacao.plots import gt10_tabulador
 from dados.filters import dimensoes_disponiveis
+from pages.bloco1_acervo.plots import (
+    fig_1a_variacao_trienal, fig_1a2_variacao_trienal, fig_1b_acervo_por_classe,
+    fig_1b2_acervo_por_classe_vertical, fig_1b3_acervo_por_classe_vertical_extremos,
+    fig_1b4_acervo_por_classe_vertical_sem_eixo, fig_1c_distribuicao_baixa,
+    fig_1d_variacao_anual, fig_1d2_variacao_anual,
+)
 
 _PREDEFINIDOS_ACERVO = [
     ("Ano × Classe (total geral, empilhado)",         "ano", "classe",        "inclusoes", "stack"),
@@ -98,9 +104,116 @@ def _render_interactive_tabulador(_df=None, key: str = "acervo_tab") -> None:
     render_tabulador(df_inc, key, dimensoes_disponiveis(df_inc.columns), _PREDEFINIDOS_ACERVO)
 
 
+# ── Narrativa do Acervo (Bloco 1) — portadas por import, período fixo 1988–2025 ──
+# Entradas com filtros=(): a função filtra o ano por dentro e o período é parte
+# da identidade do gráfico. O dataframe chega completo por closure da página.
+_NARRATIVA_ACERVO = [
+    GraficoSpec(
+        id="A6",
+        rotulo="A6 — Variação trienal do acervo (1988–2025)",
+        subtitulo="Acervo ativo encolhe mais de 500 processos por triênio desde 2018",
+        descricao="Variação do acervo ativo (distribuição − baixa) agrupada em triênios, "
+                  "positivo cinza e negativo vermelho. Período fixo da série, sem recorte.",
+        fn=fig_1a_variacao_trienal,
+        tipos=("barra",),
+        filtros=(),
+        portada=True,
+    ),
+    GraficoSpec(
+        id="A7",
+        rotulo="A7 — Variação trienal do acervo, negativo azul (1988–2025)",
+        subtitulo="Acervo ativo encolhe mais de 500 processos por triênio desde 2018",
+        descricao="Mesma variação trienal do A6, com o negativo em azul em vez de vermelho. "
+                  "Período fixo da série, sem recorte.",
+        fn=fig_1a2_variacao_trienal,
+        tipos=("barra",),
+        filtros=(),
+        portada=True,
+    ),
+    GraficoSpec(
+        id="A8",
+        rotulo="A8 — Acervo por classe, horizontal (1988–2025)",
+        subtitulo="ADI concentra o acervo ativo em todo o período",
+        descricao="Barras horizontais empilhadas por classe, 1988 no topo, com os totais anuais na ponta. "
+                  "Período fixo da série, sem recorte.",
+        fn=fig_1b_acervo_por_classe,
+        tipos=("barra",),
+        filtros=(),
+        portada=True,
+    ),
+    GraficoSpec(
+        id="A9",
+        rotulo="A9 — Acervo por classe, vertical (1988–2025)",
+        subtitulo="ADI concentra o acervo ativo em todo o período",
+        descricao="Barras verticais empilhadas por classe, com marcadores ER e faixa ESPIN. "
+                  "Período fixo da série, sem recorte.",
+        fn=fig_1b2_acervo_por_classe_vertical,
+        tipos=("barra",),
+        filtros=(),
+        portada=True,
+    ),
+    GraficoSpec(
+        id="A10",
+        rotulo="A10 — Acervo por classe, totais de 2017 e 2025 rotulados (1988–2025)",
+        subtitulo="ADI concentra o acervo ativo em todo o período",
+        descricao="Mesmo A9, com os totais de 2017 e 2025 rotulados no topo das barras. "
+                  "Período fixo da série, sem recorte.",
+        fn=fig_1b3_acervo_por_classe_vertical_extremos,
+        tipos=("barra",),
+        filtros=(),
+        portada=True,
+    ),
+    GraficoSpec(
+        id="A11",
+        rotulo="A11 — Acervo por classe, sem eixo (1988–2025)",
+        subtitulo="ADI concentra o acervo ativo em todo o período",
+        descricao="Mesmo A9 sem o eixo esquerdo; 'Exibir valores' rotula o total de cada ano. "
+                  "Período fixo da série, sem recorte.",
+        fn=fig_1b4_acervo_por_classe_vertical_sem_eixo,
+        tipos=("barra",),
+        filtros=(),
+        portada=True,
+    ),
+    GraficoSpec(
+        id="A12",
+        rotulo="A12 — Distribuição e baixa espelhados (1988–2025)",
+        subtitulo="Baixas disparam após 2019 e superam as distribuições",
+        descricao="Colunas espelhadas: distribuições (entrada) para cima e baixas (saída) para baixo, "
+                  "com marcadores ER e faixa ESPIN. Período fixo da série, sem recorte.",
+        fn=fig_1c_distribuicao_baixa,
+        tipos=("barra",),
+        filtros=(),
+        portada=True,
+    ),
+    GraficoSpec(
+        id="A13",
+        rotulo="A13 — Variação anual do acervo (1988–2025)",
+        subtitulo="Acervo ativo em queda contínua desde 2019",
+        descricao="Variação anual (entradas − saídas), acréscimo cinza e decréscimo vermelho, "
+                  "com marcadores ER e faixa ESPIN. Período fixo da série, sem recorte.",
+        fn=fig_1d_variacao_anual,
+        tipos=("barra",),
+        filtros=(),
+        portada=True,
+    ),
+    GraficoSpec(
+        id="A14",
+        rotulo="A14 — Variação anual do acervo, decréscimo azul (1988–2025)",
+        subtitulo="Acervo ativo em queda contínua desde 2019",
+        descricao="Mesma variação anual do A13, com o decréscimo em azul em vez de vermelho. "
+                  "Período fixo da série, sem recorte.",
+        fn=fig_1d2_variacao_anual,
+        tipos=("barra",),
+        filtros=(),
+        portada=True,
+    ),
+]
+
+_CATALOGO.extend(_NARRATIVA_ACERVO)
+
 _CATALOGO.append(GraficoSpec(
-    id="A6",
-    rotulo="A6 — Tabulador interativo (eixos livres)",
+    id="A15",
+    rotulo="A15 — Tabulador interativo (eixos livres)",
     subtitulo="Tabulador interativo — eixos, agrupamento e métrica livres",
     descricao="Configure o eixo X, a cor/grupo, a métrica e o modo de barras. "
               "A tabela abaixo acompanha os mesmos eixos.",

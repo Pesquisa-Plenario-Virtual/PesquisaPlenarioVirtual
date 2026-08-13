@@ -53,6 +53,9 @@ _preferencias_globais()
 # ── Navegação ────────────────────────────────────────────────────────────────
 pg = st.navigation(
     {
+        "Início": [
+            st.Page("pages/home/home.py", title="Início", icon="🏛️", default=True),
+        ],
         "Acervo": [
             st.Page("pages/acervo/acervo.py", title="Acervo Histórico", icon="📦"),
         ],

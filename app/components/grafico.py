@@ -15,7 +15,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from visual.tema import TIPOS, aplicar_tema, converter_tipo
+from visual.base import remover_marcos
+from visual.tema import TIPOS, aplicar_tema, converter_tipo, remover_tracinho_e_rotulos
 
 FILTROS_VALIDOS = ("ambiente", "classe", "tipo_questao", "desfecho", "periodo")
 
@@ -45,6 +46,9 @@ class GraficoSpec:
     # tabulador de eixos livres, cujos controles não cabem no conjunto fixo da
     # casca. Quando presente, render_pagina chama isto em vez de render_grafico.
     renderer: Callable | None = None
+    # Portada de um Bloco Empírico: filtra o ano por dentro, então o período é
+    # parte da identidade do gráfico e não pode aparecer nos filtros.
+    portada: bool = False
 
 
 def tabela_da_figura(fig: go.Figure) -> pd.DataFrame:
@@ -182,6 +186,16 @@ def _controles(spec: GraficoSpec, df, key: str) -> dict:
             "Escala", ["Absoluto", "Percentual"], index=0, key=f"{key}_esc",
         ) == "Percentual"
 
+    mcols = st.columns(2)
+    with mcols[0]:
+        estado["marcos_er"] = st.checkbox(
+            "Marcos ER", value=True, key=f"{key}_er",
+            help="Linhas pretas tracejadas das Emendas Regimentais (ER 51/52/53).")
+    with mcols[1]:
+        estado["faixa_espin"] = st.checkbox(
+            "Faixa ESPIN", value=True, key=f"{key}_espin",
+            help="Faixa rosa, linhas vermelhas e rótulo do período da ESPIN (2019–2022).")
+
     escolhas: dict = {}
     ativos = [f for f in spec.filtros if f in FILTROS_VALIDOS]
     if ativos:
@@ -200,6 +214,8 @@ def _controles(spec: GraficoSpec, df, key: str) -> dict:
                 if coluna not in df.columns:
                     continue
                 opcoes = _opcoes_filtro(spec, df, nome, coluna)
+                if not opcoes:
+                    continue  # ponytail: recorte sem valores na dimensão — sem seletor
                 if nome == "ambiente" and _fn_aceita_ambiente(spec.fn):
                     opcoes = sorted(opcoes, key=lambda v: v != "Plenário Virtual")
                     escolhas[nome] = [st.selectbox(
@@ -254,6 +270,9 @@ def render_grafico(spec: GraficoSpec, df, key: str) -> None:
         with contexto:
             fig = converter_tipo(fig, estado["tipo"])
             fig = aplicar_tema(fig, tema=tema_atual, dark=dark)
+            fig = remover_tracinho_e_rotulos(fig)
+            if not (estado["marcos_er"] and estado["faixa_espin"]):
+                fig = remover_marcos(fig, er=estado["marcos_er"], espin=estado["faixa_espin"])
             fig.update_layout(showlegend=estado["legenda"] and len(fig.data) > 1)
             if not estado["show_values"]:
                 fig.update_traces(text=None, texttemplate=None)

@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import pandas as pd
 
-from visual.base import VERMELHO
+from visual.base import VERMELHO, remover_faixa_espin
 from visual.tema import aplicar_tema
 
 _CORES_FASES = {
@@ -143,9 +143,15 @@ def render_timeline() -> None:
             "- **Zona rosa:** período da ESPIN (Portaria MS 188/2020 a Portaria MS 913/2022)"
         )
 
+    faixa_espin = st.checkbox(
+        "Faixa ESPIN", value=True, key="geral_tl_espin",
+        help="Zona rosa e rótulo do período da ESPIN (2020–2022).")
+
     fig = _build_timeline_figure()
     tema_atual = st.session_state.get("tema_visual", "novo")
     dark = st.session_state.get("modo_noturno", False)
+    if not faixa_espin:
+        fig = remover_faixa_espin(fig)
     st.plotly_chart(aplicar_tema(fig, tema=tema_atual, dark=dark), width="stretch")
 
 

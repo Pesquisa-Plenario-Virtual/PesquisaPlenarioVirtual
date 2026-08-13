@@ -3,6 +3,7 @@
 from __future__ import annotations
 import streamlit as st
 import pandas as pd
+from visual.base import remover_marcos
 from . import plots as p
 
 _CATALOGO = [
@@ -47,9 +48,16 @@ def render_graficos(df: pd.DataFrame) -> None:
     dados_fn = item[3] if len(item) > 3 else None
 
     st.caption(descricao)
-    show_values = st.checkbox("Exibir valores", value=True, key=f"bloco2_sv_{idx}")
+    c1, c2 = st.columns(2)
+    with c1:
+        show_values = st.checkbox("Exibir valores", value=True, key=f"bloco2_sv_{idx}")
+    with c2:
+        marcos_er = st.checkbox("Marcos ER", value=True, key=f"bloco2_er_{idx}")
+    faixa_espin = st.checkbox("Faixa ESPIN", value=True, key=f"bloco2_espin_{idx}")
 
     fig = fn(df, show_values=show_values)
+    if not (marcos_er and faixa_espin):
+        fig = remover_marcos(fig, er=marcos_er, espin=faixa_espin)
     st.plotly_chart(fig, width="stretch")
 
     if dados_fn is not None:

@@ -115,6 +115,13 @@ controles não cabem no conjunto fixo. É assim que o tabulador entra no catálo
 - Título e subtítulo não devem fixar período. A casca oferece filtro de tempo,
   então qualquer intervalo escrito à mão vira mentira no primeiro recorte.
   Derive do dataframe.
+- Período fixo é **identidade do gráfico**, não configuração. Gráficos de
+  panorama/bloco (ex.: bloco1/bloco2) fixam o ano na própria função — a origem
+  do dado impõe o recorte e o eixo fica travado nele. Ao portar uma figura com
+  período fixo para a casca, declarar `filtros=()` e receber o dataframe inteiro
+  por closure: um recorte temporal quebrado vira `KeyError` ou eixo vazio, nunca
+  um gráfico "menos um ano" em silêncio. `percentual=True` exige `proporcao`
+  com efeito real no eixo (contagem ↔ percentual), como em `_composicao`.
 
 ---
 

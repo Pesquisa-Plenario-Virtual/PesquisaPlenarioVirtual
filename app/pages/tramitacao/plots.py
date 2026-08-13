@@ -81,7 +81,7 @@ def _barras_grupo(tab: pd.DataFrame, col_x: str, col_grupo: str,
 def _marcar_periodo_2020_2025(fig: go.Figure, y_max: float) -> None:
     """Aplica sombreamento ESPIN + marcador ER 53 num eixo x numérico de 'ano' (2020–2025)."""
     y_top = y_max * 1.2
-    add_espin_shade(fig, ano_base=0, y0=0, y1=y_top, y_label=y_max * 1.12)
+    add_espin_shade(fig, ano_base=0, y0=0, y1=y_top)
     add_er_marker(fig, ano_base=0, er=53, y0=0, y1=y_top, y_label=y_max * 1.02)
 
 

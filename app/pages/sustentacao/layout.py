@@ -22,12 +22,12 @@ _PREDEFINIDOS_SUST = [
     ("Macro-Desfecho × Sustentação (inclusões)",          "macro_desfecho",  "teve_sustentacao",  "inclusoes", "group"),
 ]
 
-# ── Catálogo S1–S8 (S9 é o tabulador livre, fora do catálogo) ──────────────────
+# ── Catálogo S1–S5 (S6 é o tabulador livre, fora do catálogo) ──────────────────
 _CATALOGO = [
     GraficoSpec(
-        id="S1/S2",
-        rotulo="S1/S2 — Proporção com/sem sustentação (Plenário Virtual e Plenário Presencial)",
-        subtitulo="Sustentação Oral — período total",
+        id="S1",
+        rotulo="S1 — Proporção com/sem sustentação (Plenário Virtual e Plenário Presencial)",
+        subtitulo="Sustentação oral ocorre em cerca de um quarto das inclusões (25%)",
         descricao="Barra horizontal com a proporção de inclusões que tiveram sustentação oral, percentual na ponta. "
                   "Selecione o âmbito.",
         fn=gs1_sust_filtravel,
@@ -35,9 +35,9 @@ _CATALOGO = [
         filtros=("ambiente", "classe", "tipo_questao", "periodo"),
     ),
     GraficoSpec(
-        id="S3/S4",
-        rotulo="S3/S4 — Sustentações por Ano (Plenário Virtual e Plenário Presencial)",
-        subtitulo="Sustentação Oral por Ano",
+        id="S2",
+        rotulo="S2 — Sustentações por Ano (Plenário Virtual e Plenário Presencial)",
+        subtitulo="Sustentações crescem com a universalização e atingem o pico em 2020",
         descricao="Volume anual de inclusões com sustentação oral. "
                   "Anos sem ocorrência aparecem com valor zero. Selecione o âmbito.",
         fn=gs3_sust_anual_filtravel,
@@ -46,9 +46,9 @@ _CATALOGO = [
         percentual=True,
     ),
     GraficoSpec(
-        id="S5/S6",
-        rotulo="S5/S6 — Sustentações por Ano e Classe (Plenário Virtual e Plenário Presencial)",
-        subtitulo="Sustentação Oral por Ano e Classe",
+        id="S3",
+        rotulo="S3 — Sustentações por Ano e Classe (Plenário Virtual e Plenário Presencial)",
+        subtitulo="ADI concentra as sustentações em todos os anos",
         descricao="Barras agrupadas por classe (ADI, ADPF, ADC, ADO) mostrando o volume anual "
                   "de sustentações orais. Selecione o âmbito.",
         fn=gs5_sust_classe_filtravel,
@@ -57,9 +57,9 @@ _CATALOGO = [
         percentual=True,
     ),
     GraficoSpec(
-        id="S7",
-        rotulo="S7 — Sustentações por Ano e Tipo de Questão",
-        subtitulo="Sustentação Oral por Ano e Tipo de Questão",
+        id="S4",
+        rotulo="S4 — Sustentações por Ano e Tipo de Questão",
+        subtitulo="PR responde pela grande maioria das sustentações",
         descricao="Barras agrupadas por tipo de questão (PR / RC / QI) mostrando o volume anual "
                   "de sustentações orais. IJ renomeado para QI. Selecione o âmbito.",
         fn=gs7_sust_tipo_filtravel,
@@ -68,9 +68,9 @@ _CATALOGO = [
         percentual=True,
     ),
     GraficoSpec(
-        id="S8",
-        rotulo="S8 — Taxa de Sustentação por Ano e Ambiente (%)",
-        subtitulo="Taxa de Sustentação Oral por Ano e Ambiente (%)",
+        id="S5",
+        rotulo="S5 — Taxa de Sustentação por Ano e Ambiente (%)",
+        subtitulo="Taxas dos dois âmbitos se aproximam após a universalização",
         descricao="Percentual de inclusões com sustentação oral em cada ano, comparando "
                   "Plenário Virtual e Plenário Presencial lado a lado.",
         fn=gs8_taxa_ambiente,
@@ -85,8 +85,8 @@ def _render_interactive_tabulador(df: pd.DataFrame, key: str = "sust_tab") -> No
 
 
 _CATALOGO.append(GraficoSpec(
-    id="S9",
-    rotulo="S9 — Tabulador interativo (eixos livres)",
+    id="S6",
+    rotulo="S6 — Tabulador interativo (eixos livres)",
     subtitulo="Tabulador interativo — eixos, agrupamento e métrica livres",
     descricao="Configure o eixo X, a cor/grupo, a métrica e o modo de barras. "
               "A tabela abaixo acompanha os mesmos eixos.",

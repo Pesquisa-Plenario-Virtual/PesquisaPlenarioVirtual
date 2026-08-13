@@ -14,7 +14,7 @@ import streamlit as st
 
 from visual.base import br
 from pages.tramitacao.plots import gt10_tabulador
-from visual.tema import aplicar_tema
+from visual.tema import aplicar_tema, remover_tracinho_e_rotulos
 
 METRICAS_PADRAO = {
     "inclusoes": "Inclusões em pauta",
@@ -59,7 +59,7 @@ def figura_tabulador(df, eixo_x: str, grupo: str, metrica: str, barmode: str,
     fig = gt10_tabulador(df, eixo_x, grupo, metrica_gt, barmode, show_values)
     if titulo_y:
         fig.update_yaxes(title_text=titulo_y)
-    return aplicar_tema(fig, tema=tema, dark=dark)
+    return remover_tracinho_e_rotulos(aplicar_tema(fig, tema=tema, dark=dark))
 
 
 def render_tabulador(df, key: str, dims: dict[str, str], presets: list[tuple],

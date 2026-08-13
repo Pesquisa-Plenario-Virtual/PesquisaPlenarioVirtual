@@ -102,7 +102,7 @@ def _barras_anuais(df_amb: pd.DataFrame, titulo: str, show_values: bool = True,
         xaxis=dict(dtick=1, title="Ano"),
         yaxis=dict(title=y_title, range=[0, y_max * 1.3]),
     )
-    add_espin_shade(fig, ano_base=0, y0=0, y1=y_max * 1.25, y_label=y_max * 1.18)
+    add_espin_shade(fig, ano_base=0, y0=0, y1=y_max * 1.25)
     add_er_marker(fig, ano_base=0, er=53, y0=0, y1=y_max * 1.25, y_label=y_max * 1.05)
     return fig
 # ── G-R5 — Barras anuais por classe por ambiente (selecionável) ────────────────
@@ -152,7 +152,7 @@ def _barras_classe(df_amb: pd.DataFrame, titulo: str, show_values: bool = True,
         xaxis=dict(dtick=1, title="Ano"),
         yaxis=dict(title=y_title, range=[0, y_max * 1.3]),
     )
-    add_espin_shade(fig, ano_base=0, y0=0, y1=y_max * 1.25, y_label=y_max * 1.18)
+    add_espin_shade(fig, ano_base=0, y0=0, y1=y_max * 1.25)
     add_er_marker(fig, ano_base=0, er=53, y0=0, y1=y_max * 1.25, y_label=y_max * 1.05)
     return fig
 # ── G-R7 — Tipo de questão × reajuste (delega ao tabulador T10) ────────────────

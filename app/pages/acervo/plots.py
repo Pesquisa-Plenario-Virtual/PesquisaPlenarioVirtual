@@ -8,7 +8,7 @@ from __future__ import annotations
 import plotly.graph_objects as go
 import pandas as pd
 
-from visual.base import aplicar_padrao, br, AZUL, VERMELHO, ER_DATAS, _frac_ano
+from visual.base import aplicar_padrao, br, AZUL, VERMELHO, ER_FRONTEIRAS
 
 _CORES_CLASSE = {"ADI": "#2563EB", "ADPF": "#93C5FD", "ADC": "#059669", "ADO": "#7C3AED"}
 
@@ -126,19 +126,16 @@ def plotar_grafico_stf(
 
     # ER — réplica exata de fig_1b2_acervo_por_classe_vertical
     for er in (51, 52, 53):
-        ano_er, mes, dia = ER_DATAS[er]
-        # Todo marcador só existe se o ano dele está no recorte plotado. Sem
-        # esta guarda para a ER 51, o eixo categórico era esticado até a posição
-        # dela: com o filtro em 2021-2025 (5 categorias) a linha caía em x=28,5,
-        # e as barras espremiam num sexto da largura, com o resto vazio.
-        if str(ano_er) not in anos:
+        # Todo marcador só existe se a fronteira dele está no recorte plotado.
+        # Sem esta guarda para a ER 51, o eixo categórico era esticado até a
+        # posição dela: com o filtro em 2021-2025 (5 categorias) a linha caía
+        # fora, e as barras espremiam num sexto da largura, com o resto vazio.
+        fronteira = ER_FRONTEIRAS[er]
+        if str(fronteira) not in anos and str(fronteira + 1) not in anos:
             continue
-        if er in (52, 53):
-            x = anos.index(str(ano_er)) - 0.5
-        else:
-            # Posição fracionária pela data exata, relativa ao PRIMEIRO ano
-            # plotado — não a um 1988 fixo, que só valia sem filtro de período.
-            x = _frac_ano(anos_int[0], ano_er, mes, dia)
+        # Posição da fronteira entre anos, relativa ao PRIMEIRO ano plotado —
+        # não a um 1988 fixo, que só valia sem filtro de período.
+        x = (fronteira - anos_int[0]) + 0.5
         fig.add_shape(type="line", x0=x, x1=x, y0=0, y1=y_er,
                       line=dict(color="#000000", width=1.5, dash="dash"), xref="x", yref="y")
         fig.add_annotation(x=x, y=y_er, yanchor="bottom", text=f"<b>ER<br>{er}</b>", showarrow=False,

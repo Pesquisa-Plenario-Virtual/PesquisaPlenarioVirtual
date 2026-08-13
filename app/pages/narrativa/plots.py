@@ -29,7 +29,7 @@ def plot_na(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
     ])
 
     if anos_int:
-        add_espin_shade(fig, anos_int[0], y0=0, y1=85, y_label=80)
+        add_espin_shade(fig, anos_int[0], y0=0, y1=85)
 
     aplicar_padrao(
         fig,

@@ -10,7 +10,7 @@ _root = _here.parent.parent.parent
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
-from dados.loader import load_tramitacoes
+from dados.loader import load_tramitacoes, load_inclusoes_em_pauta
 from pages.tramitacao.layout import render_graficos
 
 try:
@@ -53,4 +53,4 @@ st.markdown("""
 - **Tabela Consolidada** — dados brutos por processo com contagem de inclusões por ambiente.
 """)
 
-render_graficos(df)
+render_graficos(df, df_inc=load_inclusoes_em_pauta())

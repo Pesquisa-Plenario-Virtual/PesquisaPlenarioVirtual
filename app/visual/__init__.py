@@ -24,12 +24,15 @@ As páginas devem importar deste pacote, não dos módulos internos.
 
 from visual.base import (
     ER_DATAS,
-    ESPIN_FIM,
-    ESPIN_INICIO,
+    ER_FRONTEIRAS,
+    ESPIN_FRONTEIRAS,
     add_er_marker,
     add_espin_shade,
     aplicar_padrao,
     br,
+    remover_marcos,
+    remover_marcos_er,
+    remover_faixa_espin,
 )
 from visual.paleta import CINZA_OUTROS, CORES, canonico, conhecido, cor, cores, sentence_case
 from visual.tema import (
@@ -50,5 +53,6 @@ __all__ = [
     "limpar_html_de_fonte", "texto_numerico_br",
     # base — mobiliário de domínio
     "aplicar_padrao", "br", "add_er_marker", "add_espin_shade",
-    "ER_DATAS", "ESPIN_INICIO", "ESPIN_FIM",
+    "remover_marcos", "remover_marcos_er", "remover_faixa_espin",
+    "ER_DATAS", "ER_FRONTEIRAS", "ESPIN_FRONTEIRAS",
 ]

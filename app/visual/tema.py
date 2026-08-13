@@ -276,6 +276,36 @@ def _normalizar_anotacoes(fig: go.Figure, dark: bool) -> None:
                         color=cor_original or anotacao["color"])
 
 
+# Rótulos de eixo que só repetem a dimensão que o próprio eixo já mostra
+# (Ano no x, contagem no y). Removidos para plotagem minimalista; rótulos com
+# "%" ou que nomeiam a categoria (Classe, Tipo de questão, Período) ficam.
+_ROTULOS_CONTAGEM = {
+    "Ano", "Processos", "Processos distintos", "Processos (incidentes distintos)",
+    "Inclusões em pauta", "Inclusões", "Inclusões concluídas", "Inclusões por processo",
+    "Inclusões com sustentação", "Inclusões com sustentação oral",
+    "Inclusões com reajuste de voto", "Nº de processos", "Nº de processos concluídos",
+    "Nº de sessões", "Nº de sessões por processo", "Quantidade",
+}
+
+
+def remover_tracinho_e_rotulos(fig: go.Figure) -> go.Figure:
+    """Tira o tracinho do eixo x e rótulos de eixo redundantes.
+
+    Aplica-se no ponto de render (não dentro de aplicar_tema) justamente para
+    valer nos dois temas das páginas não-empíricas: o toggle "Visual empírico"
+    devolve a figura intocada, e é lá que o usuário não quer ver o tracinho
+    nem o "Ano"/"Processos distintos" repetidos.
+    """
+    for chave in fig.layout:
+        if chave.startswith("xaxis"):
+            fig.layout[chave].ticks = ""
+        if not (chave.startswith("xaxis") or chave.startswith("yaxis")):
+            continue
+        if fig.layout[chave].title.text in _ROTULOS_CONTAGEM:
+            fig.layout[chave].title.text = ""
+    return fig
+
+
 def _normalizar_texto_livre(fig: go.Figure) -> None:
     """Título, título de eixo (inclusive subplots), anotação e tick categórico:
     "Plenário Físico" não pode aparecer em nenhum desses lugares."""

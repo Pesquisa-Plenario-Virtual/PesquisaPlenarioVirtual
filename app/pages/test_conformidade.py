@@ -60,14 +60,15 @@ def _catalogos():
     from pages.reajuste.layout import _CATALOGO as reajuste
     from pages.sessoes_virtuais.layout import _montar_catalogo
     from pages.sustentacao.layout import _CATALOGO as sustentacao
-    from pages.tramitacao.layout import _CATALOGO as tramitacao
+    from pages.tramitacao.layout import _montar_catalogo as _montar_tram
 
     inc = load_inclusoes_em_pauta()
     tram = load_tramitacoes()
     sessoes = load_sessoes_virtuais()
 
     return [
-        ("tramitacao", tramitacao, tram),
+        # Tramitação fecha as figuras do Bloco 2 sobre o df de inclusões.
+        ("tramitacao", _montar_tram(inc), tram),
         ("inclusoes", inclusoes, inc),
         ("reajuste", reajuste, tram),
         ("sustentacao", sustentacao, load_sustentacao_oral()),
@@ -228,6 +229,23 @@ def test_rotulo_de_valor_no_padrao_brasileiro():
                     pct_com_ponto.append(f"{pagina}/{gid} [{tipo}]: {s}")
     assert not sem_milhar, "rótulo de 4+ dígitos sem ponto de milhar:\n  " + "\n  ".join(sem_milhar[:15])
     assert not pct_com_ponto, "percentual com ponto decimal:\n  " + "\n  ".join(pct_com_ponto[:15])
+
+
+def test_portadas_do_bloco_empirico_nao_declaram_periodo():
+    """Figuras portadas dos Blocos Empíricos têm o período fixo por dentro.
+
+    Toda entrada marcada `portada=True` veio de um Bloco Empírico: filtra o ano
+    internamente, então qualquer `periodo` no filtro devolveria gráfico vazio
+    ou KeyError em silêncio.
+    """
+    com_periodo = []
+    for pagina, catalogo, _df in _catalogos():
+        for spec in catalogo:
+            if not spec.portada:
+                continue
+            if "periodo" in spec.filtros:
+                com_periodo.append(f"{pagina}/{spec.id}: {spec.filtros}")
+    assert not com_periodo, "entrada portada com filtro de período:\n  " + "\n  ".join(com_periodo)
 
 
 def test_tabulador_tambem_recebe_o_tema():

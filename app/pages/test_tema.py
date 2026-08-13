@@ -1,7 +1,13 @@
 """Testes de tema.py — pós-processamento de figura."""
 import plotly.graph_objects as go
 
-from visual.tema import FONTE, TAMANHOS, aplicar_tema, limpar_html_de_fonte
+from visual.tema import (
+    FONTE,
+    TAMANHOS,
+    aplicar_tema,
+    limpar_html_de_fonte,
+    remover_tracinho_e_rotulos,
+)
 
 
 def _fig_suja() -> go.Figure:
@@ -289,6 +295,45 @@ def test_cor_escalar_ainda_converte_para_linha_sem_regressao():
     fig = converter_tipo(_fig_barras(), "linha")
     assert fig.data[0].type == "scatter"
     assert fig.data[0].line.color == "#2a78d6"
+
+
+def _fig_com_tracinho_e_rotulos() -> go.Figure:
+    fig = go.Figure(go.Bar(x=["2020", "2021"], y=[10, 20]))
+    fig.update_layout(
+        xaxis=dict(title="Ano", ticks="outside"),
+        yaxis=dict(title="Processos distintos", ticks="outside"),
+    )
+    return fig
+
+
+def test_remove_tracinho_do_eixo_x():
+    fig = remover_tracinho_e_rotulos(_fig_com_tracinho_e_rotulos())
+    assert fig.layout.xaxis.ticks == ""
+    assert fig.layout.yaxis.ticks == "outside"
+
+
+def test_remove_rotulos_de_contagem_redundantes():
+    fig = remover_tracinho_e_rotulos(_fig_com_tracinho_e_rotulos())
+    assert fig.layout.xaxis.title.text == ""
+    assert fig.layout.yaxis.title.text == ""
+
+
+def test_preserva_rotulo_de_percentual_e_categoria():
+    fig = go.Figure(go.Bar(x=["2020"], y=[1]))
+    fig.update_layout(
+        xaxis=dict(title="Tipo de questão"),
+        yaxis=dict(title="% do total"),
+    )
+    remover_tracinho_e_rotulos(fig)
+    assert fig.layout.xaxis.title.text == "Tipo de questão"
+    assert fig.layout.yaxis.title.text == "% do total"
+
+
+def test_aplicar_tema_empirico_continua_intocado():
+    fig = _fig_suja()
+    antes = fig.to_json()
+    aplicar_tema(fig, tema="empirico")
+    assert fig.to_json() == antes
 
 
 if __name__ == "__main__":

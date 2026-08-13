@@ -87,7 +87,7 @@ def g0_sessoes_vs_inclusoes(df_s: pd.DataFrame, df_final: pd.DataFrame,
     )
     if anos:
         ymax = float(tab[["Sessões virtuais", "Inclusões em pauta (PV)"]].to_numpy().max()) * 1.15 + 1
-        add_espin_shade(fig, anos[0], y0=0, y1=ymax, y_label=ymax * 0.97)
+        add_espin_shade(fig, anos[0], y0=0, y1=ymax)
         add_er_marker(fig, anos[0], 53, y0=0, y1=ymax, y_label=ymax * 0.85)
     return fig
 
@@ -262,7 +262,7 @@ def _barras_macro_ano(df_sub: pd.DataFrame, titulo: str,
     if anos_presentes:
         ano_base = int(min(anos_presentes))
         ymax = float(tab.groupby("ano")["n"].sum().max()) * 1.15 + 1
-        add_espin_shade(fig, ano_base, y0=0, y1=ymax, y_label=ymax * 0.97)
+        add_espin_shade(fig, ano_base, y0=0, y1=ymax)
         add_er_marker(fig, ano_base, 53, y0=0, y1=ymax, y_label=ymax * 0.85)
     return fig
 
