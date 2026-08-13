@@ -32,6 +32,38 @@ SAIDA = RAIZ / "data" / "interim" / "reprocessamento"
 CHAVE = ["incidente", "data_inclusao", "andamento_origem"]
 
 
+def _montar_entrada() -> Path:
+    """Diretório com os três insumos do pipeline, resolvidos onde de fato estão.
+
+    `run_pipeline` lê dim_andamentos, dim_decisoes e arquivosConcatenados todos
+    de `processed_dir`, mas dim_andamentos mora em `data/interim/` neste repo.
+    Em vez de mudar a assinatura do pipeline ou mover um parquet de 560 MB,
+    monta um diretório de links simbólicos.
+    """
+    entrada = RAIZ / "data" / "interim" / "entrada_pipeline"
+    entrada.mkdir(parents=True, exist_ok=True)
+
+    candidatos = [RAIZ / "data" / "processed", RAIZ / "data" / "interim"]
+    faltando = []
+    for nome in ("dim_andamentos.parquet", "dim_decisoes.parquet",
+                 "arquivosConcatenados.parquet"):
+        origem = next((c / nome for c in candidatos if (c / nome).exists()), None)
+        if origem is None:
+            faltando.append(nome)
+            continue
+        alvo = entrada / nome
+        if alvo.is_symlink() or alvo.exists():
+            alvo.unlink()
+        alvo.symlink_to(origem)
+
+    if faltando:
+        raise SystemExit(
+            "insumos ausentes: " + ", ".join(faltando) +
+            f"\nprocurados em: {', '.join(str(c) for c in candidatos)}"
+        )
+    return entrada
+
+
 def _comparar(publicado: pd.DataFrame, novo: pd.DataFrame) -> dict:
     """Diferenças entre o parquet publicado e o regerado, por coluna."""
     p = publicado.set_index(CHAVE).sort_index()
@@ -61,14 +93,21 @@ def _comparar(publicado: pd.DataFrame, novo: pd.DataFrame) -> dict:
     return relatorio
 
 
-def _portao(relatorio: dict) -> list[str]:
-    """Falhas que impedem a publicação.
+# Colunas que o conserto do extrator de sufixo legitimamente altera. São as três
+# da mesma cadeia: o sufixo extraído, a classificação crua e a derivada.
+_COLUNAS_ESPERADAS = {"sufixo_extraido", "tipo_questao_original", "tipo_questao"}
 
-    A única mudança esperada é em `tipo_questao`, e sempre partindo de
-    "Não identificado". Qualquer outra coisa — linha que sumiu, coluna nova
-    divergente, reclassificação de valor que já existia — é motivo para parar e
-    entender antes de subir.
-    """
+# A regra "só preenche lacuna, nunca altera resposta existente" tem que ser
+# julgada na coluna CRUA. Em `tipo_questao` a lacuna já vem mascarada como "PR"
+# (o pipeline mapeia "Não identificado" para PR na exibição), então uma
+# transição PR->RC ali pode ser tanto um preenchimento legítimo quanto uma
+# reclassificação indevida — só `tipo_questao_original` distingue as duas.
+_COLUNA_CRUA = "tipo_questao_original"
+_LACUNA = "Não identificado"
+
+
+def _portao(relatorio: dict) -> list[str]:
+    """Falhas que impedem a publicação."""
     falhas = []
     if relatorio["so_no_publicado"]:
         falhas.append(f'{relatorio["so_no_publicado"]} linhas sumiram no reprocessamento')
@@ -76,16 +115,47 @@ def _portao(relatorio: dict) -> list[str]:
         falhas.append(f'{relatorio["so_no_novo"]} linhas novas apareceram')
 
     for coluna, info in relatorio["colunas_divergentes"].items():
-        if coluna != "tipo_questao":
-            falhas.append(f'coluna "{coluna}" mudou em {info["n"]} linhas — só tipo_questao era esperado')
-            continue
-        de_outra_coisa = {k: v for k, v in info["transicoes"].items() if k[0] != "Não identificado"}
+        if coluna not in _COLUNAS_ESPERADAS:
+            falhas.append(
+                f'coluna "{coluna}" mudou em {info["n"]} linhas — o conserto do '
+                f'extrator só deveria afetar {sorted(_COLUNAS_ESPERADAS)}'
+            )
+
+    crua = relatorio["colunas_divergentes"].get(_COLUNA_CRUA)
+    if crua:
+        de_outra_coisa = {k: v for k, v in crua["transicoes"].items() if k[0] != _LACUNA}
         if de_outra_coisa:
             falhas.append(
-                f"tipo_questao ALTEROU classificações que já existiam, não só preencheu "
-                f"lacuna: {de_outra_coisa}"
+                f"{_COLUNA_CRUA} ALTEROU classificações que já existiam, não só "
+                f"preencheu lacuna: {de_outra_coisa}"
             )
     return falhas
+
+
+def _conferir_sessoes() -> list[str]:
+    """`run_pipeline` também escreve sessoes_virtuais.parquet.
+
+    Comparar só o de inclusões deixaria uma mudança grande passar despercebida
+    para o Hugging Face.
+    """
+    pub_path = RAIZ / "data" / "processed" / "sessoes_virtuais.parquet"
+    nov_path = SAIDA / "sessoes_virtuais.parquet"
+    if not (pub_path.exists() and nov_path.exists()):
+        return []
+
+    pub, nov = pd.read_parquet(pub_path), pd.read_parquet(nov_path)
+    if len(pub) == len(nov):
+        return []
+
+    def _faixa(d):
+        a = pd.to_datetime(d["data_sessao_dt"], errors="coerce")
+        return f"{a.min().date()} a {a.max().date()}"
+
+    return [
+        f"publicado {len(pub):,} linhas ({_faixa(pub)})",
+        f"regerado  {len(nov):,} linhas ({_faixa(nov)})",
+        f"diferença de {abs(len(nov) - len(pub)):,} linhas",
+    ]
 
 
 def main() -> int:
@@ -100,9 +170,10 @@ def main() -> int:
 
     from src.inclusao_pauta import run_pipeline  # import tardio: pesado
 
+    entrada = _montar_entrada()
     print("regerando a partir dos andamentos...")
     run_pipeline(
-        processed_dir=RAIZ / "data" / "processed",
+        processed_dir=entrada,
         interim_dir=RAIZ / "data" / "interim",
         out_dir=SAIDA,
     )
@@ -134,7 +205,21 @@ def main() -> int:
             print(f"  {f}", file=sys.stderr)
         return 1
 
-    print("\nportão aprovou: só tipo_questao mudou, e sempre a partir de 'Não identificado'.")
+    print("\nportão aprovou: mudaram só as colunas da cadeia do sufixo, e a "
+          "classificação crua só saiu de 'Não identificado'.")
+
+    # O pipeline escreve DOIS parquets. Comparar só o de inclusões deixaria
+    # passar mudança em sessoes_virtuais — e há uma: o publicado começa em
+    # 2020 e o pipeline atual produz desde 2016.
+    falhas_sessoes = _conferir_sessoes()
+    if falhas_sessoes:
+        print("\nATENÇÃO — sessoes_virtuais.parquet também diverge:", file=sys.stderr)
+        for f in falhas_sessoes:
+            print(f"  {f}", file=sys.stderr)
+        print("\n  Isso não vem do conserto do extrator. Decidir antes de publicar.",
+              file=sys.stderr)
+        return 1
+
     if args.escrever:
         novo.to_parquet(PUBLICADO, index=False)
         print(f"gravado em {PUBLICADO}")
