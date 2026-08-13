@@ -135,8 +135,11 @@ def _portao(relatorio: dict) -> list[str]:
 def _conferir_sessoes() -> list[str]:
     """`run_pipeline` também escreve sessoes_virtuais.parquet.
 
-    Comparar só o de inclusões deixaria uma mudança grande passar despercebida
-    para o Hugging Face.
+    O publicado cobre 2020–2025; o pipeline atual produz desde 2016. Ganhar os
+    anos anteriores é aceitável — o que não pode é o recorte já publicado
+    mudar. Então a regra não é "mesmo número de linhas", é: **restringir o
+    regerado aos anos do publicado tem que reproduzi-lo exatamente**. Assim o
+    portão libera o acréscimo e continua barrando alteração retroativa.
     """
     pub_path = RAIZ / "data" / "processed" / "sessoes_virtuais.parquet"
     nov_path = SAIDA / "sessoes_virtuais.parquet"
@@ -144,18 +147,40 @@ def _conferir_sessoes() -> list[str]:
         return []
 
     pub, nov = pd.read_parquet(pub_path), pd.read_parquet(nov_path)
-    if len(pub) == len(nov):
-        return []
+    ano_min = int(pd.to_numeric(pub["ano"], errors="coerce").min())
+    recorte = nov[pd.to_numeric(nov["ano"], errors="coerce") >= ano_min]
 
-    def _faixa(d):
-        a = pd.to_datetime(d["data_sessao_dt"], errors="coerce")
-        return f"{a.min().date()} a {a.max().date()}"
+    falhas = []
+    if len(recorte) != len(pub):
+        falhas.append(
+            f"restrito a {ano_min}+, o regerado tem {len(recorte):,} linhas contra "
+            f"{len(pub):,} do publicado — o recorte já publicado mudou"
+        )
+    novos = len(nov) - len(recorte)
+    if novos:
+        print(f"\nsessoes_virtuais: +{novos:,} linhas anteriores a {ano_min} "
+              f"(o recorte {ano_min}+ é reproduzido exatamente)")
+    return falhas
 
-    return [
-        f"publicado {len(pub):,} linhas ({_faixa(pub)})",
-        f"regerado  {len(nov):,} linhas ({_faixa(nov)})",
-        f"diferença de {abs(len(nov) - len(pub)):,} linhas",
-    ]
+
+def _regerar_derivados() -> None:
+    """tramitacoes e sustentacao_oral são derivados de inclusoes_em_pauta.
+
+    `src/reajustes.py` os constrói a partir do parquet de inclusões, então
+    atualizar só as inclusões deixaria os dois com o `tipo_questao` antigo — a
+    página Inclusões mostraria RC e as páginas Tramitação e Sustentação
+    mostrariam PR para as mesmas linhas.
+    """
+    from src.reajustes import run_pipeline as run_reajustes
+
+    print("\nregerando os derivados (tramitacoes, sustentacao_oral)...")
+    run_reajustes(
+        processed_dir=RAIZ / "data" / "processed",
+        interim_dir=RAIZ / "data" / "interim",
+    )
+    for nome in ("tramitacoes.parquet", "sustentacao_oral.parquet"):
+        caminho = RAIZ / "data" / "processed" / nome
+        print(f"  {nome}: {len(pd.read_parquet(caminho)):,} linhas")
 
 
 def main() -> int:
@@ -222,10 +247,16 @@ def main() -> int:
 
     if args.escrever:
         novo.to_parquet(PUBLICADO, index=False)
-        print(f"gravado em {PUBLICADO}")
-        print("para publicar: PYTHONPATH=. .venv/bin/python scripts/upload_hf.py")
+        print(f"\ngravado: {PUBLICADO.name}")
+        sess = SAIDA / "sessoes_virtuais.parquet"
+        if sess.exists():
+            pd.read_parquet(sess).to_parquet(
+                RAIZ / "data" / "processed" / "sessoes_virtuais.parquet", index=False)
+            print("gravado: sessoes_virtuais.parquet")
+        _regerar_derivados()
+        print("\npara publicar: PYTHONPATH=. .venv/bin/python scripts/upload_hf.py")
     else:
-        print("nada gravado. use --escrever para atualizar o parquet local.")
+        print("nada gravado. use --escrever para atualizar os parquets locais.")
     return 0
 
 
