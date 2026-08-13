@@ -73,8 +73,12 @@ def _catalogos():
         ("reajuste", reajuste, tram),
         ("sustentacao", sustentacao, load_sustentacao_oral()),
         # Sessões Virtuais monta o catálogo por função: o Bloco 5 precisa do
-        # dataframe de inclusões capturado por closure.
-        ("sessoes_virtuais", _montar_catalogo(inc), sessoes),
+        # dataframe de inclusões capturado por closure. O `IJ → QI` reproduz o
+        # que sessoes_virtuais.py faz antes de chamar o layout — sem isso o
+        # portão testa um dataframe que a página nunca entrega, e a aba "QI"
+        # sai vazia por artefato do teste, não por defeito do gráfico.
+        ("sessoes_virtuais", _montar_catalogo(inc),
+         sessoes.assign(tipo_questao=sessoes["tipo_questao"].replace({"IJ": "QI"}))),
         ("acervo", acervo, load_evolucao_acervo()),
         ("narrativa", narrativa, inc[inc["ano"].between(2020, 2025)]),
     ]
@@ -176,6 +180,44 @@ def test_nenhum_texto_diz_plenario_fisico():
     for pagina, gid, tipo, fig in _todas_as_figuras():
         for t in _textos_renderizados(fig):
             assert "Plenário Físico" not in t, f'{pagina}/{gid} [{tipo}]: "{t}"'
+
+
+def test_texto_do_catalogo_tambem_nao_diz_plenario_fisico():
+    """O rótulo, o subtítulo e a descrição são texto renderizado também.
+
+    Aparecem no seletor, no sumário e acima do gráfico. O portão só varria a
+    figura, então três entradas com "Plenário Físico" no catálogo passaram sem
+    ser vistas.
+    """
+    achados = []
+    for pagina, catalogo, _df in _catalogos():
+        for spec in catalogo:
+            for campo in ("rotulo", "subtitulo", "descricao"):
+                texto = getattr(spec, campo, "") or ""
+                if "Plenário Físico" in texto:
+                    achados.append(f"{pagina}/{spec.id} .{campo}: {texto[:70]}")
+    assert not achados, "texto de catálogo com 'Plenário Físico':\n  " + "\n  ".join(achados)
+
+
+def test_nenhum_grafico_renderiza_vazio():
+    """Gráfico sem nenhum ponto é defeito silencioso, não resultado.
+
+    O I31 filtrava por um valor de ambiente que o loader já havia renomeado, e
+    saía com zero traces sem que nada reclamasse — o portão só olhava estilo.
+    Entradas legitimamente vazias, se surgirem, entram na lista de exceção com
+    o motivo escrito.
+    """
+    vazios = []
+    for pagina, gid, tipo, fig in _todas_as_figuras():
+        pontos = 0
+        for tr in fig.data:
+            for campo in ("x", "y"):
+                v = getattr(tr, campo, None)
+                if v is not None:
+                    pontos = max(pontos, len(v))
+        if pontos == 0:
+            vazios.append(f"{pagina}/{gid} [{tipo}]")
+    assert not vazios, "gráfico sem nenhum ponto:\n  " + "\n  ".join(vazios)
 
 
 def test_numero_no_padrao_brasileiro_sem_abreviacao_si():

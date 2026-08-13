@@ -72,16 +72,21 @@ def test_excluir_nc_tira_balde_mas_nao_filtra_por_string():
 from pages.inclusoes.plots import g7a_desfechos_pp_2009_2019
 
 def test_7a_recorta_pp_2009_2019_e_sai_em_percentual():
-    """7.a — só Plenário Físico, só 2009–2019, só concluído, eixo X em %.
+    """7.a — só Plenário Presencial, só 2009–2019, só concluído, eixo X em %.
 
     O recorte do período e do âmbito acontece por dentro da função (período
     fixo), então o teste usa o dado real recortado na própria chamada — o mesmo
     recorte que o catálogo declararia se pudesse.
+
+    A fixture usa "Plenário Presencial" porque é o que `load_inclusoes_em_pauta`
+    entrega: o loader renomeia "Plenário Físico" na carga. Antes esta fixture
+    usava o nome cru e por isso passava enquanto o gráfico saía vazio no app —
+    o teste validava um dado que a produção nunca vê.
     """
     df = pd.DataFrame({
         "ano": [2009, 2009, 2009, 2009, 2010, 2010, 2010, 2010,
                 2011, 2011, 2011, 2011, 2012, 2012, 2012, 2012],
-        "ambiente": "Plenário Físico",
+        "ambiente": "Plenário Presencial",
         "tipo_questao": ["PR"] * 16,
         "desfecho": [
             "Concluído - decisão unânime",

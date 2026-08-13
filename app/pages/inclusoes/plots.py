@@ -615,17 +615,21 @@ def g24_cat_anual_filtravel(df: pd.DataFrame, show_values: bool = True, proporca
 
 
 def g7a_desfechos_pp_2009_2019(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
-    """7.a — Desfechos do PP 2009–2019, só concluídos, em %.
+    """7.a — Desfechos do Plenário Presencial 2009–2019, só concluídos, em %.
 
-    Estilo G24/25 (desfecho por categoria e ano) sobre o Plenário Físico antes
-    da universalização do PV, período fixo recortado aqui dentro — como toda
-    entrada de período fixo, não declara `periodo` em `filtros`.
+    Estilo G24/25 (desfecho por categoria e ano) sobre o ambiente presencial
+    antes da universalização do PV, período fixo recortado aqui dentro — como
+    toda entrada de período fixo, não declara `periodo` em `filtros`.
+
+    O filtro é por "Plenário Presencial", não "Plenário Físico": o loader
+    renomeia o valor na carga, então comparar com o nome antigo nunca casa e o
+    gráfico sai vazio. Mesma armadilha que já derrubou _classificar_tramitacao.
     """
-    sub = _prep_cat(df[df["ambiente"] == "Plenário Físico"])
+    sub = _prep_cat(df[df["ambiente"] == "Plenário Presencial"])
     sub = sub[(sub["ano"] >= 2009) & (sub["ano"] <= 2019)]
     sub = _sem_nao_concluido(sub)
     return _barras_grupo(sub, "ano", "categoria", CORES_CATEGORIA,
-                         "Desfecho por categoria e ano — Plenário Físico (2009–2019)",
+                         "Desfecho por categoria e ano — Plenário Presencial (2009–2019)",
                          "Quantidade de processos incluídos em pauta", "Total (linha)",
                          show_values=show_values, proporcao=True)
 
