@@ -10,6 +10,8 @@ from typing import Any
 
 import pandas as pd
 
+from pages.tramitacao.plots import DIMENSOES
+
 
 def filter_by_date_range(
     df: pd.DataFrame,
@@ -33,8 +35,14 @@ def filter_by_values(
     column: str,
     values: list | set | None,
 ) -> pd.DataFrame:
-    """Mantém apenas linhas cujo valor da coluna está em values."""
-    if not values or column not in df.columns:
+    """Mantém apenas linhas cujo valor da coluna está em values.
+
+    `None` significa "sem filtro" e devolve o dataframe inteiro; uma lista
+    vazia significa "o usuário desmarcou tudo" e devolve zero linhas. Tratar os
+    dois como a mesma coisa faz o dashboard mostrar tudo justamente quando o
+    usuário pediu nada — o inverso do que ele fez.
+    """
+    if values is None or column not in df.columns:
         return df
     return df[df[column].isin(values)].copy()
 
@@ -136,10 +144,24 @@ def prepare_class_or_geral(
     return df.copy()
 
 
+def dimensoes_disponiveis(colunas) -> dict[str, str]:
+    """Subconjunto de DIMENSOES (pages/tramitacao/plots.py) cujas colunas existem em `colunas`.
+
+    DIMENSOES é compartilhado por várias páginas com tabulador livre
+    (Tramitação, Inclusões, Reajuste, ...), mas nem todo dataset tem as 9
+    colunas — oferecer uma dimensão ausente no tabulador quebra o groupby de
+    gt10_tabulador. Pura (sem Streamlit), para poder ser testada só com uma
+    lista de nomes de coluna.
+    """
+    disponiveis = set(colunas)
+    return {label: col for label, col in DIMENSOES.items() if col in disponiveis}
+
+
 __all__ = [
     "filter_by_date_range",
     "filter_by_values",
     "filter_by_text_search",
     "filter_by_year_range",
     "prepare_class_or_geral",
+    "dimensoes_disponiveis",
 ]

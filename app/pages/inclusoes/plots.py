@@ -4,10 +4,11 @@ from __future__ import annotations
 import plotly.graph_objects as go
 import pandas as pd
 
-from estilo import (
+from visual.base import (
     aplicar_padrao, add_er_marker, add_espin_shade, br,
     AZUL, AZUL_CLARO, CINZA, VERDE, ROXO, VERMELHO, ER_DATAS,
 )
+from visual.paleta import canonico, cor
 
 CORES_CLASSE = {
     "ADI":  "#2563eb",
@@ -35,6 +36,11 @@ CORES_NC = {
     "2 - Destaque":          "#ec4899",
     "3 - Retirado de pauta": "#f59e0b",
     "4 - Motivos diversos":  "#9ca3af",
+}
+CORES_DESFECHO_CONCLUIDO = {
+    "Concluído - decisão unânime":                    "#184f95",
+    "Concluído - decisão maioria com o relator":      "#2a78d6",
+    "Concluído - decisão maioria, vencido o relator": "#86b6ef",
 }
 CORES_SUST = {
     "Com sustentação oral": "#0891b2",
@@ -70,7 +76,8 @@ def _bar_fig(barmode: str = "group") -> go.Figure:
     return fig
 
 
-def _marcos_temporais(fig: go.Figure, y_max: float, ano_min: int = 2016, ano_max: int = 2025) -> go.Figure:
+def _marcos_temporais(fig: go.Figure, y_max: float, ano_min: int = 2016, ano_max: int = 2025,
+                      excluir_ers: tuple = ()) -> go.Figure:
     """ER 51/52/53 e sombreamento ESPIN em gráficos anuais, só quando a data cai
     dentro do intervalo de anos efetivamente plotado (eixo x = ano, ano_base=0)."""
     if y_max <= 0:
@@ -78,30 +85,62 @@ def _marcos_temporais(fig: go.Figure, y_max: float, ano_min: int = 2016, ano_max
     y1 = y_max * 1.15
     y_label = y_max * 1.22
     for er, (ano, _mes, _dia) in ER_DATAS.items():
+        if er in excluir_ers:
+            continue
         if ano_min <= ano <= ano_max:
             add_er_marker(fig, 0, er, 0, y1, y_label)
     if ano_min <= 2022 and ano_max >= 2020:
-        add_espin_shade(fig, 0, 0, y1, y_label)
+        add_espin_shade(fig, 0, 0, y1)
     return fig
 
 
-def _pizza(series: pd.Series, titulo: str, buraco: float = 0.4,
-           cores: list | None = None, show_values: bool = True,
-           pizza_textinfo: str | None = None) -> go.Figure:
-    marker = dict(colors=cores, line=dict(color="white", width=2)) if cores \
-             else dict(line=dict(color="white", width=2))
-    ti = pizza_textinfo if pizza_textinfo else ("percent+value" if show_values else "none")
-    ti = "none" if not show_values else ti
-    fig = go.Figure(go.Pie(
-        labels=[str(l).upper() for l in series.index], values=series.values, hole=buraco,
-        textinfo=ti,
-        textposition="auto",
-        insidetextorientation="radial",
-        marker=marker,
+def _composicao(series: pd.Series, titulo: str, cores: list | None = None,
+                show_values: bool = True, proporcao: bool = False,
+                **_ignorado) -> go.Figure:
+    """Composição parte-de-um-todo como barra horizontal, com o % na ponta.
+
+    Substitui as pizzas. A Pessoa 2 pediu zero gráficos de pizza, e para
+    composição sem eixo temporal a barra horizontal é o substituto correto —
+    linha responderia outra pergunta. Categoria à esquerda, maior no topo, e o
+    percentual na ponta da barra, que é o formato que ela indicou no G22/G23.
+
+    `proporcao` alterna o eixo x entre contagem e percentual, mantendo o rótulo
+    (que já mostra os dois). Sem isto o parâmetro seria aceito e ignorado — o
+    toggle de escala que não faz nada, a classe de bug já vista neste projeto.
+
+    `**_ignorado` absorve `buraco`, que só fazia sentido em pizza.
+    """
+    s = series.sort_values(ascending=True)          # maior no topo no eixo y invertido
+    total = float(s.sum()) or 1.0
+    pct = s / total * 100
+
+    rotulos = [canonico(str(i)) for i in s.index]
+    if cores is not None:
+        # `cores` vinha na ordem original da série; reordenar junto com ela
+        ordem = {str(i): c for i, c in zip(series.index, cores)}
+        marker_cor = [ordem.get(str(i)) for i in s.index]
+    else:
+        marker_cor = [cor(r) for r in rotulos]
+
+    fig = go.Figure(go.Bar(
+        x=pct.values if proporcao else s.values, y=rotulos, orientation="h",
+        marker_color=marker_cor,
+        text=[f"{p:.1f}%  ({br(v)})" for p, v in zip(pct, s.values)] if show_values else None,
+        textposition="outside", cliponaxis=False,
     ))
-    aplicar_padrao(fig, titulo, height=460, margin=dict(t=110, b=130, l=40, r=40),
-                    showlegend=True, legend=_LEGEND_PIZZA)
+    aplicar_padrao(
+        fig, titulo,
+        height=max(320, 90 + 46 * len(s)),
+        margin=dict(t=110, b=60, l=220, r=120),
+        showlegend=False,                            # o rótulo já está no eixo
+        xaxis=dict(title="Percentual de desfechos (%)" if proporcao else "Inclusões em pauta"),
+        yaxis=dict(title=""),
+    )
     return fig
+
+
+# Nome antigo mantido enquanto os chamadores migram; a função não faz mais pizza.
+_pizza = _composicao
 
 
 def _categoria_desfecho(d: str) -> str:
@@ -112,6 +151,18 @@ def _categoria_desfecho(d: str) -> str:
     if d == "Concluído - decisão maioria, vencido o relator":
         return "3 - Maioria (relator vencido)"
     return "4 - Não concluído (bloco)"
+
+
+def _sem_nao_concluido(d: pd.DataFrame) -> pd.DataFrame:
+    """Só as três categorias de desfecho concluído — remove o balde de não concluído.
+
+    A fonte da verdade é `_categoria_desfecho`, que produz
+    "4 - Não concluído (bloco)" como fallback para todo desfecho não concluído.
+    Excluir é remover essa categoria produzida, nunca filtrar a string de
+    desfecho — assim a regra fica num lugar só e as variantes "sem não
+    concluído" (6.b–6.e) não podem divergir do G22/G24/G26/G28.
+    """
+    return d[d["categoria"] != "4 - Não concluído (bloco)"]
 
 
 def _categoria_nc(d: str) -> str:
@@ -127,15 +178,23 @@ def _categoria_nc(d: str) -> str:
 def _barras_grupo(df_amb: pd.DataFrame, col_x: str, col_grupo: str,
                   cores: dict, titulo: str, label_y: str,
                   label_total: str, x_title: str = "Ano",
-                  show_values: bool = True, proporcao: bool = False) -> go.Figure:
+                  show_values: bool = True, proporcao: bool = False,
+                  proporcao_global: bool = False, excluir_ers: tuple = ()) -> go.Figure:
     # label_total: mantido por compatibilidade de assinatura; a linha de total
     # foi removida (PADRÃO GERAL não permite linha de tendência de total).
     tab = df_amb.groupby([col_x, col_grupo], observed=True).size().reset_index(name="n")
     grupos = list(cores.keys())
 
     if proporcao:
-        totais_x = tab.groupby(col_x)["n"].transform("sum")
-        tab["y"] = (tab["n"] / totais_x * 100).round(1)
+        if proporcao_global:
+            # % do total geral (6.f: cada desfecho como fração de todos os
+            # desfechos do âmbito). Sem isto o % seria por grupo-x (100% por
+            # desfecho), o que responderia outra pergunta.
+            total_geral = float(tab["n"].sum())
+            tab["y"] = (tab["n"] / total_geral * 100).round(1)
+        else:
+            totais_x = tab.groupby(col_x)["n"].transform("sum")
+            tab["y"] = (tab["n"] / totais_x * 100).round(1)
         y_label = "% do total"
         texto = tab["y"].apply(lambda v: f"{v:.1f}%") if show_values else None
     else:
@@ -149,16 +208,17 @@ def _barras_grupo(df_amb: pd.DataFrame, col_x: str, col_grupo: str,
         if d.empty:
             continue
         fig.add_trace(go.Bar(
-            x=d[col_x], y=d["y"], name=g.upper(),
+            x=d[col_x], y=d["y"], name=g,
             marker_color=cores[g],
             text=texto[d.index] if isinstance(texto, pd.Series) else texto,
             textposition="outside", cliponaxis=False,
         ))
     aplicar_padrao(fig, titulo, showlegend=True, legend=_LEGEND_BARRAS,
-                    xaxis=dict(title=x_title, dtick=1, tickangle=-45),
+                    xaxis=dict(title=x_title, dtick=1),
                     yaxis_title=y_label)
     if col_x == "ano" and not tab.empty:
-        _marcos_temporais(fig, tab["y"].max(), tab[col_x].min(), tab[col_x].max())
+        _marcos_temporais(fig, tab["y"].max(), tab[col_x].min(), tab[col_x].max(),
+                          excluir_ers=excluir_ers)
     return fig
 
 
@@ -179,7 +239,7 @@ def g5_anual_ambiente(df: pd.DataFrame, show_values: bool = True, proporcao: boo
     aplicar_padrao(fig, "Plenário Virtual concentra a maior parte das inclusões em pauta",
                    "Inclusões por ano e ambiente (Plenário Virtual vs Plenário Presencial)",
                    showlegend=True, legend=_LEGEND_BARRAS,
-                   xaxis=dict(title="Ano", dtick=1, tickangle=-45),
+                   xaxis=dict(title="Ano", dtick=1),
                    yaxis_title="Inclusões")
     if not tab.empty:
         _marcos_temporais(fig, tab["n"].max(), tab["ano"].min(), tab["ano"].max())
@@ -194,8 +254,7 @@ def g5_anual_ambiente(df: pd.DataFrame, show_values: bool = True, proporcao: boo
 
 def g6_classe_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
                         ambiente: str = "Plenário Virtual",
-                        classes: list[str] | None = None,
-                        pizza_textinfo: str | None = None) -> tuple[go.Figure, go.Figure]:
+                        classes: list[str] | None = None) -> tuple[go.Figure, go.Figure]:
     d = df[df["ambiente"] == ambiente]
     if classes:
         d = d[d["classe"].isin(classes)]
@@ -206,24 +265,90 @@ def g6_classe_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: b
     fig_p = _pizza(d["classe"].value_counts(),
                    f"Proporção por classe — {ambiente} (período total)",
                    cores=[CORES_CLASSE.get(l, "#999") for l in d["classe"].value_counts().index],
-                   show_values=show_values, pizza_textinfo=pizza_textinfo)
+                   show_values=show_values)
     return fig, fig_p
 
 
 def g8_desfecho_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
-                          ambiente: str = "Plenário Virtual",
-                          pizza_textinfo: str | None = None) -> go.Figure | tuple[go.Figure, go.Figure]:
+                          ambiente: str = "Plenário Virtual") -> go.Figure | tuple[go.Figure, go.Figure]:
     d = df[df["ambiente"] == ambiente]
     vc = d["macro_desfecho"].value_counts()
     fig_macro = _pizza(vc, f"Concluídos e não concluídos — {ambiente} (período total)",
                        cores=[CORES_MACRO.get(l, "#94a3b8") for l in vc.index],
-                       show_values=show_values, pizza_textinfo=pizza_textinfo)
+                       show_values=show_values)
     if ambiente == "Plenário Virtual":
         fig_det = _pizza(d["desfecho"].value_counts(),
                          f"Desfecho detalhado — {ambiente} (período total)", buraco=0.3,
-                         show_values=show_values, pizza_textinfo=pizza_textinfo)
+                         show_values=show_values)
         return fig_macro, fig_det
     return fig_macro
+
+
+def g6f_desfecho_percentual_ambiente(df: pd.DataFrame, ambiente: str = "Plenário Virtual",
+                                     show_values: bool = True) -> go.Figure:
+    """Item 6.f — desfecho em percentual por ambiente.
+
+    X = os sete desfechos, Y = "Percentual de desfechos (%)", cada barra como
+    fração do total de desfechos do âmbito. Recorte por `ambiente` da inclusão,
+    não por `tramitacao` — T6 continua sendo o por tramitação. Um ambiente por
+    entrada, duas entradas no catálogo.
+    """
+    sub = df[df["ambiente"] == ambiente]
+    return _barras_grupo(sub, "desfecho", "ambiente", {ambiente: AZUL},
+                         f"Desfechos por percentual — {ambiente}",
+                         "Quantidade de desfechos", "Total (linha)",
+                         x_title="Desfecho", show_values=show_values,
+                         proporcao=True, proporcao_global=True)
+
+
+# Agrupamentos do item 6.b2/6.b3: nomes de série -> desfechos agregados.
+# Strings verbatim do dado ("decisão maioria", sem "por", e a vírgula em
+# "maioria, vencido o relator").
+_AGRUPAMENTOS_DECISAO: dict[str, dict[str, tuple[str, ...]]] = {
+    "unânime_vs_divergência": {
+        "Unânime":     ("Concluído - decisão unânime",),
+        "Divergência": ("Concluído - decisão maioria com o relator",
+                        "Concluído - decisão maioria, vencido o relator"),
+    },
+    "relator_vs_divergência": {
+        "Com o relator": ("Concluído - decisão unânime",
+                          "Concluído - decisão maioria com o relator"),
+        "Divergência":   ("Concluído - decisão maioria, vencido o relator",),
+    },
+}
+
+
+def linha_decisao(df: pd.DataFrame, agrupamento: str = "unânime_vs_divergência",
+                  ambiente: str = "Plenário Virtual",
+                  show_values: bool = True,
+                  excluir_ers: tuple = ()) -> go.Figure:
+    """Item 6.b2/6.b3 — série temporal de unanimidade contra divergência.
+
+    Monta como barras agrupadas por ano (não linha à mão); o catálogo declara
+    `tipos=("linha", "barra")` e `visual.tema.converter_tipo` faz a conversão,
+    o mesmo mecanismo das outras páginas. "Ambos os ambientes" não filtra.
+    """
+    grupos = _AGRUPAMENTOS_DECISAO[agrupamento]
+    sub = df if ambiente == "Ambos os ambientes" else df[df["ambiente"] == ambiente]
+    mapa = {d: nome for nome, ds in grupos.items() for d in ds}
+    sub = sub.assign(serie=sub["desfecho"].map(mapa)).dropna(subset=["serie"])
+    cores = {nome: cor(nome) for nome in grupos}
+    return _barras_grupo(sub, "ano", "serie", cores,
+                         f"Unanimidade contra divergência — {ambiente}",
+                         "Quantidade de processos incluídos em pauta", "Total (linha)",
+                         show_values=show_values, excluir_ers=excluir_ers)
+
+
+def g7b_unanimidade_vs_divergencia_2010_2025(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    """7.b — linha temporal unânime vs divergência, PP+PV, 2010–2025.
+
+    Destravado pela #5 (pipeline estendido a 2009). Período fixo recortado aqui
+    dentro; sem `periodo` em `filtros`. Marcos ER 51/52 — o pedido original
+    exclui o ER 53 ("marcos ER exceto ER 53"); o ESPIN permanece.
+    """
+    sub = df[(df["ano"] >= 2010) & (df["ano"] <= 2025)]
+    return linha_decisao(sub, ambiente="Ambos os ambientes", show_values=show_values,
+                         excluir_ers=(53,))
 
 
 def g10_macro_anual_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
@@ -234,10 +359,10 @@ def g10_macro_anual_filtravel(df: pd.DataFrame, show_values: bool = True, propor
 
 
 def g12_concluidos_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
-                             ambiente: str = "Plenário Virtual") -> go.Figure:
+                             ambiente: str = "Plenário Virtual", segmentar: bool = False) -> go.Figure:
     return _concluidos_anual(df[df["ambiente"] == ambiente],
                              f"Concluídos por ano — {ambiente}",
-                             show_values=show_values, proporcao=proporcao)
+                             show_values=show_values, proporcao=proporcao, segmentar=segmentar)
 
 
 def g14_nao_concluidos_classe_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
@@ -283,7 +408,7 @@ def _macro_anual(df_amb: pd.DataFrame, titulo: str,
             textposition="outside", cliponaxis=False,
         ))
     aplicar_padrao(fig, titulo, showlegend=True, legend=_LEGEND_BARRAS,
-                   xaxis=dict(title="Ano", dtick=1, tickangle=-45),
+                   xaxis=dict(title="Ano", dtick=1),
                    yaxis_title=y_title)
     if not tab.empty:
         _marcos_temporais(fig, tab["y"].max(), tab["ano"].min(), tab["ano"].max())
@@ -291,8 +416,14 @@ def _macro_anual(df_amb: pd.DataFrame, titulo: str,
 
 
 def _concluidos_anual(df_amb: pd.DataFrame, titulo: str,
-                      show_values: bool = True, proporcao: bool = False) -> go.Figure:
+                      show_values: bool = True, proporcao: bool = False,
+                      segmentar: bool = False) -> go.Figure:
     sub = df_amb[df_amb["macro_desfecho"] == "Concluído"]
+    if segmentar:
+        return _barras_grupo(sub, "ano", "desfecho", CORES_DESFECHO_CONCLUIDO,
+                             titulo, "Inclusões concluídas", "Total (linha)",
+                             show_values=show_values, proporcao=proporcao)
+
     tab = sub.groupby("ano").size().reset_index(name="n")
     if proporcao:
         total_ano = df_amb.groupby("ano").size().reset_index(name="t")
@@ -311,7 +442,7 @@ def _concluidos_anual(df_amb: pd.DataFrame, titulo: str,
         marker_color=CORES_MACRO["Concluído"],
         text=texto, textposition="outside", cliponaxis=False,
     ))
-    aplicar_padrao(fig, titulo, xaxis=dict(title="Ano", dtick=1, tickangle=-45),
+    aplicar_padrao(fig, titulo, xaxis=dict(title="Ano", dtick=1),
                    yaxis_title=y_title)
     if not tab.empty:
         _marcos_temporais(fig, tab["y"].max(), tab["ano"].min(), tab["ano"].max())
@@ -435,21 +566,17 @@ def _prep_cat(df: pd.DataFrame) -> pd.DataFrame:
     return d
 
 
-def _pizza_categoria(t: str, vc: pd.Series, titulo: str, show_values: bool) -> go.Figure:
-    cores = [CORES_CATEGORIA.get(l, "#999") for l in vc.index]
-    fig = go.Figure(go.Pie(
-        labels=[str(l).upper() for l in vc.index], values=vc.values, hole=0.4,
-        marker=dict(colors=cores, line=dict(color="white", width=1.5)),
-        textinfo="percent" if show_values else "none",
-        textfont=dict(size=11), textposition="inside",
-        insidetextorientation="radial",
-    ))
-    aplicar_padrao(fig, titulo, height=400, margin=dict(t=100, b=140, l=20, r=20),
-                   showlegend=True, legend=_LEGEND_PIZZA)
-    return fig
+def _pizza_categoria(t: str, vc: pd.Series, titulo: str, show_values: bool,
+                     proporcao: bool = False) -> go.Figure:
+    """Composição das categorias de desfecho para um tipo de questão.
+
+    Era pizza; virou barra horizontal pelo mesmo motivo das demais.
+    """
+    return _composicao(vc, titulo, show_values=show_values, proporcao=proporcao)
 
 
-def _pizzas_categoria_por_tipo(sub: pd.DataFrame, ambiente_label: str, show_values: bool = True) -> list[go.Figure]:
+def _pizzas_categoria_por_tipo(sub: pd.DataFrame, ambiente_label: str,
+                               show_values: bool = True, proporcao: bool = False) -> list[go.Figure]:
     tipos = [t for t in _TIPOS if t in sub["tipo_questao"].unique()]
     return [
         _pizza_categoria(
@@ -457,38 +584,67 @@ def _pizzas_categoria_por_tipo(sub: pd.DataFrame, ambiente_label: str, show_valu
             sub[sub["tipo_questao"] == t]["categoria"].value_counts().sort_index(),
             f"{t} — {ambiente_label}",
             show_values,
+            proporcao=proporcao,
         )
         for t in tipos
     ]
 
 
 def g22_cat_periodo_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
-                              ambiente: str = "Plenário Virtual") -> go.Figure:
+                              ambiente: str = "Plenário Virtual",
+                              excluir_nc: bool = False) -> go.Figure:
     sub = _prep_cat(df[df["ambiente"] == ambiente])
+    if excluir_nc:
+        sub = _sem_nao_concluido(sub)
     vc = sub["categoria"].value_counts().sort_index()
     return _pizza(vc, f"Desfecho por categoria — {ambiente} (período total)",
                   cores=[CORES_CATEGORIA.get(l, "#999") for l in vc.index],
-                  show_values=show_values)
+                  show_values=show_values, proporcao=proporcao)
 
 
 def g24_cat_anual_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
-                            ambiente: str = "Plenário Virtual") -> go.Figure:
+                            ambiente: str = "Plenário Virtual",
+                            excluir_nc: bool = False) -> go.Figure:
     sub = _prep_cat(df[df["ambiente"] == ambiente])
+    if excluir_nc:
+        sub = _sem_nao_concluido(sub)
     return _barras_grupo(sub, "ano", "categoria", CORES_CATEGORIA,
                          f"Desfecho por categoria e ano — {ambiente}",
-                         "Inclusões em pauta", "Total (linha)",
+                         "Quantidade de processos incluídos em pauta", "Total (linha)",
                          show_values=show_values, proporcao=proporcao)
 
 
+def g7a_desfechos_pp_2009_2019(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    """7.a — Desfechos do PP 2009–2019, só concluídos, em %.
+
+    Estilo G24/25 (desfecho por categoria e ano) sobre o Plenário Físico antes
+    da universalização do PV, período fixo recortado aqui dentro — como toda
+    entrada de período fixo, não declara `periodo` em `filtros`.
+    """
+    sub = _prep_cat(df[df["ambiente"] == "Plenário Físico"])
+    sub = sub[(sub["ano"] >= 2009) & (sub["ano"] <= 2019)]
+    sub = _sem_nao_concluido(sub)
+    return _barras_grupo(sub, "ano", "categoria", CORES_CATEGORIA,
+                         "Desfecho por categoria e ano — Plenário Físico (2009–2019)",
+                         "Quantidade de processos incluídos em pauta", "Total (linha)",
+                         show_values=show_values, proporcao=True)
+
+
 def g26_cat_tipo_periodo_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
-                                   ambiente: str = "Plenário Virtual") -> list[go.Figure]:
+                                   ambiente: str = "Plenário Virtual",
+                                   excluir_nc: bool = False) -> list[go.Figure]:
     sub = _prep_cat(_prep_tipo(df[df["ambiente"] == ambiente]))
-    return _pizzas_categoria_por_tipo(sub, ambiente, show_values=show_values)
+    if excluir_nc:
+        sub = _sem_nao_concluido(sub)
+    return _pizzas_categoria_por_tipo(sub, ambiente, show_values=show_values, proporcao=proporcao)
 
 
 def g28_cat_tipo_anual_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
-                                 ambiente: str = "Plenário Virtual") -> dict[str, go.Figure]:
+                                 ambiente: str = "Plenário Virtual",
+                                 excluir_nc: bool = False) -> dict[str, go.Figure]:
     sub = _prep_cat(_prep_tipo(df[df["ambiente"] == ambiente]))
+    if excluir_nc:
+        sub = _sem_nao_concluido(sub)
     return {t: _barras_grupo(sub[sub["tipo_questao"] == t],
                               "ano", "categoria", CORES_CATEGORIA,
                               f"Desfecho por categoria — {t} — {ambiente}",
@@ -543,18 +699,21 @@ def _prep_nc(df: pd.DataFrame) -> pd.DataFrame:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def g_pauta_concluidos(df: pd.DataFrame, show_values: bool = True, **kwargs) -> go.Figure:
-    _ = df  # ponytail: values verified against parquet, hardcoded
+    pv = df[df["ambiente"] == "Plenário Virtual"]
+    pct_pauta = 100 * len(pv) / len(df)
+    concluidos = df[df["macro_desfecho"] == "Concluído"]
+    pct_concluidos = 100 * len(pv[pv["macro_desfecho"] == "Concluído"]) / len(concluidos)
     categorias = ['Participação<br>na pauta', 'Participação nos<br>julgamentos concluídos']
-    valores = [63.9, 91.3]
+    valores = [pct_pauta, pct_concluidos]
 
     fig = _bar_fig()
     fig.add_trace(go.Bar(
         x=categorias, y=valores, marker_color=COR_PV,
-        text=[f'{v}%' for v in valores] if show_values else None,
+        text=[f'{v:.1f}%' for v in valores] if show_values else None,
         textposition='outside', cliponaxis=False, showlegend=False,
     ))
     aplicar_padrao(fig, "Plenário Virtual concentra julgamentos concluídos muito além de sua participação na pauta",
-                   "Participação na pauta (63,9%) vs. participação nos julgamentos concluídos (91,3%) — período total",
+                   f"Participação na pauta ({pct_pauta:.1f}%) vs. participação nos julgamentos concluídos ({pct_concluidos:.1f}%) — período total",
                    height=650, yaxis=dict(range=[0, 110]), xaxis=dict(title="", tickangle=0))
     return fig
 

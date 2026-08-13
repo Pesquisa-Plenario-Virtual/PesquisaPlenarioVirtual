@@ -6,6 +6,9 @@ import plotly.graph_objects as go
 import streamlit as st
 import pandas as pd
 
+from visual.base import VERMELHO, remover_faixa_espin
+from visual.tema import aplicar_tema
+
 _CORES_FASES = {
     1: "#7f8c8d",
     2: "#3498db",
@@ -53,20 +56,8 @@ _FAIXAS_FASE = {
 _CENTRO_FASE = {f: (y0 + y1) / 2 for f, (y0, y1) in _FAIXAS_FASE.items()}
 
 
-def render_timeline() -> None:
-    st.subheader("Linha do Tempo — Evolução do Plenário Virtual")
-    st.caption(
-        "Marcos normativos que moldaram o Plenário Virtual do STF desde sua criação em 2007 "
-        "até 2025, organizados em quatro etapas de expansão."
-    )
-    with st.expander("Critério / Fonte"):
-        st.markdown(
-            "- **Fonte:** Emendas Regimentais (ER), Resoluções e Portarias do STF/MS  \n"
-            "- **Etapas:** Restrita (2007–2015) → Ampliativa 1 (2016–2018) → "
-            "Ampliativa 2 (2019) → Ampliativa 3 (2020–2025)  \n"
-            "- **Zona verde:** período da ESPIN (Portaria MS 188/2020 a Portaria MS 913/2022)"
-        )
-
+def _build_timeline_figure() -> go.Figure:
+    """Monta a figura da linha do tempo, sem tocar em Streamlit — testável isolada."""
     total = len(_DADOS_TIMELINE)
     y_max = total + 1
     fig = go.Figure()
@@ -90,13 +81,19 @@ def render_timeline() -> None:
 
     # Zona ESPIN (eventos 9 a 15 = índices 8..14 → y = total-8 .. total-14)
     # Portaria MS 188 (idx 8) → y=12, Portaria MS 913 (idx 15) → y=5
-    fig.add_hrect(y0=4.5, y1=12.5, fillcolor="green", opacity=0.08,
+    # Mesma família visual do add_espin_shade (rosa claro + linhas vermelhas
+    # tracejadas): eixo x aqui não é temporal, então as faixas ficam
+    # horizontais em vez de verticais.
+    fig.add_hrect(y0=4.5, y1=12.5, fillcolor="#FCE7F3", opacity=0.55,
                   line_width=0, layer="below")
+    for y in (4.5, 12.5):
+        fig.add_shape(type="line", x0=-0.15, x1=1.0, y0=y, y1=y,
+                      line=dict(color=VERMELHO, width=1.5, dash="dash"))
     fig.add_annotation(
         x=0.97, y=8.5,
-        text="<b>ESPIN</b>",
+        text="<b>↔ ESPIN</b>",
         showarrow=False, xanchor="right", yanchor="middle",
-        font=dict(color="green", size=10),
+        font=dict(color=VERMELHO, size=10),
     )
 
     # Eventos
@@ -129,8 +126,65 @@ def render_timeline() -> None:
     )
     fig.update_xaxes(range=[-0.15, 1.0], visible=False, fixedrange=True)
     fig.update_yaxes(range=[0, y_max], visible=False, fixedrange=True)
+    return fig
 
-    st.plotly_chart(fig, width="stretch")
+
+def render_timeline() -> None:
+    st.subheader("Linha do Tempo — Evolução do Plenário Virtual")
+    st.caption(
+        "Marcos normativos que moldaram o Plenário Virtual do STF desde sua criação em 2007 "
+        "até 2025, organizados em quatro etapas de expansão."
+    )
+    with st.expander("Critério / Fonte"):
+        st.markdown(
+            "- **Fonte:** Emendas Regimentais (ER), Resoluções e Portarias do STF/MS  \n"
+            "- **Etapas:** Restrita (2007–2015) → Ampliativa 1 (2016–2018) → "
+            "Ampliativa 2 (2019) → Ampliativa 3 (2020–2025)  \n"
+            "- **Zona rosa:** período da ESPIN (Portaria MS 188/2020 a Portaria MS 913/2022)"
+        )
+
+    faixa_espin = st.checkbox(
+        "Faixa ESPIN", value=True, key="geral_tl_espin",
+        help="Zona rosa e rótulo do período da ESPIN (2020–2022).")
+
+    fig = _build_timeline_figure()
+    tema_atual = st.session_state.get("tema_visual", "novo")
+    dark = st.session_state.get("modo_noturno", False)
+    if not faixa_espin:
+        fig = remover_faixa_espin(fig)
+    st.plotly_chart(aplicar_tema(fig, tema=tema_atual, dark=dark), width="stretch")
+
+
+def render_filtros(df: pd.DataFrame) -> tuple[list[str] | None, tuple[int | None, int | None]]:
+    """Filtros de classe e período, inline, na mesma coluna do conteúdo.
+
+    As outras sete páginas concentram os filtros junto dos gráficos; esta era a
+    única que os punha no sidebar. Devolve (classes, (ano_inicio, ano_fim));
+    `classes` é None quando a coluna não existe, para distinguir "não há filtro"
+    de "nada selecionado" — com a lista vazia o recorte tem que ficar vazio.
+    """
+    col_classe, col_periodo = st.columns([1, 2])
+
+    classes = None
+    if "classe" in df.columns:
+        opcoes = sorted(str(v) for v in df["classe"].dropna().unique())
+        with col_classe:
+            classes = st.multiselect("Classe", opcoes, default=opcoes, key="geral_f_classe")
+
+    anos = pd.to_numeric(df.get("ano"), errors="coerce").dropna() if "ano" in df.columns else pd.Series(dtype="float")
+    if anos.empty and "data_protocolo" in df.columns:
+        anos = pd.to_datetime(df["data_protocolo"], errors="coerce").dt.year.dropna()
+
+    periodo: tuple[int | None, int | None] = (None, None)
+    if not anos.empty:
+        lo, hi = int(anos.min()), int(anos.max())
+        if lo < hi:
+            with col_periodo:
+                periodo = st.slider("Período", lo, hi, (lo, hi), step=1, key="geral_f_periodo")
+        else:
+            periodo = (lo, hi)
+
+    return classes, periodo
 
 
 def render_metricas(df: pd.DataFrame) -> None:
@@ -178,19 +232,18 @@ def render_tabela_processos(df: pd.DataFrame) -> None:
 
     tab = _build_tabela_processos(df)
 
-    col1, col2, col3 = st.columns(3)
+    # Sem filtro de classe aqui: o filtro no topo da página já recortou o `df`
+    # que chega nesta função. Dois seletores "Classe" na mesma tela, um por
+    # cima do outro, só confundem sobre qual está valendo.
+    col1, col2 = st.columns(2)
     with col1:
-        classes   = st.multiselect("Classe",     sorted(tab["Classe"].unique()),     key="geral_classe")
-    with col2:
         if "Tramitação" in tab.columns and tab["Tramitação"].nunique() > 1:
             ambientes = st.multiselect("Tramitação", sorted(tab["Tramitação"].unique()), key="geral_tram")
         else:
             ambientes = []
-    with col3:
+    with col2:
         busca = st.text_input("Buscar processo", key="geral_busca", placeholder="ex: ADI 3423")
 
-    if classes:
-        tab = tab[tab["Classe"].isin(classes)]
     if ambientes:
         tab = tab[tab["Tramitação"].isin(ambientes)]
     if busca:

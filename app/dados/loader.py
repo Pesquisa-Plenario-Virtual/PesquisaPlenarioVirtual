@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 from huggingface_hub import hf_hub_download
 
-from config import HF_REPO_ID, HF_FILES
+from dados.config import HF_REPO_ID, HF_FILES
 
 
 def _try_local_parquet(filename: str) -> pd.DataFrame | None:
@@ -104,33 +104,19 @@ def load_dim_decisoes() -> pd.DataFrame:
     return load_parquet(HF_REPO_ID, HF_FILES["dim_decisoes"])
 
 
-def _corrigir_tipo_questao_2016_2019(df: pd.DataFrame) -> pd.DataFrame:
-    """Reclassifica PR->RC para 72 inclusões do PV (2016-2019) cujo sufixo recursal
-    (ex: "ADI-ED", "ADPF-AgR") está no texto do andamento mas não foi extraído pelo
-    pipeline upstream (bug na extração de sufixo, não erro na coleta do dado).
-
-    Lista gerada com o extrator oficial da cliente (classificar_tipo_questao, Tabela 2
-    da dissertação p. 62: sufixo com AGR/ED/EMB -> RC, senão IJ) aplicado ao texto de
-    and_complemento (só disponível em processed/inclusoes_em_pauta_2016_2025.csv, não
-    no parquet). Restrita a 2016-2019 de propósito: o mesmo extrator encontra outras
-    ~192 linhas em 2022/2025, mas essas mudariam 2.j e 2.k2 (2020-2025), já validados
-    pela cliente com os números atuais — não aplicadas sem confirmação dela.
-    Validada contra a referência: PV 2016-2019 PR 422->350, RC 189->261.
-    """
-    path = Path(__file__).resolve().parent / "correcao_tipo_questao_2016_2019.csv"
-    correcao = pd.read_csv(path)[["incidente", "data_inclusao", "andamento_origem", "tipo_questao_corrigido"]]
-    correcao = correcao.drop_duplicates(subset=["incidente", "data_inclusao", "andamento_origem"])
-    df = df.merge(correcao, on=["incidente", "data_inclusao", "andamento_origem"], how="left")
-    df["tipo_questao"] = df["tipo_questao_corrigido"].fillna(df["tipo_questao"])
-    return df.drop(columns=["tipo_questao_corrigido"])
-
-
 def load_inclusoes_em_pauta() -> pd.DataFrame:
-    """Carrega o dataset de inclusões em pauta (2016–2025)."""
+    """Carrega o dataset de inclusões em pauta (2016–2025).
+
+    Sem correção de `tipo_questao` aqui. Havia um remendo que lia um CSV de 72
+    linhas e reclassificava PR->RC em tempo de carga; a causa real é um regex do
+    extrator de sufixo em src/inclusao_pauta.py, corrigido lá. Enquanto o parquet
+    publicado não for reprocessado, `tipo_questao` traz 185 eventos como
+    "Não identificado" que deveriam ser RC, PR ou IJ — ver a issue de
+    reprocessamento.
+    """
     df = load_parquet(HF_REPO_ID, HF_FILES["inclusoes_em_pauta"])
     df["ambiente"] = df["ambiente"].replace("Plenário Físico", "Plenário Presencial")
     df["macro_desfecho"] = df["desfecho"].str.split(" - ").str[0]
-    df = _corrigir_tipo_questao_2016_2019(df)
     return df
 
 

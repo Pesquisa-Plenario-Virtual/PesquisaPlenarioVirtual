@@ -8,10 +8,9 @@ from __future__ import annotations
 import plotly.graph_objects as go
 import pandas as pd
 
-from estilo import aplicar_padrao, br, AZUL, VERMELHO, ER_DATAS, _frac_ano
+from visual.base import aplicar_padrao, br, AZUL, VERMELHO, ER_FRONTEIRAS
 
 _CORES_CLASSE = {"ADI": "#2563EB", "ADPF": "#93C5FD", "ADC": "#059669", "ADO": "#7C3AED"}
-ANO_MIN = 1988
 
 # Título/subtítulo "história" por métrica, para a visão TOTAL (verificado contra os dados).
 _HISTORIA_METRICA = {
@@ -77,7 +76,10 @@ def plotar_grafico_stf(
     else:
         d = df[df["classe"] == classe_nome].sort_values("ano")
         cor = _CORES_CLASSE.get(classe_nome, AZUL)
-        nome = f"CLASSE: {classe_nome.upper()}"
+        # Nome = código puro da classe (não "CLASSE: ADI") para que a camada de
+        # tema recolore pela paleta nova via nome de série (tema.py:_normalizar_traces
+        # só recolore quando canonico(nome) está em paleta.CORES).
+        nome = classe_nome.upper()
 
     anos_int = sorted(d["ano"].unique().tolist())
     anos = [str(a) for a in anos_int]
@@ -124,14 +126,16 @@ def plotar_grafico_stf(
 
     # ER — réplica exata de fig_1b2_acervo_por_classe_vertical
     for er in (51, 52, 53):
-        if er in (52, 53):
-            ano_er, _, _ = ER_DATAS[er]
-            if str(ano_er) not in anos:
-                continue
-            x = anos.index(str(ano_er)) - 0.5
-        else:
-            ano_er, mes, dia = ER_DATAS[er]
-            x = _frac_ano(ANO_MIN, ano_er, mes, dia)
+        # Todo marcador só existe se a fronteira dele está no recorte plotado.
+        # Sem esta guarda para a ER 51, o eixo categórico era esticado até a
+        # posição dela: com o filtro em 2021-2025 (5 categorias) a linha caía
+        # fora, e as barras espremiam num sexto da largura, com o resto vazio.
+        fronteira = ER_FRONTEIRAS[er]
+        if str(fronteira) not in anos and str(fronteira + 1) not in anos:
+            continue
+        # Posição da fronteira entre anos, relativa ao PRIMEIRO ano plotado —
+        # não a um 1988 fixo, que só valia sem filtro de período.
+        x = (fronteira - anos_int[0]) + 0.5
         fig.add_shape(type="line", x0=x, x1=x, y0=0, y1=y_er,
                       line=dict(color="#000000", width=1.5, dash="dash"), xref="x", yref="y")
         fig.add_annotation(x=x, y=y_er, yanchor="bottom", text=f"<b>ER<br>{er}</b>", showarrow=False,
@@ -154,6 +158,5 @@ def plotar_grafico_stf(
         showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=0.95, x=0.5, xanchor="center"),
         height=650, margin=dict(t=150, b=70, l=60, r=40),
     )
-    fig.update_yaxes(showline=True, tickfont=dict(size=22), title_font=dict(size=22))
-    fig.update_xaxes(tickfont=dict(size=22), title_font=dict(size=22))
+    fig.update_yaxes(showline=True)
     return fig

@@ -10,7 +10,7 @@ _root = _here.parent.parent.parent
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
-from dados.loader import load_tramitacoes
+from dados.loader import load_tramitacoes, load_inclusoes_em_pauta
 from pages.tramitacao.layout import render_graficos
 
 try:
@@ -28,7 +28,7 @@ if df.empty:
 st.title("Tramitação por Ambiente")
 st.markdown("""
 Esta seção analisa em quais **ambientes de julgamento** os processos de Controle Concentrado
-(ADI, ADC, ADO e ADPF) tramitaram entre **2020 e 2025**.
+(ADI, ADC, ADO e ADPF) tramitaram entre **2016 e 2025**.
 
 Os processos podem ter sido julgados exclusivamente no **Plenário Virtual** (PV), exclusivamente
 no **Plenário Presencial** (PP), ou em **ambos os ambientes** em inclusões distintas. A análise
@@ -41,7 +41,7 @@ e com os resultados das sessões.
 st.markdown("""
 **Nesta seção:**
 - **Tabulador Interativo** — configure livremente os eixos e a métrica para explorar qualquer combinação de dimensões.
-- **T1 — Distribuição Geral** — pizza com a proporção de processos por ambiente (só PV / só PP / ambos).
+- **T1 — Distribuição Geral** — barras com a proporção de processos por ambiente (só PV / só PP / ambos).
 - **T2 — Tramitação × Classe** — volume de processos por ambiente e classe processual.
 - **T3 — Tramitação × Tipo de Questão** — volume de processos por ambiente e tipo (PR / RC / QI).
 - **T4 — Ambos os Ambientes × Tipo** — recorte dos processos que passaram pelos dois ambientes.
@@ -53,4 +53,4 @@ st.markdown("""
 - **Tabela Consolidada** — dados brutos por processo com contagem de inclusões por ambiente.
 """)
 
-render_graficos(df)
+render_graficos(df, df_inc=load_inclusoes_em_pauta())

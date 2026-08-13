@@ -11,7 +11,7 @@ import math
 import pandas as pd
 import plotly.graph_objects as go
 
-from estilo import aplicar_padrao, br, AZUL, AZUL_CLARO, CINZA, VERDE, ROXO, VERMELHO, ER_DATAS, _frac_ano
+from visual.base import aplicar_padrao, br, AZUL, AZUL_CLARO, CINZA, VERDE, ROXO, VERMELHO, ER_DATAS, ER_FRONTEIRAS
 
 COR_PV, COR_PP = AZUL, CINZA
 _CLASSES = ["ADI", "ADPF", "ADC", "ADO"]
@@ -107,16 +107,10 @@ def fig_2a2_participacao_ano_marcos(df: pd.DataFrame, show_values: bool = True) 
 
     y_er, y_espin = 88, 76
     for er in (51, 52, 53):
-        if er in (52, 53):
-            ano_er, _, _ = ER_DATAS[er]
-            if ano_er not in anos_int:
-                continue
-            x = anos.index(str(ano_er)) - 0.5
-        else:
-            ano_er, mes, dia = ER_DATAS[er]
-            if ano_er not in anos_int:
-                continue
-            x = _frac_ano(ano_min, ano_er, mes, dia)
+        fronteira = ER_FRONTEIRAS[er]
+        if fronteira not in anos_int and fronteira + 1 not in anos_int:
+            continue
+        x = (fronteira - ano_min) + 0.5
         fig.add_shape(type="line", x0=x, x1=x, y0=0, y1=y_er,
                       line=dict(color="black", width=1.5, dash="dash"), xref="x", yref="y")
         fig.add_annotation(x=x, y=y_er, yanchor="bottom", text=f"<b>ER<br>{er}</b>", showarrow=False,

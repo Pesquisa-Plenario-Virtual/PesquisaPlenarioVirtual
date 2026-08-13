@@ -4,7 +4,11 @@ from __future__ import annotations
 import plotly.graph_objects as go
 import pandas as pd
 
-from estilo import aplicar_padrao, add_er_marker, add_espin_shade, br, AZUL, AZUL_CLARO, CINZA, VERDE, ROXO, VERMELHO
+from visual.paleta import canonico, cor
+from visual.base import (
+    aplicar_padrao, add_er_marker, add_espin_shade, br,
+    AZUL, AZUL_CLARO, CINZA, VERDE, ROXO, VERMELHO, ER_DATAS,
+)
 
 CORES_SUST = {
     "Com sustentação oral": "#0891b2",
@@ -20,7 +24,6 @@ CORES_TIPO  = {"PR": "#2563eb", "RC": "#f59e0b", "QI": "#16a34a"}
 CORES_AMB   = {"Plenário Virtual": "#2563eb", "Plenário Presencial": "#94a3b8"}
 _CLASSES    = ["ADI", "ADPF", "ADC", "ADO"]
 _TIPOS      = ["PR", "RC", "QI"]
-_ANOS       = list(range(2020, 2026))
 
 # Legenda horizontal acima do gráfico (barras com múltiplas séries).
 _LEGEND_BARRAS = dict(
@@ -36,31 +39,63 @@ _LEGEND_PIZZA = dict(
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-def _marcos_temporais(fig: go.Figure, y_max: float) -> go.Figure:
-    """ER 53 e sombreamento ESPIN — o dataset de sustentação oral cobre 2020–2025,
-    então ER 51/52 (2016/2019) nunca entram no eixo e ficam de fora."""
+def _periodo(df: pd.DataFrame) -> str:
+    """Trecho ' (ano_min–ano_max)' derivado do próprio df; vazio se não houver 'ano'.
+
+    Mesmo padrão de gt10_tabulador (pages/tramitacao/plots.py) e de
+    pages/reajuste/plots.py: o df recebido já pode vir recortado pelo filtro
+    de período da casca, então o intervalo exibido no título reflete o
+    recorte atual em vez de um texto fixo que mentiria sempre que o dataset
+    ou o recorte mudassem.
+    """
+    anos = pd.to_numeric(df.get("ano"), errors="coerce").dropna() if "ano" in df.columns else pd.Series(dtype="float")
+    return f" ({int(anos.min())}–{int(anos.max())})" if not anos.empty else ""
+
+
+def _marcos_temporais(fig: go.Figure, y_max: float, ano_min: int = 2016, ano_max: int = 2025) -> go.Figure:
+    """ER 51/52/53 e sombreamento ESPIN em gráficos anuais, só quando a data cai
+    dentro do intervalo de anos efetivamente plotado (eixo x = ano, ano_base=0).
+
+    Mesmo padrão de pages/inclusoes/plots.py — a regra é sobre o eixo
+    plotado, não sobre uma suposição fixa de cobertura do dataset (essa
+    suposição já se mostrou falsa uma vez: sustentacao_oral.parquet cobre
+    2016–2025, não 2020–2025).
+    """
     if y_max <= 0:
         return fig
     y1 = y_max * 1.15
     y_label = y_max * 1.22
-    add_er_marker(fig, 0, 53, 0, y1, y_label)
-    add_espin_shade(fig, 0, 0, y1, y_label)
+    for er, (ano, _mes, _dia) in ER_DATAS.items():
+        if ano_min <= ano <= ano_max:
+            add_er_marker(fig, 0, er, 0, y1, y_label)
+    if ano_min <= 2022 and ano_max >= 2020:
+        add_espin_shade(fig, 0, 0, y1)
     return fig
 
 
 def _pizza(serie: pd.Series, titulo: str, cores: list, show_values: bool = True) -> go.Figure:
-    fig = go.Figure(go.Pie(
-        labels=[str(l).upper() for l in serie.index], values=serie.values,
-        hole=0.4,
-        marker=dict(colors=cores, line=dict(color="white", width=2)),
-        textinfo="percent" if show_values else "none",
-        textfont=dict(family="Arial, sans-serif", size=14, color="black"),
-        textposition="inside",
-        insidetextorientation="radial",
-        showlegend=True,
+    """Com/sem sustentação oral como barra horizontal, com o % na ponta.
+
+    Era pizza. Nome mantido enquanto o chamador migra; não faz mais pizza.
+    """
+    s = serie.sort_values(ascending=True)
+    total = float(s.sum()) or 1.0
+    ordem = {str(i): c for i, c in zip(serie.index, cores or [])}
+    rotulos = [canonico(str(i)) for i in s.index]
+
+    fig = go.Figure(go.Bar(
+        x=s.values, y=rotulos, orientation="h",
+        marker_color=[ordem.get(str(i)) or cor(r) for i, r in zip(s.index, rotulos)],
+        text=[f"{v / total * 100:.1f}%  ({br(v)})" for v in s.values] if show_values else None,
+        textposition="outside", cliponaxis=False,
     ))
-    aplicar_padrao(fig, titulo, height=500, margin=dict(t=110, b=100, l=60, r=60),
-                   showlegend=True, legend=_LEGEND_PIZZA)
+    aplicar_padrao(
+        fig, titulo,
+        height=max(320, 90 + 46 * len(s)),
+        margin=dict(t=110, b=60, l=220, r=120),
+        showlegend=False,
+        xaxis=dict(title="Inclusões em pauta"), yaxis=dict(title=""),
+    )
     return fig
 
 
@@ -76,46 +111,69 @@ def _pizza_sust(df_amb: pd.DataFrame, titulo: str, show_values: bool = True) -> 
                   show_values=show_values)
 
 
-def _barras_anuais(df_amb: pd.DataFrame, titulo: str, show_values: bool = True) -> go.Figure:
+def _barras_anuais(df_amb: pd.DataFrame, titulo: str, show_values: bool = True,
+                   proporcao: bool = False) -> go.Figure:
+    anos = list(range(int(df_amb["ano"].min()), int(df_amb["ano"].max()) + 1))
     tab = (df_amb[df_amb["teve_sustentacao"]]
            .groupby("ano").size().reset_index(name="n"))
-    tab = tab.set_index("ano").reindex(_ANOS, fill_value=0).reset_index()
+    tab = tab.set_index("ano").reindex(anos, fill_value=0).reset_index()
+
+    if proporcao:
+        total_ano = df_amb.groupby("ano").size().reindex(anos, fill_value=0)
+        tab["y"] = (tab["n"] / tab["ano"].map(total_ano) * 100).round(1)
+        texto = tab["y"].apply(lambda v: f"{v:.1f}%") if show_values else None
+        y_title = "% de inclusões com sustentação oral"
+    else:
+        tab["y"] = tab["n"]
+        texto = tab["y"] if show_values else None
+        y_title = "Inclusões com sustentação oral"
+
     fig = go.Figure(go.Bar(
-        x=tab["ano"], y=tab["n"],
+        x=tab["ano"], y=tab["y"],
         marker_color="#0891b2",
-        text=tab["n"] if show_values else None,
+        text=texto,
         textposition="outside", cliponaxis=False,
         textfont=dict(family="Arial, sans-serif", size=17, color="black"),
         name="COM SUSTENTAÇÃO",
     ))
     aplicar_padrao(fig, titulo, height=700, margin=dict(t=130, b=140, l=120, r=60),
-                   xaxis=dict(dtick=1, title="Ano", tickangle=-45),
-                   yaxis_title="Inclusões com sustentação oral")
-    _marcos_temporais(fig, tab["n"].max())
+                   xaxis=dict(dtick=1, title="Ano"),
+                   yaxis_title=y_title)
+    _marcos_temporais(fig, tab["y"].max(), anos[0], anos[-1])
     return fig
 
 
 def _barras_grupo(df_sub: pd.DataFrame, col_grupo: str,
                   cores: dict, titulo: str, x_title: str = "Ano",
-                  show_values: bool = True) -> go.Figure:
+                  show_values: bool = True, proporcao: bool = False) -> go.Figure:
     tab = df_sub.groupby(["ano", col_grupo], observed=True).size().reset_index(name="n")
+
+    if proporcao:
+        totais = tab.groupby("ano")["n"].transform("sum")
+        tab["y"] = (tab["n"] / totais * 100).round(1)
+        y_title = "% do total do ano"
+    else:
+        tab["y"] = tab["n"]
+        y_title = "Inclusões com sustentação"
+
     fig = go.Figure()
     grupos = [g for g in cores if g in tab[col_grupo].unique()]
     for g in grupos:
         d = tab[tab[col_grupo] == g]
+        texto = d["y"].apply(lambda v: f"{v:.1f}%") if proporcao else d["y"]
         fig.add_trace(go.Bar(
-            x=d["ano"], y=d["n"], name=g.upper(),
+            x=d["ano"], y=d["y"], name=g.upper(),
             marker_color=cores[g],
-            text=d["n"] if show_values else None,
+            text=texto if show_values else None,
             textposition="outside", cliponaxis=False,
             textfont=dict(family="Arial, sans-serif", size=17, color="black"),
         ))
     aplicar_padrao(fig, titulo, height=700, margin=dict(t=130, b=140, l=120, r=60),
                    barmode="group", showlegend=True, legend=_LEGEND_BARRAS,
-                   xaxis=dict(dtick=1, title=x_title, tickangle=-45),
-                   yaxis_title="Inclusões com sustentação")
+                   xaxis=dict(dtick=1, title=x_title),
+                   yaxis_title=y_title)
     if not tab.empty:
-        _marcos_temporais(fig, tab["n"].max())
+        _marcos_temporais(fig, tab["y"].max(), int(tab["ano"].min()), int(tab["ano"].max()))
     return fig
 
 
@@ -125,9 +183,10 @@ def _barras_grupo(df_sub: pd.DataFrame, col_grupo: str,
 
 def gs1_sust_filtravel(df: pd.DataFrame, show_values: bool = True,
                        ambiente: str = "Plenário Virtual") -> go.Figure:
+    d = df[df["ambiente"] == ambiente]
     return _pizza_sust(
-        df[df["ambiente"] == ambiente],
-        f"Sustentação oral — {ambiente} (2020–2025)",
+        d,
+        f"Sustentação oral — {ambiente}{_periodo(d)}",
         show_values=show_values,
     )
 
@@ -136,12 +195,14 @@ def gs1_sust_filtravel(df: pd.DataFrame, show_values: bool = True,
 # S3/S4 — Barras anuais (PV/PP selecionável)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def gs3_sust_anual_filtravel(df: pd.DataFrame, show_values: bool = True,
+def gs3_sust_anual_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
                              ambiente: str = "Plenário Virtual") -> go.Figure:
+    d = df[df["ambiente"] == ambiente]
     return _barras_anuais(
-        df[df["ambiente"] == ambiente],
-        f"Sustentação oral por ano — {ambiente} (2020–2025)",
+        d,
+        f"Sustentação oral por ano — {ambiente}{_periodo(d)}",
         show_values=show_values,
+        proporcao=proporcao,
     )
 
 
@@ -149,25 +210,25 @@ def gs3_sust_anual_filtravel(df: pd.DataFrame, show_values: bool = True,
 # S5/S6 — Por ano e classe (PV/PP selecionável)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def gs5_sust_classe_filtravel(df: pd.DataFrame, show_values: bool = True,
+def gs5_sust_classe_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
                               ambiente: str = "Plenário Virtual") -> go.Figure:
     sub = df[(df["ambiente"] == ambiente) & df["teve_sustentacao"]]
     return _barras_grupo(sub, "classe", CORES_CLASSE,
-                         f"Sustentação oral por ano e classe — {ambiente} (2020–2025)",
-                         show_values=show_values)
+                         f"Sustentação oral por ano e classe — {ambiente}{_periodo(sub)}",
+                         show_values=show_values, proporcao=proporcao)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # S7 — Por ano e tipo de questão (PV/PP selecionável)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def gs7_sust_tipo_filtravel(df: pd.DataFrame, show_values: bool = True,
+def gs7_sust_tipo_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
                             ambiente: str = "Plenário Virtual") -> go.Figure:
     sub = df[(df["ambiente"] == ambiente) & df["teve_sustentacao"]].copy()
     sub["tipo_questao"] = sub["tipo_questao"].replace({"IJ": "QI"})
     return _barras_grupo(sub, "tipo_questao", CORES_TIPO,
-                         f"Sustentação oral por ano e tipo de questão — {ambiente} (2020–2025)",
-                         show_values=show_values)
+                         f"Sustentação oral por ano e tipo de questão — {ambiente}{_periodo(sub)}",
+                         show_values=show_values, proporcao=proporcao)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -189,11 +250,11 @@ def gs8_taxa_ambiente(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
             textfont=dict(family="Arial, sans-serif", size=17, color="black"),
         ))
     aplicar_padrao(fig, "Taxa de sustentação oral por ano e ambiente",
-                   "% de inclusões com sustentação oral, Plenário Virtual vs Plenário Presencial (2020–2025)",
+                   f"% de inclusões com sustentação oral, Plenário Virtual vs Plenário Presencial{_periodo(df)}",
                    height=700, margin=dict(t=130, b=140, l=120, r=60),
                    barmode="group", showlegend=True, legend=_LEGEND_BARRAS,
-                   xaxis=dict(dtick=1, title="Ano", tickangle=-45),
+                   xaxis=dict(dtick=1, title="Ano"),
                    yaxis_title="% de inclusões com sustentação")
     if not tab.empty:
-        _marcos_temporais(fig, tab["n"].max())
+        _marcos_temporais(fig, tab["n"].max(), int(tab["ano"].min()), int(tab["ano"].max()))
     return fig

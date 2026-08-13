@@ -3,6 +3,14 @@
 from __future__ import annotations
 import streamlit as st
 import pandas as pd
+from components.catalogo import render_pagina
+from components.grafico import GraficoSpec
+from components.tabulador import render_tabulador
+from dados.filters import dimensoes_disponiveis
+from pages.bloco2_inclusoes.plots import (
+    fig_2i_tramitacao_anual_2016, fig_31_tramitacao_2016,
+    fig_31_tramitacao_alt, fig_32_tramitacao_alt,
+)
 from .plots import (
     gt1_tramitacao,
     gt2_tram_por_classe,
@@ -20,125 +28,130 @@ from .plots import (
     DIMENSOES,
 )
 
-# ── Catálogo T1–T9 ────────────────────────────────────────────────────────────
+# ── Catálogo T1–T17 (T17 é o tabulador livre, fora do catálogo) ────────────────
 _CATALOGO = [
-    (
-        "T1 — Tramitação por Ambiente (geral)",
-        "Tramitação por Ambiente — Processos CC (2020–2025)",
-        "Distribuição dos processos distintos por ambiente: "
-        "só PV, só PP ou ambos.",
-        gt1_tramitacao,
+    GraficoSpec(
+        id="T1",
+        rotulo="T1 — Tramitação por ambiente (geral)",
+        subtitulo="Quase 60% dos processos tramitam só no virtual (2.168 de 3.644)",
+        descricao="Distribuição dos processos distintos por ambiente: "
+                  "só PV, só PP ou ambos.",
+        fn=gt1_tramitacao,
+        tipos=("barra",),
+        filtros=("classe", "tipo_questao", "periodo"),
     ),
-    (
-        "T2 — Tramitação por Ambiente e Classe",
-        "Tramitação por Ambiente e Classe — Processos CC (2020–2025)",
-        "Barras agrupadas por ambiente de tramitação (só PV / só PP / ambos) "
-        "para cada classe processual (ADI, ADPF, ADC, ADO).",
-        gt2_tram_por_classe,
+    GraficoSpec(
+        id="T2",
+        rotulo="T2 — Tramitação por ambiente e classe",
+        subtitulo="ADI domina a tramitação em todos os ambientes",
+        descricao="Barras agrupadas por ambiente de tramitação (só PV / só PP / ambos) "
+                  "para cada classe processual (ADI, ADPF, ADC, ADO).",
+        fn=gt2_tram_por_classe,
+        tipos=("barra",),
+        filtros=("tipo_questao", "periodo"),
     ),
-    (
-        "T3 — Tramitação por Ambiente e Tipo de Questão",
-        "Tramitação por Ambiente e Tipo de Questão — Processos CC (2020–2025)",
-        "Barras agrupadas por ambiente de tramitação para cada tipo de questão "
-        "(PR / RC / QI). IJ renomeado para QI.",
-        gt3_tram_por_tipo,
+    GraficoSpec(
+        id="T3",
+        rotulo="T3 — Tramitação por ambiente e tipo de questão",
+        subtitulo="PR domina a tramitação em todos os ambientes",
+        descricao="Barras agrupadas por ambiente de tramitação para cada tipo de questão "
+                  "(PR / RC / QI). IJ renomeado para QI.",
+        fn=gt3_tram_por_tipo,
+        tipos=("barra",),
+        filtros=("classe", "periodo"),
     ),
-    (
-        "T4 — Processos em Ambos os Ambientes por Tipo de Questão",
-        "Processos em Ambos os Ambientes por Tipo de Questão (2020–2025)",
-        "Recorte dos processos que tramitaram em ambos os ambientes, "
-        "distribuídos por tipo de questão (PR / RC / QI).",
-        gt4_ambos_por_tipo,
+    GraficoSpec(
+        id="T4",
+        rotulo="T4 — Processos em ambos os ambientes por tipo de questão",
+        subtitulo="PR também domina os processos que passaram pelos dois ambientes",
+        descricao="Recorte dos processos que tramitaram em ambos os ambientes, "
+                  "distribuídos por tipo de questão (PR / RC / QI).",
+        fn=gt4_ambos_por_tipo,
+        tipos=("barra",),
+        filtros=("classe", "periodo"),
     ),
-    (
-        "T5 — Macro-Desfecho por Ambiente de Tramitação",
-        "Macro-Desfecho por Ambiente de Tramitação — Inclusões (2020–2025)",
-        "Volume de inclusões concluídas e não concluídas em cada "
-        "grupo de tramitação (só PV / só PP / ambos).",
-        gt5_macro_por_tram,
+    GraficoSpec(
+        id="T5",
+        rotulo="T5 — Macro-desfecho por ambiente de tramitação",
+        subtitulo="Não conclusão domina os grupos presencial e misto; no virtual, concluídos levam",
+        descricao="Volume de inclusões concluídas e não concluídas em cada "
+                  "grupo de tramitação (só PV / só PP / ambos).",
+        fn=gt5_macro_por_tram,
+        tipos=("barra",),
+        filtros=("classe", "tipo_questao", "periodo"),
     ),
-    (
-        "T6 — Desfecho Detalhado por Ambiente de Tramitação",
-        "Desfecho Detalhado por Ambiente de Tramitação — Inclusões (2020–2025)",
-        "Os 7 desfechos detalhados (unânime, maioria, pedido de vista etc.) "
-        "para cada grupo de tramitação.",
-        gt6_desfecho_por_tram,
+    GraficoSpec(
+        id="T6",
+        rotulo="T6 — Desfecho detalhado por ambiente de tramitação",
+        subtitulo="Virtual conclui em unanimidade; presencial acumula 'motivos diversos'",
+        descricao="Os sete desfechos detalhados (unânime, maioria, pedido de vista "
+                  "e os demais) em cada grupo de tramitação.",
+        fn=gt6_desfecho_por_tram,
+        tipos=("barra", "barra_h", "linha"),
+        filtros=("classe", "tipo_questao", "periodo"),
+        percentual=True,
     ),
-    (
-        "T7 — Distribuição por Classe dentro de cada Ambiente",
-        "Distribuição por Classe — por Ambiente de Tramitação (2020–2025)",
-        "Barras 100% empilhadas mostrando a composição por classe processual "
-        "dentro de cada ambiente (só PV / só PP / ambos).",
-        gt7_classe_por_tram,
+    GraficoSpec(
+        id="T7",
+        rotulo="T7 — Distribuição por classe dentro de cada ambiente",
+        subtitulo="ADI é a maioria esmagadora em qualquer ambiente de tramitação",
+        descricao="Barras 100% empilhadas mostrando a composição por classe processual "
+                  "dentro de cada ambiente (só PV / só PP / ambos).",
+        fn=gt7_classe_por_tram,
+        tipos=("barra",),
+        filtros=("tipo_questao", "periodo"),
     ),
-    (
-        "T8 — Distribuição por Tipo de Questão dentro de cada Ambiente",
-        "Distribuição por Tipo de Questão — por Ambiente de Tramitação (2020–2025)",
-        "Barras 100% empilhadas mostrando a composição por tipo de questão "
-        "dentro de cada ambiente (só PV / só PP / ambos).",
-        gt8_tipo_por_tram,
+    GraficoSpec(
+        id="T8",
+        rotulo="T8 — Distribuição por tipo de questão dentro de cada ambiente",
+        subtitulo="QI pesa só no presencial (60%); virtual e misto são quase só PR",
+        descricao="Barras 100% empilhadas mostrando a composição por tipo de questão "
+                  "dentro de cada ambiente (só PV / só PP / ambos).",
+        fn=gt8_tipo_por_tram,
+        tipos=("barra",),
+        filtros=("classe", "periodo"),
     ),
-    (
-        "T9 — Taxa de Conclusão por Ambiente e Classe (%)",
-        "Taxa de Conclusão (%) por Ambiente de Tramitação e Classe (2020–2025)",
-        "Percentual de inclusões concluídas para cada combinação de ambiente de "
-        "tramitação e classe processual.",
-        gt9_taxa_conclusao,
+    GraficoSpec(
+        id="T9",
+        rotulo="T9 — Taxa de conclusão por ambiente e classe (%)",
+        subtitulo="Virtual conclui muito mais que o presencial em toda classe",
+        descricao="Percentual de inclusões concluídas para cada combinação de ambiente de "
+                  "tramitação e classe processual.",
+        fn=gt9_taxa_conclusao,
+        tipos=("barra",),
+        filtros=("tipo_questao", "periodo"),
     ),
-    (
-        "T11 — Processos por Ano e Ambiente",
-        "Processos distintos por ano e ambiente (2020–2025)",
-        "Cada processo aparece uma vez por ano-ambiente onde foi pautado. "
-        "Barra por ambiente com total geral no eixo secundário.",
-        gt11_proc_ano_ambiente,
+    GraficoSpec(
+        id="T10",
+        rotulo="T10 — Processos por ano e ambiente",
+        subtitulo="Presencial encolhe enquanto o virtual dispara a partir de 2019",
+        descricao="Cada processo aparece uma vez por ano-ambiente onde foi pautado. "
+                  "Barra por ambiente com total geral no eixo secundário.",
+        fn=gt11_proc_ano_ambiente,
+        tipos=("barra", "linha"),
+        filtros=("classe", "tipo_questao", "periodo"),
     ),
-    (
-        "T12 — Processos por Tipo de Tramitação",
-        "Processos por tipo de tramitação, por ano sem repetição (2020–2025)",
-        "Cada processo conta uma única vez: ano da primeira inclusão, "
-        "categoria conforme todo o histórico (Virtual / Físico / Ambos).",
-        gt12_proc_tramitacao_primeiro_ano,
+    GraficoSpec(
+        id="T11",
+        rotulo="T11 — Processos por tipo de tramitação",
+        subtitulo="Virtual substitui o presencial na tramitação de novos processos",
+        descricao="Cada processo conta uma única vez: ano da primeira inclusão, "
+                  "categoria conforme todo o histórico (Virtual / Físico / Ambos).",
+        fn=gt12_proc_tramitacao_primeiro_ano,
+        tipos=("barra", "linha"),
+        filtros=("classe", "tipo_questao", "periodo"),
     ),
-    (
-        "T13 — Processos por Tipo de Tramitação (período total)",
-        "Processos por tipo de tramitação — 2020–2025",
-        "Cada processo aparece uma única vez, classificado pelo(s) ambiente(s) "
-        "em que tramitou ao longo de todo o período.",
-        gt13_tramitacao_periodo,
-    ),
-    (
-        "T10 — Tabulador Interativo",
-        "Tabulador Interativo — Tramitação por Ambiente (2020–2025)",
-        "Configure livremente os eixos, agrupamento, métrica e modo de barras.",
-        None,
+    GraficoSpec(
+        id="T12",
+        rotulo="T12 — Processos por tipo de tramitação (período total)",
+        subtitulo="Quase 60% dos processos tramitam exclusivamente no virtual",
+        descricao="Cada processo aparece uma única vez, classificado pelo(s) ambiente(s) "
+                  "em que tramitou ao longo de todo o período.",
+        fn=gt13_tramitacao_periodo,
+        tipos=("barra",),
+        filtros=("classe", "tipo_questao"),
     ),
 ]
-
-_LABELS = [item[0] for item in _CATALOGO]
-
-_SUMARIO = {
-    "Visão geral (T1–T4, T13)": [
-        "T1 — tramitação por ambiente",
-        "T2 — tramitação por ambiente e classe",
-        "T3 — tramitação por ambiente e tipo de questão",
-        "T4 — processos em ambos os ambientes por tipo",
-        "T13 — processos por tipo de tramitação (período total)",
-    ],
-    "Detalhamento (T5–T9)": [
-        "T5 — macro-desfecho por tramitação",
-        "T6 — desfecho detalhado por tramitação",
-        "T7 — distribuição por classe por ambiente",
-        "T8 — distribuição por tipo por ambiente",
-        "T9 — taxa de conclusão por tramitação e classe",
-    ],
-    "Temporal (T11–T12)": [
-        "T11 — processos por ano e ambiente",
-        "T12 — processos por tipo de tramitação (sem repetição)",
-    ],
-    "Livre (T10)": [
-        "T10 — tabulador interativo (eixos livres)",
-    ],
-}
 
 _PREDEFINIDOS = [
     ("Ambiente × Classe (inclusões, agrupado)",          "tramitacao",   "classe",         "inclusoes", "group"),
@@ -153,151 +166,89 @@ _PREDEFINIDOS = [
 _LABELS_PRE = [p[0] for p in _PREDEFINIDOS]
 _DIMS_LABEL = list(DIMENSOES.keys())
 
-_TABELA_SPECS: dict[int, tuple[str, str | None]] = {
-    0: ("tramitacao", None),
-    1: ("classe", "tramitacao"),
-    2: ("tipo_questao", "tramitacao"),
-    4: ("tramitacao", "macro_desfecho"),
-    5: ("tramitacao", "desfecho"),
-    8: ("tramitacao", "classe"),
-    9: ("ano", "ambiente"),
-    10: ("ano", "tramitacao"),
-}
-
-
-def _build_tabela(df: pd.DataFrame, spec: tuple[str, str | None]) -> pd.DataFrame:
-    col_linha, col_grupo = spec
-    d = df.copy()
-    d["tipo_questao"] = d["tipo_questao"].replace({"IJ": "QI"})
-    d["ambiente"] = d["ambiente"].replace({"Plenário Presencial": "Plenário Físico"})
-    if col_grupo is None:
-        tab = d[col_linha].value_counts().reset_index()
-        tab.columns = [col_linha, "n"]
-        pvt = tab.set_index(col_linha)
-        pvt.loc["Total"] = pvt["n"].sum()
-        pvt = pvt.reset_index()
-        pvt[pvt.columns[0]] = pvt[pvt.columns[0]].astype(str)
-        return pvt
-    tab = d.groupby([col_linha, col_grupo], observed=True).size().reset_index(name="n")
-    pvt = tab.pivot_table(index=col_linha, columns=col_grupo, values="n", fill_value=0)
-    pvt["Total"] = pvt.sum(axis=1)
-    pvt.loc["Total"] = pvt.sum()
-    pvt = pvt.reset_index()
-    pvt[pvt.columns[0]] = pvt[pvt.columns[0]].astype(str)
-    return pvt
-
-
-def _render_tabela(df: pd.DataFrame, idx: int) -> None:
-    spec = _TABELA_SPECS.get(idx)
-    if spec is None:
-        return
-    with st.expander("📊 Dados da tabulação"):
-        tab = _build_tabela(df, spec)
-        fmt = {c: "{:,.0f}" for c in tab.columns if c != tab.columns[0]}
-        st.dataframe(tab.style.format(fmt, na_rep="—"), width="stretch", height=280)
-
-
-def _render_fig(fn, df: pd.DataFrame, show_values: bool) -> None:
-    try:
-        result = fn(df, show_values=show_values)
-    except TypeError:
-        result = fn(df)
-    st.plotly_chart(result, width="stretch")
-
 
 def _render_tabulador(df: pd.DataFrame, key_suffix: str) -> None:
-    col_pre, _ = st.columns([2, 1])
-    with col_pre:
-        pre_escolha = st.selectbox(
-            "🔖 Pré-definidos",
-            options=["— ou configure manualmente abaixo —"] + _LABELS_PRE,
-            index=0,
-            key=f"tab_predefinido_{key_suffix}",
-        )
+    render_tabulador(df, key_suffix, dimensoes_disponiveis(df.columns), _PREDEFINIDOS)
 
-    if pre_escolha.startswith("—"):
-        def_x, def_g, def_m, def_bm = 0, 1, 0, 0
+
+_TABULADOR = GraficoSpec(
+    id="T17",
+    rotulo="T17 — Tabulador interativo (eixos livres)",
+    subtitulo="Tabulador interativo — eixos, agrupamento e métrica livres",
+    descricao="Configure o eixo X, a cor/grupo, a métrica e o modo de barras. "
+              "A tabela abaixo acompanha os mesmos eixos.",
+    fn=None,
+    renderer=lambda df, key: _render_tabulador(df, key_suffix=key),
+)
+
+# ── Portados do Bloco 2 (período fixo) ────────────────────────────────────────
+# A página Tramitação trabalha com o dataset de tramitações; as figuras do
+# Bloco 2 precisam das inclusões em pauta, capturadas por closure em
+# _montar_catalogo. Entradas com filtros=(): período é identidade do gráfico.
+def _montar_catalogo(df_inc: pd.DataFrame) -> list[GraficoSpec]:
+    """Monta o catálogo fechando as figuras do Bloco 2 sobre `df_inc`.
+
+    Aplica a convenção do chamador do Bloco 2 (tipo_questao já com IJ→QI) e
+    ignora o dataframe da página — as figuras filtram o ano por dentro.
+    """
+    d_inc = df_inc.assign(tipo_questao=df_inc["tipo_questao"].replace({"IJ": "QI"}))
+
+    def _portado(fn):
+        def _wrap(_df, show_values: bool = True, **_kw):
+            return fn(d_inc, show_values=show_values)
+        return _wrap
+
+    portados = [
+        GraficoSpec(
+            id="T13",
+            rotulo="T13 — Tramitação por ano (2016–2025)",
+            subtitulo="Virtual ultrapassa o presencial em 2020 e o substitui na tramitação",
+            descricao="Ambiente de tramitação de cada processo por ano, 2016–2025: o virtual ultrapassa "
+                      "o presencial em 2020. Período fixo do dado, sem recorte.",
+            fn=_portado(fig_2i_tramitacao_anual_2016),
+            tipos=("barra",),
+            filtros=(),
+            portada=True,
+        ),
+        GraficoSpec(
+            id="T14",
+            rotulo="T14 — Tramitação por período (2016–2019)",
+            subtitulo="2016–2019: quase dois terços dos processos só no presencial (63%)",
+            descricao="Proporção de processos que tramitaram só no virtual, só no presencial ou em ambos, "
+                      "2016–2019. Período fixo do dado, sem recorte.",
+            fn=_portado(fig_31_tramitacao_2016),
+            tipos=("barra",),
+            filtros=(),
+            portada=True,
+        ),
+        GraficoSpec(
+            id="T15",
+            rotulo="T15 — Tramitação por período, vertical (2016–2019)",
+            subtitulo="2016–2019: quase dois terços dos processos só no presencial (63%)",
+            descricao="Mesma leitura do T14 em barras verticais, 2016–2019. Período fixo do dado, sem recorte.",
+            fn=_portado(fig_31_tramitacao_alt),
+            tipos=("barra",),
+            filtros=(),
+            portada=True,
+        ),
+        GraficoSpec(
+            id="T16",
+            rotulo="T16 — Tramitação por período, vertical (2020–2025)",
+            subtitulo="2020–2025: mais de três quartos dos processos só no virtual (78%)",
+            descricao="Mesma leitura do 3.2 em barras verticais, 2020–2025. Período fixo do dado, sem recorte.",
+            fn=_portado(fig_32_tramitacao_alt),
+            tipos=("barra",),
+            filtros=(),
+            portada=True,
+        ),
+    ]
+    # O tabulador fecha a página: entra por último, depois dos portados.
+    return [*_CATALOGO, *portados, _TABULADOR]
+
+
+def render_graficos(df: pd.DataFrame, df_inc: pd.DataFrame | None = None) -> None:
+    if df_inc is not None:
+        catalogo = _montar_catalogo(df_inc)
     else:
-        _, px, pg, pm, pbm = next(p for p in _PREDEFINIDOS if p[0] == pre_escolha)
-        def_x  = _DIMS_LABEL.index(next(k for k, v in DIMENSOES.items() if v == px))
-        def_g  = _DIMS_LABEL.index(next(k for k, v in DIMENSOES.items() if v == pg))
-        def_m  = ["inclusoes", "processos"].index(pm)
-        def_bm = ["group", "stack", "100%"].index(pbm)
-
-    c1, c2, c3, c4, c5 = st.columns([2, 2, 2, 2, 1])
-    with c1:
-        eixo_x_lbl = st.selectbox("Eixo X",    _DIMS_LABEL, index=def_x, key=f"tab_x_{key_suffix}")
-    with c2:
-        grupo_lbl  = st.selectbox("Cor/Grupo", _DIMS_LABEL, index=def_g, key=f"tab_g_{key_suffix}")
-    with c3:
-        metrica = st.selectbox(
-            "Métrica", ["inclusoes", "processos"], index=def_m, key=f"tab_m_{key_suffix}",
-            format_func=lambda v: "Inclusões em pauta" if v == "inclusoes" else "Processos distintos",
-        )
-    with c4:
-        barmode = st.selectbox(
-            "Modo", ["group", "stack", "100%"], index=def_bm, key=f"tab_bm_{key_suffix}",
-            format_func=lambda v: {"group": "Agrupado", "stack": "Empilhado", "100%": "Empilhado 100%"}[v],
-        )
-    with c5:
-        show_values = st.checkbox("Exibir valores", value=False, key=f"tab_sv_{key_suffix}")
-
-    eixo_x = DIMENSOES[eixo_x_lbl]
-    grupo  = DIMENSOES[grupo_lbl]
-
-    if eixo_x == grupo:
-        st.warning("Eixo X e Cor/Grupo não podem ser a mesma dimensão.")
-        return
-
-    st.plotly_chart(gt10_tabulador(df, eixo_x, grupo, metrica, barmode, show_values), width="stretch")
-
-    st.markdown("---")
-    st.subheader("Tabela — mesmos eixos")
-    d = df.copy()
-    d["tipo_questao"] = d["tipo_questao"].replace({"IJ": "QI"})
-    if metrica == "processos":
-        d = d.drop_duplicates("incidente")
-    tab = d.groupby([eixo_x, grupo], observed=True).size().reset_index(name="n")
-    if barmode == "100%":
-        totais = tab.groupby(eixo_x)["n"].transform("sum")
-        tab["n"] = (tab["n"] / totais * 100).round(1)
-    pvt = tab.pivot_table(index=eixo_x, columns=grupo, values="n", fill_value=0)
-    pvt["Total"] = pvt.sum(axis=1)
-    pvt.loc["Total"] = pvt.sum()
-    pvt = pvt.reset_index()
-    pvt[pvt.columns[0]] = pvt[pvt.columns[0]].astype(str)
-    fmt = {c: "{:,.0f}" for c in pvt.columns if pvt[c].dtype.kind in "iuf"}
-    st.dataframe(pvt.style.format(fmt, na_rep="—"), width="stretch", height=280)
-
-
-def render_graficos(df: pd.DataFrame) -> None:
-    with st.expander("Sumário — visualizações disponíveis", expanded=True):
-        cols = st.columns(2)
-        for i, (bloco, graficos) in enumerate(_SUMARIO.items()):
-            with cols[i % 2]:
-                st.markdown(f"**{bloco}**")
-                for g in graficos:
-                    st.markdown(f"- {g}")
-
-    st.markdown("---")
-
-    escolha = st.selectbox(
-        "Selecione a visualização",
-        options=_LABELS,
-        index=0,
-        key="tramitacao_selectbox",
-    )
-
-    idx = _LABELS.index(escolha)
-    _, subtitulo, descricao, fn = _CATALOGO[idx]
-
-    st.subheader(subtitulo)
-    st.markdown(descricao)
-
-    if idx == len(_CATALOGO) - 1:  # T10
-        _render_tabulador(df, key_suffix="main")
-    else:
-        show_values = st.checkbox("Exibir valores", value=False, key=f"tram_sv_{idx}")
-        _render_fig(fn, df, show_values)
-
-    _render_tabela(df, idx)
+        catalogo = [*_CATALOGO, _TABULADOR]
+    render_pagina(catalogo, df, key_prefix="tram")

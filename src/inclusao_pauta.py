@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-ANO_INI, ANO_FIM = 2016, 2025
+ANO_INI, ANO_FIM = 2009, 2025
 
 ANDAMENTOS_PAUTA = [
     'Inclua-se em pauta - minuta extraída',
@@ -66,8 +66,13 @@ RE_LIMPEZA_DECISOES = (
     r'Sess[ãa]o (?:Ordinária|Extraordinária|Ordinaria|Extraordinaria) Virtual'
 )
 
+# O terminador do sufixo é `.`, `{`, " - " (como em "ADI-ED - Agendado para:")
+# ou o fim do texto. Sem os dois últimos, um recurso cujo complemento segue no
+# formato "Julgamento Virtual: ADI-ED - Agendado para: 05/10/2018." não casava,
+# extrair_sufixo devolvia None e o evento virava "Não identificado" — exibido
+# como processo principal. Eram 185 eventos assim na série.
 RE_SUFIXO_MODERNO = re.compile(
-    r'Julgamento Virtual:\s*([A-Z]{2,5})([\-\s][A-Za-z][\w\-]*)?\s*[\.{]'
+    r'Julgamento Virtual:\s*([A-Z]{2,5})([\-\s][A-Za-z][\w\-]*)?\s*(?=[\.{]|\s-\s|$)'
 )
 RE_SUFIXO_ANTIGO = re.compile(
     r'-\s*([A-Z]{2,5})([\-][A-Za-z][\w\-]*)?\s*$'
