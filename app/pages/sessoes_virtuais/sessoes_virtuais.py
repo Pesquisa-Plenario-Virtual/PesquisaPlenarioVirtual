@@ -42,9 +42,16 @@ if not df_final.empty:
 
 # ── Cabeçalho ─────────────────────────────────────────────────────────────────
 st.title("Sessões Virtuais")
-st.markdown("""
+
+# Período derivado do dado, não escrito à mão: o dataset cobria 2020–2025 e
+# passou a cobrir desde 2016 no reprocessamento. Um intervalo fixo aqui
+# viraria mentira na próxima vez que a série crescer.
+_anos = pd.to_numeric(df_s.get("ano"), errors="coerce").dropna()
+_periodo = f"{int(_anos.min())} e {int(_anos.max())}" if not _anos.empty else "o período disponível"
+
+st.markdown(f"""
 Esta seção analisa as **sessões virtuais iniciadas** no Controle Concentrado
-(ADI, ADC, ADO e ADPF) do STF entre **2020 e 2025**.
+(ADI, ADC, ADO e ADPF) do STF entre **{_periodo}**.
 
 A unidade de análise é a **sessão virtual** — cada vez que um processo é incluído
 em ambiente virtual para julgamento. Um mesmo processo pode ter múltiplas sessões
