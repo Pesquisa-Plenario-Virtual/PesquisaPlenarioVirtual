@@ -82,6 +82,7 @@ def g0_sessoes_vs_inclusoes(df_s: pd.DataFrame, df_final: pd.DataFrame,
         "Sessões virtuais vs Inclusões em pauta (PV) por ano",
         f"Comparação anual entre sessões virtuais iniciadas e inclusões em pauta{periodo}",
         barmode="group", showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.1, x=0.5, xanchor="center"),
         xaxis=dict(title="Ano"),
         yaxis=dict(title="Quantidade"),
     )
@@ -150,6 +151,7 @@ def g3_2_faixa_sessoes_classe(df_s: pd.DataFrame, show_values: bool = True) -> g
         "Número de sessões por processo e classe",
         f"Distribuição por faixa de nº de sessões{_periodo(df_s)}",
         barmode="stack", showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.1, x=0.5, xanchor="center"),
         xaxis=dict(title="Classe"),
         yaxis=dict(title="Nº de processos"),
     )
@@ -233,6 +235,7 @@ def g4_2_sessoes_classe_tipo(df_s: pd.DataFrame, show_values: bool = True) -> go
         "Sessões por classe e tipo de questão",
         f"Volume de sessões virtuais{_periodo(df_s)}",
         barmode="group", showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.1, x=0.5, xanchor="center"),
         xaxis=dict(title="Classe"),
         yaxis=dict(title="Nº de sessões"),
     )
@@ -255,6 +258,7 @@ def _barras_macro_ano(df_sub: pd.DataFrame, titulo: str,
     aplicar_padrao(
         fig, titulo, "Nº de sessões concluídas vs não concluídas por ano",
         barmode="stack", showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.1, x=0.5, xanchor="center"),
         xaxis=dict(title="Ano"),
         yaxis=dict(title="Nº de sessões"),
     )
@@ -304,6 +308,7 @@ def g4_5_taxa_conclusao_classe_tipo(df_s: pd.DataFrame, show_values: bool = True
         "Taxa de conclusão por classe e tipo de questão",
         f"Sessões virtuais{_periodo(df_s)}",
         barmode="group", showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.1, x=0.5, xanchor="center"),
         xaxis=dict(title="Classe"),
         yaxis=dict(title="% Concluído", range=[0, 105]),
     )

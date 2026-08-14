@@ -78,7 +78,7 @@ def _pizza(serie: pd.Series, titulo: str, cores: list, show_values: bool = True)
 
     Era pizza. Nome mantido enquanto o chamador migra; não faz mais pizza.
     """
-    s = serie.sort_values(ascending=True)
+    s = serie.sort_values(ascending=False)
     total = float(s.sum()) or 1.0
     ordem = {str(i): c for i, c in zip(serie.index, cores or [])}
     rotulos = [canonico(str(i)) for i in s.index]

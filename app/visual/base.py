@@ -78,7 +78,7 @@ TOPO_PAD = 12
 ALTURA_LINHA_TITULO = 36
 GAP_TITULO_LEGENDA = 16
 ALTURA_LINHA_LEGENDA = 26
-GAP_LEGENDA_GRAFICO = 30
+GAP_LEGENDA_GRAFICO = 70
 
 
 def _pilha_vertical_topo(fig: go.Figure, tem_subtitulo: bool, margin_t_atual) -> float:
@@ -97,8 +97,9 @@ def aplicar_padrao(fig: go.Figure, titulo: str, subtitulo: str | None = None, **
 
     A pilha vertical do topo é padronizada em todos os gráficos: o `margin.t`
     reserva altura para título + gap + legenda + gap, e legendas horizontais de
-    topo ficam ancoradas no topo do gráfico (y=1.0). Legendas dentro da área do
-    gráfico (y<1) e abaixo dele (pizzas, y<0) ficam como o gráfico definiu.
+    topo ficam `GAP_LEGENDA_GRAFICO` px acima do topo do gráfico (gap uniforme,
+    independente do tamanho da figura). Legendas dentro da área do gráfico (y<1)
+    e abaixo dele (pizzas, y<0) ficam como o gráfico definiu.
     """
     title = f"<b>{titulo}</b>"
     if subtitulo:
@@ -110,7 +111,12 @@ def aplicar_padrao(fig: go.Figure, titulo: str, subtitulo: str | None = None, **
     legend = dict(layout.get("legend") or {})
     if (layout.get("showlegend") and legend.get("orientation", "v") == "h"
             and float(legend.get("y", 1.0) or 1.0) >= 1.0):
-        legend.update(orientation="h", y=1.0, yanchor="bottom", x=0.5, xanchor="center")
+        # Gap em px, não normalizado: converte GAP_LEGENDA_GRAFICO em fração da
+        # altura do gráfico para o y. Gap uniforme em qualquer tamanho de figura.
+        altura_plot = max(1.0, float(layout.get("height") or LAYOUT_PADRAO["height"])
+                          - margin["t"] - float(margin.get("b") or LAYOUT_PADRAO["margin"]["b"]))
+        y_topo = 1.0 + GAP_LEGENDA_GRAFICO / altura_plot
+        legend.update(orientation="h", y=y_topo, yanchor="bottom", x=0.5, xanchor="center")
         layout["legend"] = legend
     fig.update_layout(title=title, **layout)
     fig.update_xaxes(**AXIS_PADRAO)

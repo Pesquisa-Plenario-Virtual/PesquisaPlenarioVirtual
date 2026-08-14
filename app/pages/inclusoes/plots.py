@@ -110,7 +110,7 @@ def _composicao(series: pd.Series, titulo: str, cores: list | None = None,
 
     `**_ignorado` absorve `buraco`, que só fazia sentido em pizza.
     """
-    s = series.sort_values(ascending=True)          # maior no topo no eixo y invertido
+    s = series.sort_values(ascending=False)         # menor no topo, maior na base (1ª categoria = base no plotly)
     total = float(s.sum()) or 1.0
     pct = s / total * 100
 
@@ -179,7 +179,8 @@ def _barras_grupo(df_amb: pd.DataFrame, col_x: str, col_grupo: str,
                   cores: dict, titulo: str, label_y: str,
                   label_total: str, x_title: str = "Ano",
                   show_values: bool = True, proporcao: bool = False,
-                  proporcao_global: bool = False, excluir_ers: tuple = ()) -> go.Figure:
+                  proporcao_global: bool = False, excluir_ers: tuple = (),
+                  label_y_proporcao: str | None = None) -> go.Figure:
     # label_total: mantido por compatibilidade de assinatura; a linha de total
     # foi removida (PADRÃO GERAL não permite linha de tendência de total).
     tab = df_amb.groupby([col_x, col_grupo], observed=True).size().reset_index(name="n")
@@ -195,7 +196,10 @@ def _barras_grupo(df_amb: pd.DataFrame, col_x: str, col_grupo: str,
         else:
             totais_x = tab.groupby(col_x)["n"].transform("sum")
             tab["y"] = (tab["n"] / totais_x * 100).round(1)
-        y_label = "% do total"
+        # item 6.f pede o rótulo "Quantidade de desfechos" mesmo com o dado em
+        # percentual — label_y_proporcao existe só para esse caso pedir um
+        # texto de eixo diferente do "% do total" padrão.
+        y_label = label_y_proporcao or "% do total"
         texto = tab["y"].apply(lambda v: f"{v:.1f}%") if show_values else None
     else:
         tab["y"] = tab["n"]
@@ -297,8 +301,9 @@ def g6f_desfecho_percentual_ambiente(df: pd.DataFrame, ambiente: str = "Plenári
     return _barras_grupo(sub, "desfecho", "ambiente", {ambiente: AZUL},
                          f"Desfechos por percentual — {ambiente}",
                          "Quantidade de desfechos", "Total (linha)",
-                         x_title="Desfecho", show_values=show_values,
-                         proporcao=True, proporcao_global=True)
+                         x_title="Tipo de desfechos", show_values=show_values,
+                         proporcao=True, proporcao_global=True,
+                         label_y_proporcao="Quantidade de desfechos")
 
 
 # Agrupamentos do item 6.b2/6.b3: nomes de série -> desfechos agregados.
