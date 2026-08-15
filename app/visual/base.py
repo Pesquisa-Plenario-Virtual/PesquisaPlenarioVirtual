@@ -81,13 +81,19 @@ ALTURA_LINHA_LEGENDA = 26
 GAP_LEGENDA_GRAFICO = 70
 
 
-def _pilha_vertical_topo(fig: go.Figure, tem_subtitulo: bool, margin_t_atual) -> float:
+def _linhas_legenda(fig: go.Figure, tem_legenda: bool) -> int:
+    if not tem_legenda:
+        return 0
+    n_series = len(fig.data)
+    return max(1, -(-n_series // 4)) if n_series > 1 else 0
+
+
+def _pilha_vertical_topo(fig: go.Figure, tem_subtitulo: bool, tem_legenda: bool, margin_t_atual) -> float:
     """margin.t mínimo para a pilha título → legenda → gráfico, nunca encolhe o valor do gráfico."""
     linhas_titulo = 2 if tem_subtitulo else 1
-    n_series = len(fig.data)
+    linhas_legenda = _linhas_legenda(fig, tem_legenda)
     minimo = TOPO_PAD + ALTURA_LINHA_TITULO * linhas_titulo + GAP_LEGENDA_GRAFICO
-    if n_series > 1:
-        linhas_legenda = max(1, -(-n_series // 4))
+    if linhas_legenda:
         minimo += GAP_TITULO_LEGENDA + ALTURA_LINHA_LEGENDA * linhas_legenda
     return max(margin_t_atual or LAYOUT_PADRAO["margin"]["t"], minimo)
 
@@ -105,20 +111,32 @@ def aplicar_padrao(fig: go.Figure, titulo: str, subtitulo: str | None = None, **
     if subtitulo:
         title += f"<br><sup>{subtitulo}</sup>"
     layout = {**LAYOUT_PADRAO, **layout_kwargs}
-    margin = dict(layout.get("margin") or {})
-    margin["t"] = _pilha_vertical_topo(fig, bool(subtitulo), margin.get("t"))
-    layout["margin"] = margin
     legend = dict(layout.get("legend") or {})
-    if (layout.get("showlegend") and legend.get("orientation", "v") == "h"
-            and float(legend.get("y", 1.0) or 1.0) >= 1.0):
-        # Gap em px, não normalizado: converte GAP_LEGENDA_GRAFICO em fração da
-        # altura do gráfico para o y. Gap uniforme em qualquer tamanho de figura.
-        altura_plot = max(1.0, float(layout.get("height") or LAYOUT_PADRAO["height"])
-                          - margin["t"] - float(margin.get("b") or LAYOUT_PADRAO["margin"]["b"]))
-        y_topo = 1.0 + GAP_LEGENDA_GRAFICO / altura_plot
-        legend.update(orientation="h", y=y_topo, yanchor="bottom", x=0.5, xanchor="center")
+    legenda_topo = (bool(layout.get("showlegend")) and legend.get("orientation", "v") == "h"
+                    and float(legend.get("y", 1.0) or 1.0) >= 1.0)
+    margin = dict(layout.get("margin") or {})
+    margin["t"] = _pilha_vertical_topo(fig, bool(subtitulo), legenda_topo, margin.get("t"))
+    layout["margin"] = margin
+    # Legenda usa coordenadas "paper" (área do gráfico, y=1 no topo do plot,
+    # pode passar de 1 para subir para a margem). Título usa "container" (y=1
+    # no topo da figura inteira, travado em [0,1]) — não dá para compartilhar o
+    # mesmo y, então calcula-se a borda inferior do título em px a partir do
+    # topo da figura e converte para fração do container.
+    altura_fig = float(layout.get("height") or LAYOUT_PADRAO["height"])
+    altura_plot = max(1.0, altura_fig - margin["t"] - float(margin.get("b") or LAYOUT_PADRAO["margin"]["b"]))
+    if legenda_topo:
+        linhas_legenda = _linhas_legenda(fig, True)
+        y_legenda = 1.0 + GAP_LEGENDA_GRAFICO / altura_plot
+        legend.update(orientation="h", y=y_legenda, yanchor="bottom", x=0.5, xanchor="center")
         layout["legend"] = legend
-    fig.update_layout(title=title, **layout)
+        gap_titulo_plot_px = GAP_LEGENDA_GRAFICO + ALTURA_LINHA_LEGENDA * linhas_legenda + GAP_TITULO_LEGENDA
+    else:
+        gap_titulo_plot_px = GAP_LEGENDA_GRAFICO
+    titulo_bottom_px_do_topo = margin["t"] - gap_titulo_plot_px
+    y_titulo = max(0.0, min(1.0, 1.0 - titulo_bottom_px_do_topo / altura_fig))
+    layout["title"] = dict(text=title, xref="container", yref="container",
+                           x=0.5, xanchor="center", y=y_titulo, yanchor="bottom")
+    fig.update_layout(**layout)
     fig.update_xaxes(**AXIS_PADRAO)
     fig.update_yaxes(**AXIS_PADRAO)
     return fig
