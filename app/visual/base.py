@@ -131,8 +131,10 @@ def aplicar_padrao(fig: go.Figure, titulo: str, subtitulo: str | None = None, **
         legend.update(orientation="h", y=y_legenda, yanchor="bottom", x=0.5, xanchor="center")
         layout["legend"] = legend
     y_titulo = max(0.0, min(1.0, 1.0 - (TOPO_PAD + ALTURA_LINHA_TITULO * 0.6) / altura_fig))
-    layout["title"] = dict(text=title, xref="container", yref="container",
-                           x=0.5, xanchor="center", y=y_titulo, yanchor="top")
+    # x em "paper" (área do gráfico) para alinhar com a borda esquerda do eixo,
+    # não com a borda da figura inteira (que incluiria a margem esquerda).
+    layout["title"] = dict(text=title, xref="paper", yref="container",
+                           x=0.0, xanchor="left", y=y_titulo, yanchor="top")
     fig.update_layout(**layout)
     fig.update_xaxes(**AXIS_PADRAO)
     fig.update_yaxes(**AXIS_PADRAO)
