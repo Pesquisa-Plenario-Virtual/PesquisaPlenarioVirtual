@@ -21,12 +21,12 @@ FONTE = "Times New Roman, Times, serif"
 
 TAMANHOS = {
     "titulo": 22,
-    "subtitulo": 14,
-    "eixo_titulo": 16,
-    "tick": 14,
-    "legenda": 14,
-    "valor": 13,
-    "anotacao": 12,
+    "subtitulo": 16,
+    "eixo_titulo": 18,
+    "tick": 16,
+    "legenda": 16,
+    "valor": 15,
+    "anotacao": 14,
 }
 
 # Hex da paleta antiga (estilo.py) -> equivalente na paleta validada.

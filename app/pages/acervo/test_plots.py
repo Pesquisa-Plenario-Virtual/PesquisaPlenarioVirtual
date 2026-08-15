@@ -42,11 +42,11 @@ def test_total_usa_azul_e_tem_er_espin():
     ann_texts = " ".join(a.text for a in fig.layout.annotations)
     assert "ER" in ann_texts and "ESPIN" in ann_texts
     assert fig.layout.legend.y == 0.95
-    # escala padronizada pós-tema: tick 14, título de eixo 16, título 22
-    assert fig.layout.xaxis.tickfont.size == 14
-    assert fig.layout.yaxis.tickfont.size == 14
-    assert fig.layout.xaxis.title.font.size == 16
-    assert fig.layout.yaxis.title.font.size == 16
+    # escala padronizada pós-tema: tick 16, título de eixo 18, título 22
+    assert fig.layout.xaxis.tickfont.size == 16
+    assert fig.layout.yaxis.tickfont.size == 16
+    assert fig.layout.xaxis.title.font.size == 18
+    assert fig.layout.yaxis.title.font.size == 18
     assert fig.layout.title.font.size == 22
     assert fig.layout.xaxis.tickangle == 0
     assert fig.layout.font.family == "Times New Roman, Times, serif"
