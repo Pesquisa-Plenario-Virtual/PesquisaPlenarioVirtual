@@ -72,6 +72,7 @@ def _barras_grupo(tab: pd.DataFrame, col_x: str, col_grupo: str,
         fig, titulo, subtitulo,
         barmode="group",
         showlegend=True,
+        legend=dict(orientation="h"),
     )
     fig.update_xaxes(title_text=x_title)
     fig.update_yaxes(title_text=label_y)
@@ -171,6 +172,7 @@ def gt4_ambos_por_tipo(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
         "Processos que tramitaram em Plenário Virtual e Presencial, por tipo de questão (2016–2025)",
         barmode="group",
         showlegend=True,
+        legend=dict(orientation="h"),
     )
     fig.update_xaxes(title_text="Tipo de questão")
     fig.update_yaxes(title_text="Processos distintos")
@@ -234,6 +236,7 @@ def gt7_classe_por_tram(df: pd.DataFrame, show_values: bool = True) -> go.Figure
         "Composição por classe varia conforme o ambiente de tramitação",
         "Distribuição por classe processual, dentro de cada ambiente de tramitação (2016–2025)",
         barmode="stack", showlegend=True,
+        legend=dict(orientation="h"),
         xaxis=dict(title="", categoryorder="array", categoryarray=[t.upper() for t in ordem]),
         yaxis=dict(title="% de processos", range=[0, 100]),
     )
@@ -269,6 +272,7 @@ def gt8_tipo_por_tram(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
         "Composição por tipo de questão varia conforme o ambiente de tramitação",
         "Distribuição por tipo de questão, dentro de cada ambiente de tramitação (2016–2025)",
         barmode="stack", showlegend=True,
+        legend=dict(orientation="h"),
         xaxis=dict(title="", categoryorder="array", categoryarray=[t.upper() for t in ordem]),
         yaxis=dict(title="% de processos", range=[0, 100]),
     )
@@ -406,6 +410,7 @@ def gt10_tabulador(
         fig, titulo, subtitulo,
         barmode=bm,
         showlegend=True,
+        legend=dict(orientation="h"),
     )
     fig.update_xaxes(title_text=inv.get(eixo_x, eixo_x))
     fig.update_yaxes(title_text=label_y)
@@ -517,6 +522,7 @@ def gt13_tramitacao_periodo(df: pd.DataFrame, show_values: bool = True) -> go.Fi
         "Processos por tipo de tramitação (2016–2025)",
         barmode="group",
         showlegend=True,
+        legend=dict(orientation="h"),
         height=600,
         margin=dict(t=120, b=80, l=60, r=60),
     )

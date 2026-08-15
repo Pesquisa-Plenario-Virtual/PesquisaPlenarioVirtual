@@ -113,29 +113,26 @@ def aplicar_padrao(fig: go.Figure, titulo: str, subtitulo: str | None = None, **
     layout = {**LAYOUT_PADRAO, **layout_kwargs}
     legend = dict(layout.get("legend") or {})
     legenda_topo = (bool(layout.get("showlegend")) and legend.get("orientation", "v") == "h"
-                    and float(legend.get("y", 1.0) or 1.0) >= 1.0)
+                    and legend.get("yanchor", "bottom") != "top")
     margin = dict(layout.get("margin") or {})
     margin["t"] = _pilha_vertical_topo(fig, bool(subtitulo), legenda_topo, margin.get("t"))
     layout["margin"] = margin
     # Legenda usa coordenadas "paper" (área do gráfico, y=1 no topo do plot,
     # pode passar de 1 para subir para a margem). Título usa "container" (y=1
-    # no topo da figura inteira, travado em [0,1]) — não dá para compartilhar o
-    # mesmo y, então calcula-se a borda inferior do título em px a partir do
-    # topo da figura e converte para fração do container.
+    # no topo da figura inteira) ancorado no topo por `TOPO_PAD`: com subtítulo
+    # (<br><sup>), o Plotly não estende a altura do bloco de título de forma
+    # previsível a partir de um `yanchor="bottom"`, então ancorar pelo topo e
+    # deixar o bloco crescer para baixo é o que não colide com a legenda logo
+    # abaixo — o espaço para essa altura já está reservado em `margin.t`.
     altura_fig = float(layout.get("height") or LAYOUT_PADRAO["height"])
     altura_plot = max(1.0, altura_fig - margin["t"] - float(margin.get("b") or LAYOUT_PADRAO["margin"]["b"]))
     if legenda_topo:
-        linhas_legenda = _linhas_legenda(fig, True)
         y_legenda = 1.0 + GAP_LEGENDA_GRAFICO / altura_plot
         legend.update(orientation="h", y=y_legenda, yanchor="bottom", x=0.5, xanchor="center")
         layout["legend"] = legend
-        gap_titulo_plot_px = GAP_LEGENDA_GRAFICO + ALTURA_LINHA_LEGENDA * linhas_legenda + GAP_TITULO_LEGENDA
-    else:
-        gap_titulo_plot_px = GAP_LEGENDA_GRAFICO
-    titulo_bottom_px_do_topo = margin["t"] - gap_titulo_plot_px
-    y_titulo = max(0.0, min(1.0, 1.0 - titulo_bottom_px_do_topo / altura_fig))
+    y_titulo = max(0.0, min(1.0, 1.0 - (TOPO_PAD + ALTURA_LINHA_TITULO * 0.6) / altura_fig))
     layout["title"] = dict(text=title, xref="container", yref="container",
-                           x=0.5, xanchor="center", y=y_titulo, yanchor="bottom")
+                           x=0.5, xanchor="center", y=y_titulo, yanchor="top")
     fig.update_layout(**layout)
     fig.update_xaxes(**AXIS_PADRAO)
     fig.update_yaxes(**AXIS_PADRAO)
@@ -154,6 +151,9 @@ def add_er_marker(fig: go.Figure, ano_base: int, er: int, y0: float, y1: float, 
                   line=dict(color=PRETO, width=1.5, dash="dash"), xref="x", yref="y")
     fig.add_annotation(x=x, y=y_label, text=f"<b>ER {er}</b>", showarrow=False,
                         font=dict(color=PRETO, size=12), xref="x", yref="y")
+    # y0 é sempre 0 (base do eixo); sem isto o autorange do Plotly deixa um
+    # piso negativo e a linha "flutua" acima do eixo X em vez de tocá-lo.
+    fig.update_yaxes(rangemode="tozero")
     return fig
 
 
@@ -185,6 +185,9 @@ def add_espin_shade(fig: go.Figure, ano_base: int, y0: float, y1: float) -> go.F
                        text="<b>ESPIN</b>", showarrow=False,
                        font=dict(color=VERMELHO, size=13, weight="bold"),
                        xref="x", yref="y")
+    # y0 é sempre 0 (base do eixo); sem isto o autorange do Plotly deixa um
+    # piso negativo e a faixa "flutua" acima do eixo X em vez de tocá-lo.
+    fig.update_yaxes(rangemode="tozero")
     return fig
 
 
