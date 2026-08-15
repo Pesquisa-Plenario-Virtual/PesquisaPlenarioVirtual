@@ -103,9 +103,15 @@ def _comparar(publicado: pd.DataFrame, novo: pd.DataFrame, recorte: int | None) 
     return relatorio
 
 
-# Colunas que o conserto do extrator de sufixo legitimamente altera. São as três
-# da mesma cadeia: o sufixo extraído, a classificação crua e a derivada.
-_COLUNAS_ESPERADAS = {"sufixo_extraido", "tipo_questao_original", "tipo_questao"}
+# Colunas que os consertos aplicados legitimamente alteram: a cadeia do
+# extrator de sufixo (sufixo_extraido/tipo_questao_original/tipo_questao) e a
+# cadeia da janela de casamento pauta->decisão (desfecho/macro_desfecho), que
+# passou a enxergar julgamento suspenso e a não descartar decisão no último
+# dia da janela.
+_COLUNAS_ESPERADAS = {
+    "sufixo_extraido", "tipo_questao_original", "tipo_questao",
+    "desfecho", "macro_desfecho",
+}
 
 # A regra "só preenche lacuna, nunca altera resposta existente" tem que ser
 # julgada na coluna CRUA. Em `tipo_questao` a lacuna já vem mascarada como "PR"
@@ -114,6 +120,13 @@ _COLUNAS_ESPERADAS = {"sufixo_extraido", "tipo_questao_original", "tipo_questao"
 # reclassificação indevida — só `tipo_questao_original` distingue as duas.
 _COLUNA_CRUA = "tipo_questao_original"
 _LACUNA = "Não identificado"
+
+# Mesma regra para o conserto da janela: `desfecho` só pode sair de "Não
+# concluído - motivos diversos" e ir para algum "Concluído - ...". Nunca o
+# inverso, e nunca entre dois subtipos de "Concluído" diferentes — isso
+# indicaria a janela estendida pegando a decisão errada, não preenchendo uma
+# lacuna genuína.
+_LACUNA_DESFECHO = "Não concluído - motivos diversos"
 
 
 def _portao(relatorio: dict) -> list[str]:
@@ -138,6 +151,18 @@ def _portao(relatorio: dict) -> list[str]:
             falhas.append(
                 f"{_COLUNA_CRUA} ALTEROU classificações que já existiam, não só "
                 f"preencheu lacuna: {de_outra_coisa}"
+            )
+
+    desfecho = relatorio["colunas_divergentes"].get("desfecho")
+    if desfecho:
+        fora_da_regra = {
+            k: v for k, v in desfecho["transicoes"].items()
+            if k[0] != _LACUNA_DESFECHO or not str(k[1]).startswith("Concluído")
+        }
+        if fora_da_regra:
+            falhas.append(
+                f'desfecho mudou fora da regra "{_LACUNA_DESFECHO} -> Concluído - ...": '
+                f"{fora_da_regra}"
             )
     return falhas
 

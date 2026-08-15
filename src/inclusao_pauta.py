@@ -296,6 +296,8 @@ def _classificar_desfechos(pauta_df, and_ambiente_df, dec_df, retirada_nomes, de
             (and_ambiente_df['and_index'] > and_idx)
         ]
 
+        eventos_adiamento = eventos[eventos['and_nome'].isin(ANDAMENTOS_ADIAMENTO)]
+
         if eventos['and_nome'].isin(retirada_nomes).any():
             desfecho = 'Não concluído - retirado de pauta'
 
@@ -308,10 +310,29 @@ def _classificar_desfechos(pauta_df, and_ambiente_df, dec_df, retirada_nomes, de
             desfecho = 'Não concluído - pedido de vista'
 
         else:
+            fim_busca = fim_janela
+            if not eventos_adiamento.empty:
+                # Julgamento suspenso retoma depois da janela padrão (3-7d
+                # físico); busca a decisão até 60d do último adiamento, com
+                # teto absoluto de 180d da inclusão para não alcançar uma
+                # reentrada em pauta futura não relacionada.
+                ultimo_adiamento = eventos_adiamento['and_data_dt'].max()
+                teto = min(ultimo_adiamento + pd.Timedelta(days=60),
+                           inicio + pd.Timedelta(days=180))
+                reentrada = and_ambiente_df[
+                    (and_ambiente_df['incidente'] == inc) &
+                    (and_ambiente_df['and_nome'].isin(ANDAMENTOS_PAUTA)) &
+                    (and_ambiente_df['and_data_dt'] > ultimo_adiamento) &
+                    (and_ambiente_df['and_data_dt'] <= teto)
+                ]
+                if not reentrada.empty:
+                    teto = reentrada['and_data_dt'].min()
+                fim_busca = max(fim_janela, teto)
+
             dec_janela = dec_df[
                 (dec_df['incidente'] == inc) &
                 (dec_df['dec_data_dt'] >= dec_ref - pd.Timedelta(days=1)) &
-                (dec_df['dec_data_dt'] < fim_janela)
+                (dec_df['dec_data_dt'] <= fim_busca)
             ].copy()
 
             desfecho = None
@@ -678,6 +699,22 @@ def _selfcheck():
 
     ini, fim = extrair_janela_sessao('Agendado para: 10/03/2023 a 17/03/2023', pd.Timestamp('2023-03-01'), eh_virtual=True)
     assert ini == pd.Timestamp('2023-03-10') and fim == pd.Timestamp('2023-03-24')
+
+    pauta_teste = pd.DataFrame([{
+        'incidente': 1, 'and_data_dt': pd.Timestamp('2020-01-01'), 'and_index': 1,
+        'fim_janela': pd.Timestamp('2020-01-08'), 'dec_ref': pd.Timestamp('2020-01-01'),
+    }])
+    and_teste = pd.DataFrame([{
+        'incidente': 1, 'and_data_dt': pd.Timestamp('2020-01-05'), 'and_index': 2,
+        'and_nome': 'Suspenso o julgamento', 'and_complemento': '',
+    }])
+    dec_teste = pd.DataFrame([{
+        'incidente': 1, 'dec_data_dt': pd.Timestamp('2020-02-01'),
+        'dec_complemento': 'Decisão: por maioria e nos termos do voto do Relator, negou provimento.',
+    }])
+    r = _classificar_desfechos(pauta_teste, and_teste, dec_teste, ANDAMENTOS_RETIRADA_FISICO, DESTAQUE_NOMES_FISICO)
+    assert r.iloc[0]['desfecho'] == 'Concluído - decisão maioria com o relator', \
+        'janela estendida por adiamento parou de pegar decisão por maioria'
 
     print("inclusao_pauta: selfcheck OK")
 
