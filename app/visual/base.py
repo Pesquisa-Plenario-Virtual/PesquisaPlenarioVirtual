@@ -28,11 +28,11 @@ ER_DATAS = {
     52: (2019, 6, 14),
     53: (2020, 3, 18),
 }
-# Fronteiras entre anos onde os marcadores ficam: a emenda marca o início do
-# regime que passa a valer no ano seguinte à sua edição (ER 51/2016 vale de
-# 2017; ER 52/2019 de 2019; ER 53/2020 de 2020). Cada valor é o ano `N` da
-# fronteira N/N+1.
-ER_FRONTEIRAS = {51: 2016, 52: 2018, 53: 2019}
+# Fronteiras entre anos onde os marcadores ficam: cada valor é o ano `N` da
+# fronteira N/N+1. ER 51/2016 já vale no próprio 2016 (fronteira 2015/2016);
+# ER 52/2019 e ER 53/2020 valem só no ano seguinte à edição (fronteiras
+# 2018/2019 e 2019/2020).
+ER_FRONTEIRAS = {51: 2015, 52: 2018, 53: 2019}
 # Faixa ESPIN: da fronteira 2019/2020 (final de 2019) à fronteira 2022/2023
 # (final de 2022).
 ESPIN_FRONTEIRAS = (2019, 2022)

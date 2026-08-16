@@ -1,10 +1,10 @@
 """Posição dos marcadores ER/ESPIN nas fronteiras entre anos.
 
-A ER marca o início do regime que vale no ano seguinte (ER 51/2016 vale de
-2017; ER 52/2019 de 2019; ER 53/2020 de 2020), então as linhas ficam nas
-fronteiras 2016/2017, 2018/2019 e 2019/2020, e a faixa ESPIN vai da fronteira
-2019/2020 à 2022/2023. Num eixo de anos absolutos a fronteira N/N+1 vale
-N + 0.5; num eixo categórico vale (N − base) + 0.5.
+ER 51/2016 já vale no próprio 2016 (fronteira 2015/2016); ER 52/2019 e
+ER 53/2020 valem só no ano seguinte à edição (fronteiras 2018/2019 e
+2019/2020), e a faixa ESPIN vai da fronteira 2019/2020 à 2022/2023. Num
+eixo de anos absolutos a fronteira N/N+1 vale N + 0.5; num eixo categórico
+vale (N − base) + 0.5.
 """
 import plotly.graph_objects as go
 
@@ -32,10 +32,10 @@ def test_marcadores_em_fronteiras_eixo_numerico():
     for er in (51, 52, 53):
         add_er_marker(fig, 0, er, 0, 100, 110)
     add_espin_shade(fig, 0, 0, 100)
-    assert _lines(fig) == [2016.5, 2018.5, 2019.5, 2019.56, 2022.5]
+    assert _lines(fig) == [2015.5, 2018.5, 2019.5, 2019.56, 2022.5]
     assert _vrect(fig) == [(2019.5, 2022.5)]
     labels = {a.text: round(float(a.x), 1) for a in fig.layout.annotations}
-    assert labels["<b>ER 51</b>"] == 2016.5
+    assert labels["<b>ER 51</b>"] == 2015.5
     assert labels["<b>ER 52</b>"] == 2018.5
     assert labels["<b>ER 53</b>"] == 2019.5
     assert labels["<b>ESPIN</b>"] == 2021.0
