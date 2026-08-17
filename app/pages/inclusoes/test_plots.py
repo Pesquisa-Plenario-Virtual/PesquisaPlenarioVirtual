@@ -140,7 +140,7 @@ def test_7b_recorta_2010_2025_ambos_e_exclui_er_53():
 
     fig = g7b_unanimidade_vs_divergencia_2010_2025(df, show_values=False)
     series = {t.name for t in fig.data if hasattr(t, "name")}
-    assert series == {"Unânime", "Divergência"}
+    assert series == {"Julgamento por unanimidade", "Julgamento com divergência(s)"}
 
     textos = [a.text or "" for a in fig.layout.annotations]
     assert any("ER 51" in t for t in textos)

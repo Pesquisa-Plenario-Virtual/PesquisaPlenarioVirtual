@@ -17,8 +17,15 @@ CORES_CLASSE = {
     "ADO":  "#ef4444",
 }
 CORES_MACRO = {
-    "Concluído":     "#16a34a",
-    "Não concluído": "#ef4444",
+    "Concluído":     "#2a78d6",
+    "Não concluído": "#eb6834",
+}
+# Macrocategorias de I12 (Prevalência da relatoria/divergência) — cor pedida
+# explicitamente fora da paleta validada, só usada nesse gráfico (vetorial,
+# não passa pelo recolore central de visual/tema.py).
+CORES_MACRO_DESFECHO = {
+    "Prevalência da relatoria":   "#a2eb98",
+    "Prevalência da divergência": "#d64e45",
 }
 CORES_TIPO = {
     "PR": "#2563eb",
@@ -52,6 +59,10 @@ CORES_REAJUSTE = {
 }
 COR_PV    = "#2563eb"
 COR_PP    = "#94a3b8"
+# Exceção só para I1 (pedido explícito, diverge da paleta central de
+# "Plenário Virtual"/"Plenário Presencial" usada nos outros ~90 gráficos).
+COR_PV_I1 = "#b8136f"
+COR_PP_I1 = "#5c5c5c"
 
 _CLASSES = ["ADI", "ADPF", "ADC", "ADO"]
 _TIPOS   = ["PR", "RC", "QI"]
@@ -233,11 +244,14 @@ def _barras_grupo(df_amb: pd.DataFrame, col_x: str, col_grupo: str,
 def g5_anual_ambiente(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False) -> tuple[go.Figure, go.Figure]:
     tab = df.groupby(["ano", "ambiente"], observed=True).size().reset_index(name="n")
     fig = _bar_fig()
-    for amb, cor in [("Plenário Virtual", COR_PV), ("Plenário Presencial", COR_PP)]:
+    for amb, cor_ in [("Plenário Virtual", COR_PV_I1), ("Plenário Presencial", COR_PP_I1)]:
         d = tab[tab["ambiente"] == amb]
         texto = d["n"] if show_values else None
         fig.add_trace(go.Bar(
-            x=d["ano"], y=d["n"], name=amb.upper(), marker_color=cor,
+            # Cor vetorial (uma por barra) sobrevive ao recolore de
+            # visual/tema.py — escalar seria trocado pelo azul/laranja da
+            # paleta central por causa do name reconhecido.
+            x=d["ano"], y=d["n"], name=amb.upper(), marker_color=[cor_] * len(d),
             text=texto, textposition="outside", cliponaxis=False,
         ))
     aplicar_padrao(fig, "Plenário Virtual concentra a maior parte das inclusões em pauta",
@@ -249,7 +263,7 @@ def g5_anual_ambiente(df: pd.DataFrame, show_values: bool = True, proporcao: boo
         _marcos_temporais(fig, tab["n"].max(), tab["ano"].min(), tab["ano"].max())
 
     pizza = df["ambiente"].value_counts()
-    cores_pizza = [COR_PV if l == "Plenário Virtual" else COR_PP
+    cores_pizza = [COR_PV_I1 if l == "Plenário Virtual" else COR_PP_I1
                    for l in pizza.index]
     fig_p = _pizza(pizza, "Proporção PV vs PP (período total)", cores=cores_pizza,
                    show_values=show_values)
@@ -274,18 +288,16 @@ def g6_classe_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: b
 
 
 def g8_desfecho_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
-                          ambiente: str = "Plenário Virtual") -> go.Figure | tuple[go.Figure, go.Figure]:
+                          ambiente: str = "Plenário Virtual") -> tuple[go.Figure, go.Figure]:
     d = df[df["ambiente"] == ambiente]
     vc = d["macro_desfecho"].value_counts()
     fig_macro = _pizza(vc, f"Concluídos e não concluídos — {ambiente} (período total)",
                        cores=[CORES_MACRO.get(l, "#94a3b8") for l in vc.index],
-                       show_values=show_values)
-    if ambiente == "Plenário Virtual":
-        fig_det = _pizza(d["desfecho"].value_counts(),
-                         f"Desfecho detalhado — {ambiente} (período total)", buraco=0.3,
-                         show_values=show_values)
-        return fig_macro, fig_det
-    return fig_macro
+                       show_values=show_values, proporcao=proporcao)
+    fig_det = _pizza(d["desfecho"].value_counts(),
+                     f"Desfecho detalhado — {ambiente} (período total)", buraco=0.3,
+                     show_values=show_values, proporcao=proporcao)
+    return fig_macro, fig_det
 
 
 def g6f_desfecho_percentual_ambiente(df: pd.DataFrame, ambiente: str = "Plenário Virtual",
@@ -311,21 +323,29 @@ def g6f_desfecho_percentual_ambiente(df: pd.DataFrame, ambiente: str = "Plenári
 # "maioria, vencido o relator").
 _AGRUPAMENTOS_DECISAO: dict[str, dict[str, tuple[str, ...]]] = {
     "unânime_vs_divergência": {
-        "Unânime":     ("Concluído - decisão unânime",),
-        "Divergência": ("Concluído - decisão maioria com o relator",
-                        "Concluído - decisão maioria, vencido o relator"),
+        "Julgamento por unanimidade":   ("Concluído - decisão unânime",),
+        "Julgamento com divergência(s)": ("Concluído - decisão maioria com o relator",
+                                          "Concluído - decisão maioria, vencido o relator"),
     },
     "relator_vs_divergência": {
-        "Com o relator": ("Concluído - decisão unânime",
-                          "Concluído - decisão maioria com o relator"),
-        "Divergência":   ("Concluído - decisão maioria, vencido o relator",),
+        "Decisão com relatoria":  ("Concluído - decisão unânime",
+                                   "Concluído - decisão maioria com o relator"),
+        "Decisão com divergência": ("Concluído - decisão maioria, vencido o relator",),
     },
+}
+
+# Macrocategoria de I12: as 3 categorias de desfecho concluído (chaves de
+# `_categoria_desfecho`) agrupadas em 2 — quem prevalece é o relator ou a
+# divergência.
+_AGRUPAMENTO_MACRO_I12: dict[str, tuple[str, ...]] = {
+    "Prevalência da relatoria":   ("1 - Unânime", "2 - Maioria (relator vencedor)"),
+    "Prevalência da divergência": ("3 - Maioria (relator vencido)",),
 }
 
 
 def linha_decisao(df: pd.DataFrame, agrupamento: str = "unânime_vs_divergência",
                   ambiente: str = "Plenário Virtual",
-                  show_values: bool = True,
+                  show_values: bool = True, proporcao: bool = False,
                   excluir_ers: tuple = ()) -> go.Figure:
     """Item 6.b2/6.b3 — série temporal de unanimidade contra divergência.
 
@@ -341,7 +361,7 @@ def linha_decisao(df: pd.DataFrame, agrupamento: str = "unânime_vs_divergência
     return _barras_grupo(sub, "ano", "serie", cores,
                          f"Unanimidade contra divergência — {ambiente}",
                          "Quantidade de processos incluídos em pauta", "Total (linha)",
-                         show_values=show_values, excluir_ers=excluir_ers)
+                         show_values=show_values, proporcao=proporcao, excluir_ers=excluir_ers)
 
 
 def g7b_unanimidade_vs_divergencia_2010_2025(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
@@ -597,13 +617,21 @@ def _pizzas_categoria_por_tipo(sub: pd.DataFrame, ambiente_label: str,
 
 def g22_cat_periodo_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
                               ambiente: str = "Plenário Virtual",
-                              excluir_nc: bool = False) -> go.Figure:
+                              excluir_nc: bool = False, macro: bool = False) -> go.Figure:
     sub = _prep_cat(df[df["ambiente"] == ambiente])
-    if excluir_nc:
+    if excluir_nc or macro:
         sub = _sem_nao_concluido(sub)
+    if macro:
+        mapa = {c: nome for nome, cs in _AGRUPAMENTO_MACRO_I12.items() for c in cs}
+        vc = sub["categoria"].map(mapa).value_counts()
+        return _pizza(vc, f"Prevalência da relatoria vs divergência — {ambiente} (período total)",
+                      cores=[CORES_MACRO_DESFECHO.get(l, "#999") for l in vc.index],
+                      show_values=show_values, proporcao=proporcao)
+    # Sem `cores=`: cai no fallback de paleta (mesmo caminho de I16), que já
+    # resolve as 3 categorias concluídas em tons de azul validados — não
+    # duplicar hex num dict local que pode divergir da paleta central.
     vc = sub["categoria"].value_counts().sort_index()
     return _pizza(vc, f"Desfecho por categoria — {ambiente} (período total)",
-                  cores=[CORES_CATEGORIA.get(l, "#999") for l in vc.index],
                   show_values=show_values, proporcao=proporcao)
 
 

@@ -121,10 +121,12 @@ CORES: dict[str, tuple[str, str]] = {
     "Sem reajuste de voto": (CINZA_OUTROS, CINZA_OUTROS),
     # Séries de decisão (6.b2/6.b3) — agregações dos desfechos concluídos, na
     # família azul dos concluídos, contraste por tom: o consenso é o degrau
-    # escuro, a divergência o claro.
-    "Unânime":       ("#184f95", "#184f95"),
-    "Com o relator": ("#2a78d6", "#3987e5"),
-    "Divergência":   ("#86b6ef", "#9ec5f4"),
+    # escuro, a divergência o claro. Duas entradas de divergência porque os
+    # dois agrupamentos usam textos de legenda distintos para o mesmo tom.
+    "Julgamento por unanimidade":    ("#184f95", "#184f95"),
+    "Julgamento com divergência(s)": ("#86b6ef", "#9ec5f4"),
+    "Decisão com relatoria":         ("#2a78d6", "#3987e5"),
+    "Decisão com divergência":       ("#86b6ef", "#9ec5f4"),
     # Faixas de nº de sessões — rampa ordinal azul: são todas sessões virtuais,
     # então a família é a do Plenário Virtual e o tom cresce com a contagem.
     # Degraus da rampa sequencial azul documentada na §4 da spec, respeitando o

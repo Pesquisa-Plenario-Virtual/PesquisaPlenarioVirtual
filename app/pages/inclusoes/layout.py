@@ -83,11 +83,13 @@ _CATALOGO: list[GraficoSpec] = [
         id="I3",
         rotulo="I3 (G8/G9) — Desfecho Geral (Plenário Virtual e Plenário Presencial)",
         subtitulo="Três de cada cinco inclusões concluem, e a unanimidade é o desfecho dominante",
-        descricao="Composição de concluídos e não concluídos em barra horizontal, mais desfecho detalhado (PV) "
-                  "ou apenas macro (Plenário Presencial). Selecione o âmbito.",
+        descricao="Composição de concluídos e não concluídos em barra horizontal, mais desfecho detalhado, "
+                  "para os dois âmbitos. Selecione o âmbito e alterne entre valor absoluto e percentual.",
         fn=g8_desfecho_filtravel,
         tipos=("barra",),
         filtros=("ambiente", "classe", "tipo_questao"),
+        percentual=True,
+        fonte_grande=True,
     ),
     GraficoSpec(
         id="I4",
@@ -177,15 +179,16 @@ _CATALOGO: list[GraficoSpec] = [
     ),
     GraficoSpec(
         id="I12",
-        rotulo="I12 (item 6.b) — Categoria de Desfecho sem não concluído (Plenário Virtual e Plenário Presencial)",
-        subtitulo="Entre os concluídos, a unanimidade domina com folga",
-        descricao="Mesma barra horizontal do I11 com as três categorias de desfecho concluído — "
-                  "o balde de não concluído sai. Selecione o âmbito.",
+        rotulo="I12 (item 6.b) — Prevalência da relatoria vs divergência (Plenário Virtual e Plenário Presencial)",
+        subtitulo="Entre os concluídos, a relatoria prevalece sobre a divergência",
+        descricao="Barra horizontal com as três categorias de desfecho concluído agrupadas em duas "
+                  "macrocategorias — Prevalência da relatoria (unânime + maioria com o relator) e "
+                  "Prevalência da divergência (maioria vencido o relator). Selecione o âmbito.",
         fn=g22_cat_periodo_filtravel,
         tipos=("barra",),
         filtros=("ambiente", "classe", "tipo_questao"),
         percentual=True,
-        kwargs_fixos={"excluir_nc": True},
+        kwargs_fixos={"excluir_nc": True, "macro": True},
     ),
     GraficoSpec(
         id="I13",
@@ -286,6 +289,7 @@ _CATALOGO: list[GraficoSpec] = [
         tipos=("linha", "barra"),
         filtros=(),
         kwargs_fixos={"agrupamento": "unânime_vs_divergência", "ambiente": "Plenário Virtual"},
+        percentual=True,
     ),
     GraficoSpec(
         id="I22",
@@ -297,6 +301,7 @@ _CATALOGO: list[GraficoSpec] = [
         tipos=("linha", "barra"),
         filtros=(),
         kwargs_fixos={"agrupamento": "unânime_vs_divergência", "ambiente": "Plenário Presencial"},
+        percentual=True,
     ),
     GraficoSpec(
         id="I23",
@@ -308,6 +313,7 @@ _CATALOGO: list[GraficoSpec] = [
         tipos=("linha", "barra"),
         filtros=(),
         kwargs_fixos={"agrupamento": "unânime_vs_divergência", "ambiente": "Ambos os ambientes"},
+        percentual=True,
     ),
     GraficoSpec(
         id="I24",
@@ -319,6 +325,7 @@ _CATALOGO: list[GraficoSpec] = [
         tipos=("linha", "barra"),
         filtros=(),
         kwargs_fixos={"agrupamento": "relator_vs_divergência", "ambiente": "Plenário Virtual"},
+        percentual=True,
     ),
     GraficoSpec(
         id="I25",
@@ -330,6 +337,7 @@ _CATALOGO: list[GraficoSpec] = [
         tipos=("linha", "barra"),
         filtros=(),
         kwargs_fixos={"agrupamento": "relator_vs_divergência", "ambiente": "Plenário Presencial"},
+        percentual=True,
     ),
     GraficoSpec(
         id="I26",
@@ -341,6 +349,7 @@ _CATALOGO: list[GraficoSpec] = [
         tipos=("linha", "barra"),
         filtros=(),
         kwargs_fixos={"agrupamento": "relator_vs_divergência", "ambiente": "Ambos os ambientes"},
+        percentual=True,
     ),
     # ── Desfecho Não Concluído por Categoria ──────────────────────────────────
     GraficoSpec(

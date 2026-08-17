@@ -84,18 +84,18 @@ def _sem_plenario_fisico(texto):
     return texto.replace(_PLENARIO_FISICO, _PLENARIO_PRESENCIAL)
 
 
-def _fonte(size_key: str, dark: bool) -> dict:
+def _fonte(size_key: str, dark: bool, escala: float = 1.0) -> dict:
     return dict(
         family=FONTE,
-        size=TAMANHOS[size_key],
+        size=round(TAMANHOS[size_key] * escala),
         color=TINTA_ESCURA if dark else TINTA_CLARA,
     )
 
 
-def _normalizar_eixos(fig: go.Figure, dark: bool) -> None:
+def _normalizar_eixos(fig: go.Figure, dark: bool, escala: float = 1.0) -> None:
     """Tipografia, tamanho e tickangle=0 em todo eixo, inclusive subplots."""
-    eixo_tick = _fonte("tick", dark)
-    eixo_titulo = _fonte("eixo_titulo", dark)
+    eixo_tick = _fonte("tick", dark, escala)
+    eixo_titulo = _fonte("eixo_titulo", dark, escala)
     for chave in fig.layout:
         if not (chave.startswith("xaxis") or chave.startswith("yaxis")):
             continue
@@ -106,14 +106,14 @@ def _normalizar_eixos(fig: go.Figure, dark: bool) -> None:
             eixo.tickangle = 0
 
 
-def _normalizar_traces(fig: go.Figure, dark: bool) -> None:
+def _normalizar_traces(fig: go.Figure, dark: bool, escala: float = 1.0) -> None:
     """Nome canônico, textfont padronizado e cor semântica por nome de série.
 
     Só recolore o que está no vocabulário da paleta: uma série fora dele mantém
     a cor que a função de gráfico escolheu. Cor vetorial (uma por barra, como em
     acervo/plots.py) é preservada — recolorir destruiria a codificação.
     """
-    valor = _fonte("valor", dark)
+    valor = _fonte("valor", dark, escala)
     for tr in fig.data:
         nome = getattr(tr, "name", None)
         if nome:
@@ -265,14 +265,14 @@ def _normalizar_numeros(fig: go.Figure) -> None:
             eixo.tickformat = ","
 
 
-def _normalizar_anotacoes(fig: go.Figure, dark: bool) -> None:
-    anotacao = _fonte("anotacao", dark)
+def _normalizar_anotacoes(fig: go.Figure, dark: bool, escala: float = 1.0) -> None:
+    anotacao = _fonte("anotacao", dark, escala)
     for ann in fig.layout.annotations:
         if ann.text:
             ann.text = limpar_html_de_fonte(ann.text)
         # a cor da anotação é semântica (ER preto, ESPIN vermelho) — preservar
         cor_original = ann.font.color
-        ann.font = dict(family=FONTE, size=TAMANHOS["anotacao"],
+        ann.font = dict(family=FONTE, size=round(TAMANHOS["anotacao"] * escala),
                         color=cor_original or anotacao["color"])
 
 
@@ -332,10 +332,13 @@ def _normalizar_texto_livre(fig: go.Figure) -> None:
             tr.y = tuple(_sem_plenario_fisico(v) for v in tr.y)
 
 
-def aplicar_tema(fig: go.Figure, tema: str = "novo", dark: bool = False) -> go.Figure:
+def aplicar_tema(fig: go.Figure, tema: str = "novo", dark: bool = False,
+                 escala_fonte: float = 1.0) -> go.Figure:
     """Impõe o padrão visual da Pessoa 2 a uma figura já construída.
 
-    tema="empirico" devolve a figura sem tocar em nada.
+    tema="empirico" devolve a figura sem tocar em nada. `escala_fonte`
+    multiplica TAMANHOS inteiro — opt-in por GraficoSpec.fonte_grande, não
+    muda o padrão dos outros gráficos.
     """
     if tema == "empirico":
         return fig
@@ -345,16 +348,16 @@ def aplicar_tema(fig: go.Figure, tema: str = "novo", dark: bool = False) -> go.F
 
     fig.update_layout(
         font=dict(family=FONTE, color=tinta),
-        title_font=_fonte("titulo", dark),
-        legend_font=_fonte("legenda", dark),
+        title_font=_fonte("titulo", dark, escala_fonte),
+        legend_font=_fonte("legenda", dark, escala_fonte),
         paper_bgcolor=fundo,
         plot_bgcolor=fundo,
     )
     if fig.layout.title.text:
         fig.layout.title.text = limpar_html_de_fonte(fig.layout.title.text)
-    _normalizar_eixos(fig, dark)
-    _normalizar_traces(fig, dark)
-    _normalizar_anotacoes(fig, dark)
+    _normalizar_eixos(fig, dark, escala_fonte)
+    _normalizar_traces(fig, dark, escala_fonte)
+    _normalizar_anotacoes(fig, dark, escala_fonte)
     _normalizar_texto_livre(fig)
     _normalizar_numeros(fig)
     _normalizar_texto_de_valor(fig)

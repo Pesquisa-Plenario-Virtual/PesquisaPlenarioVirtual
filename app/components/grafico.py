@@ -40,6 +40,9 @@ class GraficoSpec:
     tipos: tuple[str, ...] = ("barra",)
     filtros: tuple[str, ...] = ()
     percentual: bool = False
+    # Fonte maior que o padrão do tema, pedido pontual (I3). Não mexe nos
+    # outros gráficos porque é opt-in por spec.
+    fonte_grande: bool = False
     kwargs_fixos: dict = field(default_factory=dict)
     opcoes_filtro: dict = field(default_factory=dict)
     # Entrada que renderiza a si mesma, com assinatura (df, key). Usada pelo
@@ -269,7 +272,8 @@ def render_grafico(spec: GraficoSpec, df, key: str) -> None:
         contexto = aba if aba is not None else st.container()
         with contexto:
             fig = converter_tipo(fig, estado["tipo"])
-            fig = aplicar_tema(fig, tema=tema_atual, dark=dark)
+            fig = aplicar_tema(fig, tema=tema_atual, dark=dark,
+                               escala_fonte=1.25 if spec.fonte_grande else 1.0)
             fig = remover_tracinho_e_rotulos(fig)
             if not (estado["marcos_er"] and estado["faixa_espin"]):
                 fig = remover_marcos(fig, er=estado["marcos_er"], espin=estado["faixa_espin"])
