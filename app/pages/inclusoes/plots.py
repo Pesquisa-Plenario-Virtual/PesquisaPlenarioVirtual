@@ -591,13 +591,26 @@ def _prep_cat(df: pd.DataFrame) -> pd.DataFrame:
     return d
 
 
+# I12/I16 pediram a legenda sem o prefixo "Concluído – ". `canonico()` faria o
+# caminho inverso (código curto -> nome canônico completo), então o rótulo
+# curto é resolvido aqui e a cor é buscada pelo nome canônico original, antes
+# da troca — senão cai no degrau de reserva por não bater com a paleta.
+_ROTULO_CATEGORIA_CURTO = {
+    "1 - Unânime":                    "Decisão unânime",
+    "2 - Maioria (relator vencedor)": "Decisão maioria com o relator",
+    "3 - Maioria (relator vencido)":  "Decisão maioria, vencido o relator",
+}
+
+
 def _pizza_categoria(t: str, vc: pd.Series, titulo: str, show_values: bool,
                      proporcao: bool = False) -> go.Figure:
     """Composição das categorias de desfecho para um tipo de questão.
 
     Era pizza; virou barra horizontal pelo mesmo motivo das demais.
     """
-    return _composicao(vc, titulo, show_values=show_values, proporcao=proporcao)
+    cores = [cor(canonico(l)) for l in vc.index]
+    vc_curto = vc.rename(index=_ROTULO_CATEGORIA_CURTO)
+    return _composicao(vc_curto, titulo, cores=cores, show_values=show_values, proporcao=proporcao)
 
 
 def _pizzas_categoria_por_tipo(sub: pd.DataFrame, ambiente_label: str,
