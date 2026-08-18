@@ -424,7 +424,7 @@ def converter_tipo(fig: go.Figure, tipo: str = "barra") -> go.Figure:
         return fig
 
     novos = []
-    for tr in fig.data:
+    for i, tr in enumerate(fig.data):
         c = _cor_do_trace(tr)
         base = dict(x=tr.x, y=tr.y, name=tr.name, text=tr.text,
                     hovertemplate=tr.hovertemplate, legendgroup=tr.legendgroup,
@@ -436,10 +436,13 @@ def converter_tipo(fig: go.Figure, tipo: str = "barra") -> go.Figure:
             bruta = _cor_marker_bruta(tr)
             marker_cor = bruta if _e_vetor(bruta) else c
             modo = "lines+markers+text" if tr.text is not None else "lines+markers"
+            # Alterna posição do rótulo por série (top/bottom) pra não
+            # sobrepor texto quando duas linhas passam perto uma da outra.
+            posicao = "top center" if i % 2 == 0 else "bottom center"
             novos.append(go.Scatter(mode=modo,
                                     line=dict(color=c, width=2),
                                     marker=dict(color=marker_cor, size=8),
-                                    textposition="top center", **base))
+                                    textposition=posicao, **base))
         elif tipo == "area":
             novos.append(go.Scatter(mode="lines", stackgroup="um", fill="tonexty",
                                     line=dict(color=c, width=2), **base))
