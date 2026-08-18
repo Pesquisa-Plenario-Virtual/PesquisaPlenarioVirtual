@@ -25,6 +25,14 @@ TAMANHOS_PERMITIDOS = set(TAMANHOS.values())
 # pizza é aceita em lugar nenhum das oito páginas.
 PIZZAS_CONHECIDAS: set[tuple[str, str]] = set()
 
+# Cor fora da paleta validada, pedida explicitamente pela Pessoa 2 pra um
+# gráfico específico (não pro dashboard todo) — I1 (#b8136f/#5c5c5c, exceção
+# de ambiente só nesse gráfico) e I12/I24/I25/I26 (#a2eb98/#d64e45, macro
+# "Prevalência da relatoria/divergência"). Vetorial já fica de fora da
+# checagem por natureza; isto cobre o caso em que ela também aparece como
+# escalar — a linha de um gráfico "linha", que não tem como ser vetorial.
+CORES_EXCECAO_LOCAL = {"#b8136f", "#5c5c5c", "#a2eb98", "#d64e45"}
+
 
 def _cores_da_paleta() -> set[str]:
     """Todo hex que a paleta autoriza, nos dois modos, mais o cinza reservado."""
@@ -340,7 +348,7 @@ def test_cor_de_serie_vem_da_paleta():
                 cor = getattr(obj, "color", None) if obj is not None else None
                 if not isinstance(cor, str) or not cor.startswith("#"):
                     continue
-                if cor.lower() not in CORES_PERMITIDAS:
+                if cor.lower() not in CORES_PERMITIDAS and cor.lower() not in CORES_EXCECAO_LOCAL:
                     fora_da_paleta.append((pagina, gid, tipo, tr.name, origem, cor))
     assert not fora_da_paleta, "cores fora da paleta:\n" + "\n".join(
         f"  {p}/{g} [{t}] {n!r} {o}={c}" for p, g, t, n, o, c in fora_da_paleta

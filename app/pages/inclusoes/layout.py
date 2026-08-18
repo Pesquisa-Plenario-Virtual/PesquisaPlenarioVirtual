@@ -87,7 +87,7 @@ _CATALOGO: list[GraficoSpec] = [
                   "para os dois âmbitos. Selecione o âmbito e alterne entre valor absoluto e percentual.",
         fn=g8_desfecho_filtravel,
         tipos=("barra",),
-        filtros=("ambiente", "classe", "tipo_questao"),
+        filtros=("ambiente", "classe", "tipo_questao", "periodo"),
         percentual=True,
         fonte_grande=True,
     ),
@@ -174,7 +174,7 @@ _CATALOGO: list[GraficoSpec] = [
                   "e Não concluído (bloco agregado). Selecione o âmbito.",
         fn=g22_cat_periodo_filtravel,
         tipos=("barra",),
-        filtros=("ambiente", "classe", "tipo_questao"),
+        filtros=("ambiente", "classe", "tipo_questao", "periodo"),
         percentual=True,
     ),
     GraficoSpec(
@@ -186,9 +186,21 @@ _CATALOGO: list[GraficoSpec] = [
                   "Prevalência da divergência (maioria vencido o relator). Selecione o âmbito.",
         fn=g22_cat_periodo_filtravel,
         tipos=("barra",),
-        filtros=("ambiente", "classe", "tipo_questao"),
+        filtros=("ambiente", "classe", "tipo_questao", "periodo"),
         percentual=True,
         kwargs_fixos={"excluir_nc": True, "macro": True},
+    ),
+    GraficoSpec(
+        id="I41",
+        rotulo="I41 (item 6.b, versão antiga) — Categoria de Desfecho sem não concluído (Plenário Virtual e Plenário Presencial)",
+        subtitulo="Entre os concluídos, a unanimidade domina com folga",
+        descricao="Versão anterior do I12: as três categorias de desfecho concluído sem agrupar em "
+                  "macrocategoria — o balde de não concluído sai. Selecione o âmbito.",
+        fn=g22_cat_periodo_filtravel,
+        tipos=("barra",),
+        filtros=("ambiente", "classe", "tipo_questao", "periodo"),
+        percentual=True,
+        kwargs_fixos={"excluir_nc": True},
     ),
     GraficoSpec(
         id="I13",
@@ -317,7 +329,7 @@ _CATALOGO: list[GraficoSpec] = [
     ),
     GraficoSpec(
         id="I24",
-        rotulo="I24 (item 6.b3) — Com o relator vs Divergência — Plenário Virtual",
+        rotulo="I24 (item 6.b3) — Prevalência da Relatoria vs Divergência — Plenário Virtual",
         subtitulo="No PV, a decisão com o relator esmaga a divergência",
         descricao="Linha temporal de decisões que confirmam o relator (unânime ou maioria com ele) contra as que "
                   "divergem (vencido o relator), ano a ano, no Plenário Virtual. Período fixo do dado.",
@@ -329,7 +341,7 @@ _CATALOGO: list[GraficoSpec] = [
     ),
     GraficoSpec(
         id="I25",
-        rotulo="I25 (item 6.b3) — Com o relator vs Divergência — Plenário Presencial",
+        rotulo="I25 (item 6.b3) — Prevalência da Relatoria vs Divergência — Plenário Presencial",
         subtitulo="No PP, a decisão com o relator também é amplamente majoritária",
         descricao="Linha temporal de decisões que confirmam o relator (unânime ou maioria com ele) contra as que "
                   "divergem (vencido o relator), ano a ano, no Plenário Presencial. Período fixo do dado.",
@@ -341,7 +353,7 @@ _CATALOGO: list[GraficoSpec] = [
     ),
     GraficoSpec(
         id="I26",
-        rotulo="I26 (item 6.b3) — Com o relator vs Divergência — Ambos os ambientes",
+        rotulo="I26 (item 6.b3) — Prevalência da Relatoria vs Divergência — Ambos os ambientes",
         subtitulo="Decisão com o relator domina a divergência em todo o período",
         descricao="Linha temporal de decisões que confirmam o relator (unânime ou maioria com ele) contra as que "
                   "divergem (vencido o relator), ano a ano, nos dois ambientes somados. Período fixo do dado.",
@@ -520,5 +532,15 @@ _CATALOGO.append(GraficoSpec(
 
 def render_graficos(df: pd.DataFrame, df_dec: pd.DataFrame | None = None) -> None:
     df = _refinar_motivos_diversos(df, df_dec if df_dec is not None else pd.DataFrame())
+
+    # "Não identificado" -> PR, só nesta página. O texto do andamento físico só
+    # registra sufixo (AgR/ED/MC/TPI/QO/Acordo) quando é recurso ou questão
+    # incidental — silêncio total no texto (confirmado: só 2 em 5.926
+    # andamentos físicos sem classe têm alguma palavra-chave de sufixo) indica
+    # mérito, não "indeterminável". `tipo_questao_original` preserva o valor
+    # bruto. Escopo só de Inclusões — outras páginas usam o mesmo loader e não
+    # pediram essa reclassificação (tramitação e sessões virtuais, por
+    # exemplo, hoje excluem "Não identificado" via `isin`, não promovem a PR).
+    df = df.assign(tipo_questao=df["tipo_questao"].replace("Não identificado", "PR"))
 
     render_pagina(_CATALOGO, df, key_prefix="inc")

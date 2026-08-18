@@ -107,12 +107,19 @@ def load_dim_decisoes() -> pd.DataFrame:
 def load_inclusoes_em_pauta() -> pd.DataFrame:
     """Carrega o dataset de inclusões em pauta (2016–2025).
 
-    Sem correção de `tipo_questao` aqui. Havia um remendo que lia um CSV de 72
-    linhas e reclassificava PR->RC em tempo de carga; a causa real é um regex do
-    extrator de sufixo em src/inclusao_pauta.py, corrigido lá. Enquanto o parquet
-    publicado não for reprocessado, `tipo_questao` traz 185 eventos como
-    "Não identificado" que deveriam ser RC, PR ou IJ — ver a issue de
-    reprocessamento.
+    Sem correção de `tipo_questao` aqui — outras páginas consomem este mesmo
+    loader (tramitação, sessões virtuais, Bloco 2/3, acervo, narrativa) e
+    algumas já tratam "Não identificado" à própria maneira (ex.: excluindo
+    via `isin`). A reclassificação "Não identificado"->PR pro Plenário
+    Presencial é específica da página de Inclusões — ver
+    `pages.inclusoes.inclusoes` — pra não mudar o dado por baixo dos pés de
+    quem consome este loader e não pediu essa mudança.
+
+    Havia um remendo que lia um CSV de 72 linhas e reclassificava PR->RC em
+    tempo de carga; a causa real é um regex do extrator de sufixo em
+    src/inclusao_pauta.py, corrigido lá. Enquanto o parquet publicado não for
+    reprocessado, `tipo_questao` traz 185 eventos que deveriam ser RC ou IJ e
+    não PR — ver a issue de reprocessamento.
     """
     df = load_parquet(HF_REPO_ID, HF_FILES["inclusoes_em_pauta"])
     df["ambiente"] = df["ambiente"].replace("Plenário Físico", "Plenário Presencial")

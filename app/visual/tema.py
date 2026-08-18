@@ -149,7 +149,7 @@ def _normalizar_traces(fig: go.Figure, dark: bool, escala: float = 1.0) -> None:
 
         if marker is not None and hasattr(marker, "color") and not vetorial:
             tr.marker.color = nova
-        if hasattr(tr, "line") and tr.type in ("scatter", "scattergl"):
+        if hasattr(tr, "line") and tr.type in ("scatter", "scattergl") and not vetorial:
             tr.line.color = nova
 
 
@@ -378,10 +378,23 @@ def _cor_marker_bruta(tr):
     return getattr(marker, "color", None) if marker is not None else None
 
 
+def _cor_vetor_uniforme(c) -> str | None:
+    """Se `c` é vetor com um único valor distinto, devolve esse valor.
+
+    Uma cor por barra onde todas as barras têm a mesma cor (ex.: I1, blindado
+    contra o recolore de `_normalizar_traces` via cor vetorial) não perde nada
+    virando linha/área — só cor por barra *diferente por barra* não converte.
+    """
+    if not _e_vetor(c):
+        return None
+    valores = {v for v in c if v is not None}
+    return next(iter(valores)) if len(valores) == 1 else None
+
+
 def _cor_do_trace(tr) -> str | None:
     c = _cor_marker_bruta(tr)
     if _e_vetor(c):
-        return None
+        return _cor_vetor_uniforme(c)
     if c:
         return c
     linha = getattr(tr, "line", None)
@@ -396,14 +409,18 @@ def converter_tipo(fig: go.Figure, tipo: str = "barra") -> go.Figure:
 
     Também devolve a figura intocada quando a reconstrução não tem como
     preservar o essencial: trace sem x/y (Pie, Sunburst, Treemap — não têm
-    forma de barra/linha/área) ou cor vetorial (uma cor por barra) pedida como
-    linha/área, onde uma única linha não tem como carregar várias cores.
+    forma de barra/linha/área) ou cor vetorial *não uniforme* (cor diferente
+    por barra) pedida como linha/área, onde uma única linha não tem como
+    carregar várias cores.
     """
     if tipo not in TIPOS or tipo == "barra" or not fig.data:
         return fig
     if any(not hasattr(tr, "x") or not hasattr(tr, "y") for tr in fig.data):
         return fig
-    if tipo in ("linha", "area") and any(_e_vetor(_cor_marker_bruta(tr)) for tr in fig.data):
+    if tipo in ("linha", "area") and any(
+        _e_vetor(_cor_marker_bruta(tr)) and _cor_vetor_uniforme(_cor_marker_bruta(tr)) is None
+        for tr in fig.data
+    ):
         return fig
 
     novos = []
@@ -413,9 +430,14 @@ def converter_tipo(fig: go.Figure, tipo: str = "barra") -> go.Figure:
                     hovertemplate=tr.hovertemplate, legendgroup=tr.legendgroup,
                     showlegend=tr.showlegend)
         if tipo == "linha":
+            # A linha em si só aceita uma cor (`c`, escalar); o marcador de
+            # cada ponto pode manter a cor vetorial original — mesma regra do
+            # barra_h logo abaixo, protege séries como I1 do recolore.
+            bruta = _cor_marker_bruta(tr)
+            marker_cor = bruta if _e_vetor(bruta) else c
             novos.append(go.Scatter(mode="lines+markers",
                                     line=dict(color=c, width=2),
-                                    marker=dict(color=c, size=8),
+                                    marker=dict(color=marker_cor, size=8),
                                     textposition="top center", **base))
         elif tipo == "area":
             novos.append(go.Scatter(mode="lines", stackgroup="um", fill="tonexty",

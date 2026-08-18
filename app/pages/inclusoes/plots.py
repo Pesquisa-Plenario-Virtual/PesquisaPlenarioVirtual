@@ -327,10 +327,12 @@ _AGRUPAMENTOS_DECISAO: dict[str, dict[str, tuple[str, ...]]] = {
         "Julgamento com divergência(s)": ("Concluído - decisão maioria com o relator",
                                           "Concluído - decisão maioria, vencido o relator"),
     },
+    # Mesmos dois grupos e mesmo nome do macro do I12 (item 6.b) — I24/25/26
+    # são a mesma análise em série temporal, precisam da mesma legenda e cor.
     "relator_vs_divergência": {
-        "Decisão com relatoria":  ("Concluído - decisão unânime",
-                                   "Concluído - decisão maioria com o relator"),
-        "Decisão com divergência": ("Concluído - decisão maioria, vencido o relator",),
+        "Prevalência da relatoria":   ("Concluído - decisão unânime",
+                                       "Concluído - decisão maioria com o relator"),
+        "Prevalência da divergência": ("Concluído - decisão maioria, vencido o relator",),
     },
 }
 
@@ -357,11 +359,22 @@ def linha_decisao(df: pd.DataFrame, agrupamento: str = "unânime_vs_divergência
     sub = df if ambiente == "Ambos os ambientes" else df[df["ambiente"] == ambiente]
     mapa = {d: nome for nome, ds in grupos.items() for d in ds}
     sub = sub.assign(serie=sub["desfecho"].map(mapa)).dropna(subset=["serie"])
-    cores = {nome: cor(nome) for nome in grupos}
-    return _barras_grupo(sub, "ano", "serie", cores,
-                         f"Unanimidade contra divergência — {ambiente}",
-                         "Quantidade de processos incluídos em pauta", "Total (linha)",
-                         show_values=show_values, proporcao=proporcao, excluir_ers=excluir_ers)
+    # Prevalência da relatoria/divergência usa a cor local do I12 (fora da
+    # paleta validada, pedido explícito) — paleta.cor() só entra pro grupo
+    # unânime_vs_divergência, que continua nos tons de azul de sempre.
+    cores = {nome: CORES_MACRO_DESFECHO.get(nome) or cor(nome) for nome in grupos}
+    fig = _barras_grupo(sub, "ano", "serie", cores,
+                        f"Unanimidade contra divergência — {ambiente}",
+                        "Quantidade de processos incluídos em pauta", "Total (linha)",
+                        show_values=show_values, proporcao=proporcao, excluir_ers=excluir_ers)
+    # Cor vetorial só pra Prevalência da relatoria/divergência — protege o
+    # hex fora da paleta do recolore de visual/tema.py, mesmo mecanismo do
+    # I1. As séries de unânime_vs_divergência continuam escalares, seguindo
+    # a paleta normalmente (inclusive variante escura).
+    for tr in fig.data:
+        if tr.name in CORES_MACRO_DESFECHO:
+            tr.marker.color = [CORES_MACRO_DESFECHO[tr.name]] * len(tr.x)
+    return fig
 
 
 def g7b_unanimidade_vs_divergencia_2010_2025(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
@@ -488,14 +501,8 @@ def _por_classe_com_total(df_amb: pd.DataFrame, filtro_macro: str,
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _prep_tipo(df: pd.DataFrame) -> pd.DataFrame:
-    """IJ->QI é rótulo, não classificação — "Não identificado" fica como está.
-
-    Reclassificar como PR inflava o balde de PR no Plenário Presencial com
-    processos que não têm sinal nenhum de tipo no texto de origem (a maioria
-    dos casos lá). Sem o fallback, esses processos somem dos gráficos por
-    tipo de questão em vez de contarem como PR sem confirmação — mesmo
-    critério que I11/I12 já usavam.
-    """
+    """IJ->QI é rótulo. "Não identificado"->PR já vem de `layout.render_graficos`
+    (fonte única da página, vale pra I9/I10/I11/I12/I15-I18/I29 igual)."""
     d = df.copy()
     d["tipo_questao"] = d["tipo_questao"].replace({"IJ": "QI"})
     return d
