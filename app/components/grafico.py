@@ -43,6 +43,9 @@ class GraficoSpec:
     # Fonte maior que o padrão do tema, pedido pontual (I3). Não mexe nos
     # outros gráficos porque é opt-in por spec.
     fonte_grande: bool = False
+    # Slider de período abre já travado nesse intervalo em vez de (lo, hi) do
+    # dado inteiro — continua ajustável. None mantém o comportamento padrão.
+    periodo_padrao: tuple[int, int] | None = None
     kwargs_fixos: dict = field(default_factory=dict)
     opcoes_filtro: dict = field(default_factory=dict)
     # Entrada que renderiza a si mesma, com assinatura (df, key). Usada pelo
@@ -210,8 +213,12 @@ def _controles(spec: GraficoSpec, df, key: str) -> dict:
                         continue
                     lo, hi = int(df["ano"].min()), int(df["ano"].max())
                     if lo < hi:
+                        if spec.periodo_padrao:
+                            padrao = (max(lo, spec.periodo_padrao[0]), min(hi, spec.periodo_padrao[1]))
+                        else:
+                            padrao = (lo, hi)
                         escolhas["periodo"] = st.slider(
-                            "Período", lo, hi, (lo, hi), step=1, key=f"{key}_per")
+                            "Período", lo, hi, padrao, step=1, key=f"{key}_per")
                     continue
                 coluna = _COLUNA_DO_FILTRO[nome]
                 if coluna not in df.columns:
