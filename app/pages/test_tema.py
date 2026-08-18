@@ -228,7 +228,7 @@ def _fig_barras() -> go.Figure:
 def test_barra_para_linha_preserva_dado_nome_e_cor():
     fig = converter_tipo(_fig_barras(), "linha")
     assert all(tr.type == "scatter" for tr in fig.data)
-    assert fig.data[0].mode == "lines+markers"
+    assert fig.data[0].mode == "lines+markers+text"
     assert list(fig.data[0].x) == ["2020", "2021"]
     assert list(fig.data[0].y) == [10, 20]
     assert fig.data[0].name == "Plenário Virtual"

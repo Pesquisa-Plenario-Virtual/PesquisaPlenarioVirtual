@@ -435,7 +435,8 @@ def converter_tipo(fig: go.Figure, tipo: str = "barra") -> go.Figure:
             # barra_h logo abaixo, protege séries como I1 do recolore.
             bruta = _cor_marker_bruta(tr)
             marker_cor = bruta if _e_vetor(bruta) else c
-            novos.append(go.Scatter(mode="lines+markers",
+            modo = "lines+markers+text" if tr.text is not None else "lines+markers"
+            novos.append(go.Scatter(mode=modo,
                                     line=dict(color=c, width=2),
                                     marker=dict(color=marker_cor, size=8),
                                     textposition="top center", **base))
