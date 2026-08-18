@@ -488,8 +488,16 @@ def _por_classe_com_total(df_amb: pd.DataFrame, filtro_macro: str,
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _prep_tipo(df: pd.DataFrame) -> pd.DataFrame:
+    """IJ->QI é rótulo, não classificação — "Não identificado" fica como está.
+
+    Reclassificar como PR inflava o balde de PR no Plenário Presencial com
+    processos que não têm sinal nenhum de tipo no texto de origem (a maioria
+    dos casos lá). Sem o fallback, esses processos somem dos gráficos por
+    tipo de questão em vez de contarem como PR sem confirmação — mesmo
+    critério que I11/I12 já usavam.
+    """
     d = df.copy()
-    d["tipo_questao"] = d["tipo_questao"].replace({"IJ": "QI", "Não identificado": "PR"}).fillna("PR")
+    d["tipo_questao"] = d["tipo_questao"].replace({"IJ": "QI"})
     return d
 
 
