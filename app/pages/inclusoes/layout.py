@@ -81,7 +81,7 @@ _CATALOGO: list[GraficoSpec] = [
     ),
     GraficoSpec(
         id="I3",
-        rotulo="I3 (G8/G9) — Desfecho Geral (Plenário Virtual e Plenário Presencial)",
+        rotulo="I3 (G8/G9) — Desfecho Geral (Plenário Virtual e Plenário Presencial) (2020-2025)",
         subtitulo="Três de cada cinco inclusões concluem, e a unanimidade é o desfecho dominante",
         descricao="Composição de concluídos e não concluídos em barra horizontal, mais desfecho detalhado, "
                   "para os dois âmbitos. Selecione o âmbito e alterne entre valor absoluto e percentual.",
@@ -169,7 +169,7 @@ _CATALOGO: list[GraficoSpec] = [
     # ── Desfecho Concluído por Categoria ─────────────────────────────────────
     GraficoSpec(
         id="I11",
-        rotulo="I11 (G22/G23) — Categoria de Desfecho (Plenário Virtual e Plenário Presencial)",
+        rotulo="I11 (G22/G23) — Categoria de Desfecho (Plenário Virtual e Plenário Presencial) (2020-2025)",
         subtitulo="Unanimidade é a categoria mais frequente; não concluído vem logo atrás",
         descricao="Barra horizontal com as 4 categorias, percentual na ponta: Unânime, Maioria (relator vencedor), Maioria (relator vencido) "
                   "e Não concluído (bloco agregado). Selecione o âmbito.",
@@ -181,7 +181,7 @@ _CATALOGO: list[GraficoSpec] = [
     ),
     GraficoSpec(
         id="I12",
-        rotulo="I12 (item 6.b) — Prevalência da relatoria vs divergência (Plenário Virtual e Plenário Presencial)",
+        rotulo="I12 (item 6.b) — Prevalência da relatoria vs divergência (Plenário Virtual e Plenário Presencial) (2020-2025)",
         subtitulo="Entre os concluídos, a relatoria prevalece sobre a divergência",
         descricao="Barra horizontal com as três categorias de desfecho concluído agrupadas em duas "
                   "macrocategorias — Prevalência da relatoria (unânime + maioria com o relator) e "
@@ -195,7 +195,7 @@ _CATALOGO: list[GraficoSpec] = [
     ),
     GraficoSpec(
         id="I41",
-        rotulo="I41 (item 6.b, versão antiga) — Categoria de Desfecho sem não concluído (Plenário Virtual e Plenário Presencial)",
+        rotulo="I41 (item 6.b, versão antiga) — Categoria de Desfecho sem não concluído (Plenário Virtual e Plenário Presencial) (2020-2025)",
         subtitulo="Entre os concluídos, a unanimidade domina com folga",
         descricao="Versão anterior do I12: as três categorias de desfecho concluído sem agrupar em "
                   "macrocategoria — o balde de não concluído sai. Selecione o âmbito.",
@@ -208,7 +208,7 @@ _CATALOGO: list[GraficoSpec] = [
     ),
     GraficoSpec(
         id="I42",
-        rotulo="I42 (item 6.b) — Julgamento por unanimidade vs divergência (Plenário Virtual e Plenário Presencial)",
+        rotulo="I42 (item 6.b) — Julgamento por unanimidade vs divergência (Plenário Virtual e Plenário Presencial) (2020-2025)",
         subtitulo="Entre os concluídos, a unanimidade prevalece sobre a divergência",
         descricao="Igual ao I12, mas as três categorias de desfecho concluído agrupadas em "
                   "Julgamento por unanimidade e Julgamento com divergência(s). Selecione o âmbito.",
@@ -242,24 +242,26 @@ _CATALOGO: list[GraficoSpec] = [
     ),
     GraficoSpec(
         id="I15",
-        rotulo="I15 (G26/G27) — Categoria × Tipo de Questão (Plenário Virtual e Plenário Presencial)",
+        rotulo="I15 (G26/G27) — Categoria × Tipo de Questão (Plenário Virtual e Plenário Presencial) (2020-2025)",
         subtitulo="Em PR e QI o não concluído supera a unanimidade; só em RC a unanimidade lidera",
-        descricao="Uma barra horizontal por tipo de questão (PR/RC/QI) com as 4 categorias de desfecho. Período total. "
+        descricao="Uma barra horizontal por tipo de questão (PR/RC/QI) com as 4 categorias de desfecho. "
                   "Processos sem tipo de questão classificados como PR. Selecione o âmbito.",
         fn=g26_cat_tipo_periodo_filtravel,
         tipos=("barra",),
-        filtros=("ambiente", "classe", "tipo_questao"),
+        filtros=("ambiente", "classe", "tipo_questao", "periodo"),
+        periodo_padrao=(2020, 2025),
         percentual=True,
     ),
     GraficoSpec(
         id="I16",
-        rotulo="I16 (item 6.d) — Categoria × Tipo de Questão sem não concluído (Plenário Virtual e Plenário Presencial)",
+        rotulo="I16 (item 6.d) — Categoria × Tipo de Questão sem não concluído (Plenário Virtual e Plenário Presencial) (2020-2025)",
         subtitulo="Unanimidade lidera as conclusões em todos os tipos de questão",
         descricao="Uma barra horizontal por tipo de questão (PR/RC/QI) com as três categorias de desfecho concluído. "
-                  "Período total. Selecione o âmbito.",
+                  "Selecione o âmbito.",
         fn=g26_cat_tipo_periodo_filtravel,
         tipos=("barra",),
-        filtros=("ambiente", "classe", "tipo_questao"),
+        filtros=("ambiente", "classe", "tipo_questao", "periodo"),
+        periodo_padrao=(2020, 2025),
         percentual=True,
         kwargs_fixos={"excluir_nc": True},
     ),
