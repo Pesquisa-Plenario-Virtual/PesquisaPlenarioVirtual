@@ -27,55 +27,60 @@ _CATALOGO = [
     GraficoSpec(
         id="S1",
         rotulo="S1 — Proporção com/sem sustentação (Plenário Virtual e Plenário Presencial)",
-        subtitulo="Sustentação oral ocorre em cerca de um quarto das inclusões (25%)",
+        subtitulo="Sustentação oral ocorre em cerca de um quarto das inclusões (25%) (2020–2025)",
         descricao="Barra horizontal com a proporção de inclusões que tiveram sustentação oral, percentual na ponta. "
                   "Selecione o âmbito.",
         fn=gs1_sust_filtravel,
         tipos=("barra",),
         filtros=("ambiente", "classe", "tipo_questao", "periodo"),
+        periodo_padrao=(2020, 2025),
     ),
     GraficoSpec(
         id="S2",
         rotulo="S2 — Sustentações por Ano (Plenário Virtual e Plenário Presencial)",
-        subtitulo="Sustentações crescem com a universalização e atingem o pico em 2020",
+        subtitulo="Sustentações crescem com a universalização e atingem o pico em 2020 (2020–2025)",
         descricao="Volume anual de inclusões com sustentação oral. "
                   "Anos sem ocorrência aparecem com valor zero. Selecione o âmbito.",
         fn=gs3_sust_anual_filtravel,
         tipos=("barra", "linha"),
         filtros=("ambiente", "classe", "tipo_questao", "periodo"),
+        periodo_padrao=(2020, 2025),
         percentual=True,
     ),
     GraficoSpec(
         id="S3",
         rotulo="S3 — Sustentações por Ano e Classe (Plenário Virtual e Plenário Presencial)",
-        subtitulo="ADI concentra as sustentações em todos os anos",
+        subtitulo="ADI concentra as sustentações em todos os anos (2020–2025)",
         descricao="Barras agrupadas por classe (ADI, ADPF, ADC, ADO) mostrando o volume anual "
                   "de sustentações orais. Selecione o âmbito.",
         fn=gs5_sust_classe_filtravel,
         tipos=("barra", "linha"),
         filtros=("ambiente", "tipo_questao", "periodo"),
+        periodo_padrao=(2020, 2025),
         percentual=True,
     ),
     GraficoSpec(
         id="S4",
         rotulo="S4 — Sustentações por Ano e Tipo de Questão",
-        subtitulo="PR responde pela grande maioria das sustentações",
+        subtitulo="PR responde pela grande maioria das sustentações (2020–2025)",
         descricao="Barras agrupadas por tipo de questão (PR / RC / QI) mostrando o volume anual "
                   "de sustentações orais. IJ renomeado para QI. Selecione o âmbito.",
         fn=gs7_sust_tipo_filtravel,
         tipos=("barra", "linha"),
         filtros=("ambiente", "classe", "periodo"),
+        periodo_padrao=(2020, 2025),
         percentual=True,
     ),
     GraficoSpec(
         id="S5",
         rotulo="S5 — Taxa de Sustentação por Ano e Ambiente (%)",
-        subtitulo="Taxas dos dois âmbitos se aproximam após a universalização",
+        subtitulo="Taxas dos dois âmbitos se aproximam após a universalização (2020–2025)",
         descricao="Percentual de inclusões com sustentação oral em cada ano, comparando "
                   "Plenário Virtual e Plenário Presencial lado a lado.",
         fn=gs8_taxa_ambiente,
         tipos=("barra", "linha"),
         filtros=("classe", "tipo_questao", "periodo"),
+        periodo_padrao=(2020, 2025),
     ),
 ]
 

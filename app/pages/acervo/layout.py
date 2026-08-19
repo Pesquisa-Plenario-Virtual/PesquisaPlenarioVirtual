@@ -82,7 +82,7 @@ _CATALOGO = [
     GraficoSpec(
         id=f"A{i + 1}",
         rotulo=f"A{i + 1} — {titulo}",
-        subtitulo=f"Evolução — {titulo}",
+        subtitulo=f"Evolução — {titulo} (1988–2025)",
         descricao=descricao,
         fn=_wrapper_metrica(col, label),
         tipos=("barra", "linha"),
@@ -111,7 +111,7 @@ _NARRATIVA_ACERVO = [
     GraficoSpec(
         id="A6",
         rotulo="A6 — Variação trienal do acervo (1988–2025)",
-        subtitulo="Acervo ativo encolhe mais de 500 processos por triênio desde 2018",
+        subtitulo="Acervo ativo encolhe mais de 500 processos por triênio desde 2018 (1988–2025)",
         descricao="Variação do acervo ativo (distribuição − baixa) agrupada em triênios, "
                   "positivo cinza e negativo vermelho. Período fixo da série, sem recorte.",
         fn=fig_1a_variacao_trienal,
@@ -122,7 +122,7 @@ _NARRATIVA_ACERVO = [
     GraficoSpec(
         id="A7",
         rotulo="A7 — Variação trienal do acervo, negativo azul (1988–2025)",
-        subtitulo="Acervo ativo encolhe mais de 500 processos por triênio desde 2018",
+        subtitulo="Acervo ativo encolhe mais de 500 processos por triênio desde 2018 (1988–2025)",
         descricao="Mesma variação trienal do A6, com o negativo em azul em vez de vermelho. "
                   "Período fixo da série, sem recorte.",
         fn=fig_1a2_variacao_trienal,
@@ -133,7 +133,7 @@ _NARRATIVA_ACERVO = [
     GraficoSpec(
         id="A8",
         rotulo="A8 — Acervo por classe, horizontal (1988–2025)",
-        subtitulo="ADI concentra o acervo ativo em todo o período",
+        subtitulo="ADI concentra o acervo ativo em todo o período (1988–2025)",
         descricao="Barras horizontais empilhadas por classe, 1988 no topo, com os totais anuais na ponta. "
                   "Período fixo da série, sem recorte.",
         fn=fig_1b_acervo_por_classe,
@@ -144,7 +144,7 @@ _NARRATIVA_ACERVO = [
     GraficoSpec(
         id="A9",
         rotulo="A9 — Acervo por classe, vertical (1988–2025)",
-        subtitulo="ADI concentra o acervo ativo em todo o período",
+        subtitulo="ADI concentra o acervo ativo em todo o período (1988–2025)",
         descricao="Barras verticais empilhadas por classe, com marcadores ER e faixa ESPIN. "
                   "Período fixo da série, sem recorte.",
         fn=fig_1b2_acervo_por_classe_vertical,
@@ -155,7 +155,7 @@ _NARRATIVA_ACERVO = [
     GraficoSpec(
         id="A10",
         rotulo="A10 — Acervo por classe, totais de 2017 e 2025 rotulados (1988–2025)",
-        subtitulo="ADI concentra o acervo ativo em todo o período",
+        subtitulo="ADI concentra o acervo ativo em todo o período (1988–2025)",
         descricao="Mesmo A9, com os totais de 2017 e 2025 rotulados no topo das barras. "
                   "Período fixo da série, sem recorte.",
         fn=fig_1b3_acervo_por_classe_vertical_extremos,
@@ -166,7 +166,7 @@ _NARRATIVA_ACERVO = [
     GraficoSpec(
         id="A11",
         rotulo="A11 — Acervo por classe, sem eixo (1988–2025)",
-        subtitulo="ADI concentra o acervo ativo em todo o período",
+        subtitulo="ADI concentra o acervo ativo em todo o período (1988–2025)",
         descricao="Mesmo A9 sem o eixo esquerdo; 'Exibir valores' rotula o total de cada ano. "
                   "Período fixo da série, sem recorte.",
         fn=fig_1b4_acervo_por_classe_vertical_sem_eixo,
@@ -177,7 +177,7 @@ _NARRATIVA_ACERVO = [
     GraficoSpec(
         id="A12",
         rotulo="A12 — Distribuição e baixa espelhados (1988–2025)",
-        subtitulo="Baixas disparam após 2019 e superam as distribuições",
+        subtitulo="Baixas disparam após 2019 e superam as distribuições (1988–2025)",
         descricao="Colunas espelhadas: distribuições (entrada) para cima e baixas (saída) para baixo, "
                   "com marcadores ER e faixa ESPIN. Período fixo da série, sem recorte.",
         fn=fig_1c_distribuicao_baixa,
@@ -188,7 +188,7 @@ _NARRATIVA_ACERVO = [
     GraficoSpec(
         id="A13",
         rotulo="A13 — Variação anual do acervo (1988–2025)",
-        subtitulo="Acervo ativo em queda contínua desde 2019",
+        subtitulo="Acervo ativo em queda contínua desde 2019 (1988–2025)",
         descricao="Variação anual (entradas − saídas), acréscimo cinza e decréscimo vermelho, "
                   "com marcadores ER e faixa ESPIN. Período fixo da série, sem recorte.",
         fn=fig_1d_variacao_anual,
@@ -199,7 +199,7 @@ _NARRATIVA_ACERVO = [
     GraficoSpec(
         id="A14",
         rotulo="A14 — Variação anual do acervo, decréscimo azul (1988–2025)",
-        subtitulo="Acervo ativo em queda contínua desde 2019",
+        subtitulo="Acervo ativo em queda contínua desde 2019 (1988–2025)",
         descricao="Mesma variação anual do A13, com o decréscimo em azul em vez de vermelho. "
                   "Período fixo da série, sem recorte.",
         fn=fig_1d2_variacao_anual,

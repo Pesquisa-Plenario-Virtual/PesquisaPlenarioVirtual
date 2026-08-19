@@ -93,6 +93,7 @@ def fig_2a_participacao_ano(df: pd.DataFrame, show_values: bool = True) -> go.Fi
 def fig_2a2_participacao_ano_marcos(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
     """2.a.2 — Igual ao 2.a, com marcos ER 51/52/53 e ESPIN completos (como no Bloco 1)."""
     tab = df.groupby(["ano", "ambiente"]).size().unstack(fill_value=0)
+    tab = tab[tab.index >= 2016]  # PV não existe antes de 2016 — anos zerados só poluem o eixo
     pct = 100 * tab["Plenário Virtual"] / tab.sum(axis=1)
     anos = [str(a) for a in pct.index]
     anos_int = list(pct.index)
