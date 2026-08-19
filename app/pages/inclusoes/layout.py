@@ -207,6 +207,19 @@ _CATALOGO: list[GraficoSpec] = [
         kwargs_fixos={"excluir_nc": True},
     ),
     GraficoSpec(
+        id="I42",
+        rotulo="I42 (item 6.b) — Julgamento por unanimidade vs divergência (Plenário Virtual e Plenário Presencial)",
+        subtitulo="Entre os concluídos, a unanimidade prevalece sobre a divergência",
+        descricao="Igual ao I12, mas as três categorias de desfecho concluído agrupadas em "
+                  "Julgamento por unanimidade e Julgamento com divergência(s). Selecione o âmbito.",
+        fn=g22_cat_periodo_filtravel,
+        tipos=("barra",),
+        filtros=("ambiente", "classe", "tipo_questao", "periodo"),
+        periodo_padrao=(2020, 2025),
+        percentual=True,
+        kwargs_fixos={"excluir_nc": True, "macro_unanime": True},
+    ),
+    GraficoSpec(
         id="I13",
         rotulo="I13 (G24/G25) — Categoria de Desfecho por Ano (Plenário Virtual e Plenário Presencial)",
         subtitulo="Unanimidade cresce com a universalização do PV e se consolida em primeiro",

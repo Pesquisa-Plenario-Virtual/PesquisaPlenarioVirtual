@@ -344,6 +344,13 @@ _AGRUPAMENTO_MACRO_I12: dict[str, tuple[str, ...]] = {
     "Prevalência da divergência": ("3 - Maioria (relator vencido)",),
 }
 
+# Mesmo esquema do I12, mas agrupando pelo critério de I21-23 (unânime vs
+# divergência, sem distinguir se a divergência venceu ou perdeu o relator).
+_AGRUPAMENTO_MACRO_UNANIME: dict[str, tuple[str, ...]] = {
+    "Julgamento por unanimidade":    ("1 - Unânime",),
+    "Julgamento com divergência(s)": ("2 - Maioria (relator vencedor)", "3 - Maioria (relator vencido)"),
+}
+
 
 def linha_decisao(df: pd.DataFrame, agrupamento: str = "unânime_vs_divergência",
                   ambiente: str = "Plenário Virtual",
@@ -645,10 +652,17 @@ def _pizzas_categoria_por_tipo(sub: pd.DataFrame, ambiente_label: str,
 
 def g22_cat_periodo_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
                               ambiente: str = "Plenário Virtual",
-                              excluir_nc: bool = False, macro: bool = False) -> go.Figure:
+                              excluir_nc: bool = False, macro: bool = False,
+                              macro_unanime: bool = False) -> go.Figure:
     sub = _prep_cat(df[df["ambiente"] == ambiente])
-    if excluir_nc or macro:
+    if excluir_nc or macro or macro_unanime:
         sub = _sem_nao_concluido(sub)
+    if macro_unanime:
+        mapa = {c: nome for nome, cs in _AGRUPAMENTO_MACRO_UNANIME.items() for c in cs}
+        vc = sub["categoria"].map(mapa).value_counts()
+        return _pizza(vc, f"Julgamento por unanimidade vs divergência — {ambiente} (período total)",
+                      cores=[cor(l) for l in vc.index],
+                      show_values=show_values, proporcao=proporcao)
     if macro:
         mapa = {c: nome for nome, cs in _AGRUPAMENTO_MACRO_I12.items() for c in cs}
         vc = sub["categoria"].map(mapa).value_counts()
