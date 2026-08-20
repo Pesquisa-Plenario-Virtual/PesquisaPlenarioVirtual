@@ -144,7 +144,8 @@ def _composicao(series: pd.Series, titulo: str, cores: list | None = None,
         height=max(320, 90 + 46 * len(s)),
         margin=dict(t=110, b=60, l=220, r=120),
         showlegend=False,                            # o rótulo já está no eixo
-        xaxis=dict(title="Percentual de desfechos (%)" if proporcao else "Inclusões em pauta"),
+        xaxis=dict(title="Percentual de desfechos (%)" if proporcao else "Inclusões em pauta",
+                   range=[0, 100] if proporcao else None),
         yaxis=dict(title=""),
     )
     return fig
@@ -227,6 +228,7 @@ def _barras_grupo(df_amb: pd.DataFrame, col_x: str, col_grupo: str,
             marker_color=cores[g],
             text=texto[d.index] if isinstance(texto, pd.Series) else texto,
             textposition="outside", cliponaxis=False,
+            textfont=dict(size=20, color="black", weight="bold"),
         ))
     aplicar_padrao(fig, titulo, showlegend=True, legend=_LEGEND_BARRAS,
                     xaxis=dict(title=x_title, dtick=1),
