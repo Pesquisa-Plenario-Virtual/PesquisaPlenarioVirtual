@@ -228,7 +228,7 @@ def _barras_grupo(df_amb: pd.DataFrame, col_x: str, col_grupo: str,
             marker_color=cores[g],
             text=texto[d.index] if isinstance(texto, pd.Series) else texto,
             textposition="outside", cliponaxis=False,
-            textfont=dict(size=20, color="black", weight="bold"),
+            textfont=dict(size=26 if proporcao else 20, color="black", weight="bold"),
         ))
     aplicar_padrao(fig, titulo, showlegend=True, legend=_LEGEND_BARRAS,
                     xaxis=dict(title=x_title, dtick=1),
