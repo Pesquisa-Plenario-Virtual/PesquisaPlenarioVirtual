@@ -119,7 +119,14 @@ def _normalizar_traces(fig: go.Figure, dark: bool, escala: float = 1.0) -> None:
         if nome:
             tr.name = canonico(nome)
         if hasattr(tr, "textfont"):
-            tr.textfont = valor
+            # Preserva um tamanho explícito maior que o padrão (ex.: rótulos
+            # de percentual do I8/_barras_grupo) — senão a normalização
+            # sobrescreve silenciosamente qualquer size definido em plots.py.
+            tamanho_atual = getattr(tr.textfont, "size", None)
+            if tamanho_atual and tamanho_atual > valor["size"]:
+                tr.textfont = {**valor, "size": tamanho_atual}
+            else:
+                tr.textfont = valor
         texto = getattr(tr, "text", None)
         if isinstance(texto, str):
             tr.text = limpar_html_de_fonte(texto)
