@@ -49,6 +49,13 @@ CORES_DESFECHO_CONCLUIDO = {
     "Concluído - decisão maioria com o relator":      "#2a78d6",
     "Concluído - decisão maioria, vencido o relator": "#86b6ef",
 }
+# Legenda curta pedida para I6/I41 — mesma forma do rótulo de I16
+# (_ROTULO_CATEGORIA_CURTO), só que indexada pela string de desfecho.
+_ROTULO_DESFECHO_CURTO = {
+    "Concluído - decisão unânime":                    "Decisão unânime",
+    "Concluído - decisão maioria com o relator":      "Decisão maioria com o relator",
+    "Concluído - decisão maioria, vencido o relator": "Decisão maioria, vencido o relator",
+}
 CORES_SUST = {
     "Com sustentação oral": "#0891b2",
     "Sem sustentação oral": "#e5e7eb",
@@ -192,7 +199,8 @@ def _barras_grupo(df_amb: pd.DataFrame, col_x: str, col_grupo: str,
                   label_total: str, x_title: str = "Ano",
                   show_values: bool = True, proporcao: bool = False,
                   proporcao_global: bool = False, excluir_ers: tuple = (),
-                  label_y_proporcao: str | None = None) -> go.Figure:
+                  label_y_proporcao: str | None = None,
+                  rotulos_grupo: dict[str, str] | None = None) -> go.Figure:
     # label_total: mantido por compatibilidade de assinatura; a linha de total
     # foi removida (PADRÃO GERAL não permite linha de tendência de total).
     tab = df_amb.groupby([col_x, col_grupo], observed=True).size().reset_index(name="n")
@@ -224,12 +232,18 @@ def _barras_grupo(df_amb: pd.DataFrame, col_x: str, col_grupo: str,
         if d.empty:
             continue
         fig.add_trace(go.Bar(
-            x=d[col_x], y=d["y"], name=g,
+            x=d[col_x], y=d["y"],
+            name=(rotulos_grupo or {}).get(g, g),
             marker_color=cores[g],
             text=texto[d.index] if isinstance(texto, pd.Series) else texto,
             textposition="outside", cliponaxis=False,
-            textfont=dict(size=30 if proporcao else 20, color="black", weight="bold"),
+            textfont=dict(size=34 if proporcao else 20, color="black", weight="bold"),
         ))
+    if proporcao:
+        # Barras percentuais de classe/tipo são estreitas (4 grupos por ano) e o
+        # Plotly encolhe o rótulo "outside" para caber — mode="show" força o
+        # tamanho pedido em `textfont`, que era o ponto de I8.
+        fig.update_layout(uniformtext=dict(minsize=34, mode="show"))
     aplicar_padrao(fig, titulo, showlegend=True, legend=_LEGEND_BARRAS,
                     xaxis=dict(title=x_title, dtick=1),
                     yaxis_title=y_label)
@@ -469,7 +483,8 @@ def _concluidos_anual(df_amb: pd.DataFrame, titulo: str,
     if segmentar:
         return _barras_grupo(sub, "ano", "desfecho", CORES_DESFECHO_CONCLUIDO,
                              titulo, "Inclusões concluídas", "Total (linha)",
-                             show_values=show_values, proporcao=proporcao)
+                             show_values=show_values, proporcao=proporcao,
+                             rotulos_grupo=_ROTULO_DESFECHO_CURTO)
 
     tab = sub.groupby("ano").size().reset_index(name="n")
     if proporcao:
@@ -675,6 +690,14 @@ def g22_cat_periodo_filtravel(df: pd.DataFrame, show_values: bool = True, propor
     # resolve as 3 categorias concluídas em tons de azul validados — não
     # duplicar hex num dict local que pode divergir da paleta central.
     vc = sub["categoria"].value_counts().sort_index()
+    if excluir_nc:
+        # I41: mesma legenda curta de I16 ("Decisão unânime" etc.), sem o
+        # prefixo "Concluído - " que canonico() reinstalaria. Cor resolvida
+        # pelo nome canônico antes da troca, como em _pizza_categoria.
+        cores_vc = [cor(canonico(l)) for l in vc.index]
+        vc = vc.rename(index=_ROTULO_CATEGORIA_CURTO)
+        return _pizza(vc, f"Desfecho por categoria — {ambiente} (período total)",
+                      cores=cores_vc, show_values=show_values, proporcao=proporcao)
     return _pizza(vc, f"Desfecho por categoria — {ambiente} (período total)",
                   show_values=show_values, proporcao=proporcao)
 
