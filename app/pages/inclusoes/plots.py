@@ -237,13 +237,14 @@ def _barras_grupo(df_amb: pd.DataFrame, col_x: str, col_grupo: str,
             marker_color=cores[g],
             text=texto[d.index] if isinstance(texto, pd.Series) else texto,
             textposition="outside", cliponaxis=False,
-            textfont=dict(size=34 if proporcao else 20, color="black", weight="bold"),
+            textfont=dict(size=20, color="black", weight="bold"),
         ))
     if proporcao:
         # Barras percentuais de classe/tipo são estreitas (4 grupos por ano) e o
         # Plotly encolhe o rótulo "outside" para caber — mode="show" força o
-        # tamanho pedido em `textfont`, que era o ponto de I8.
-        fig.update_layout(uniformtext=dict(minsize=34, mode="show"))
+        # tamanho pedido em `textfont` (o mesmo da versão absoluta), que era o
+        # ponto de I8.
+        fig.update_layout(uniformtext=dict(minsize=20, mode="show"))
     aplicar_padrao(fig, titulo, showlegend=True, legend=_LEGEND_BARRAS,
                     xaxis=dict(title=x_title, dtick=1),
                     yaxis_title=y_label)
