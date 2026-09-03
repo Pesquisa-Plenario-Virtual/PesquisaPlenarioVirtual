@@ -200,7 +200,8 @@ def _barras_grupo(df_amb: pd.DataFrame, col_x: str, col_grupo: str,
                   show_values: bool = True, proporcao: bool = False,
                   proporcao_global: bool = False, excluir_ers: tuple = (),
                   label_y_proporcao: str | None = None,
-                  rotulos_grupo: dict[str, str] | None = None) -> go.Figure:
+                  rotulos_grupo: dict[str, str] | None = None,
+                  tamanho_texto: int = 20) -> go.Figure:
     # label_total: mantido por compatibilidade de assinatura; a linha de total
     # foi removida (PADRÃO GERAL não permite linha de tendência de total).
     tab = df_amb.groupby([col_x, col_grupo], observed=True).size().reset_index(name="n")
@@ -237,14 +238,13 @@ def _barras_grupo(df_amb: pd.DataFrame, col_x: str, col_grupo: str,
             marker_color=cores[g],
             text=texto[d.index] if isinstance(texto, pd.Series) else texto,
             textposition="outside", cliponaxis=False,
-            textfont=dict(size=20, color="black", weight="bold"),
+            textfont=dict(size=tamanho_texto, color="black", weight="bold"),
         ))
     if proporcao:
         # Barras percentuais de classe/tipo são estreitas (4 grupos por ano) e o
         # Plotly encolhe o rótulo "outside" para caber — mode="show" força o
-        # tamanho pedido em `textfont` (o mesmo da versão absoluta), que era o
-        # ponto de I8.
-        fig.update_layout(uniformtext=dict(minsize=20, mode="show"))
+        # tamanho pedido em `textfont`, que era o ponto de I8.
+        fig.update_layout(uniformtext=dict(minsize=tamanho_texto, mode="show"))
     aplicar_padrao(fig, titulo, showlegend=True, legend=_LEGEND_BARRAS,
                     xaxis=dict(title=x_title, dtick=1),
                     yaxis_title=y_label)
@@ -518,7 +518,8 @@ def _por_classe_com_total(df_amb: pd.DataFrame, filtro_macro: str,
     df_f = df_amb[df_amb["macro_desfecho"] == filtro_macro]
     return _barras_grupo(df_f, "ano", "classe", CORES_CLASSE,
                          titulo, "Inclusões por classe", label_total,
-                         show_values=show_values, proporcao=proporcao)
+                         show_values=show_values, proporcao=proporcao,
+                         tamanho_texto=18)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
