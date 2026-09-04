@@ -519,7 +519,7 @@ def _por_classe_com_total(df_amb: pd.DataFrame, filtro_macro: str,
     return _barras_grupo(df_f, "ano", "classe", CORES_CLASSE,
                          titulo, "Inclusões por classe", label_total,
                          show_values=show_values, proporcao=proporcao,
-                         tamanho_texto=18)
+                         tamanho_texto=16)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
