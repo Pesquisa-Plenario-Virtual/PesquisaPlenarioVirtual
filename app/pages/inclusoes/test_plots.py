@@ -148,6 +148,53 @@ def test_7b_recorta_2010_2025_ambos_e_exclui_er_53():
     assert not any("ER 53" in t for t in textos)
 
 
+from pages.inclusoes.plots import _macro_anual, g_unanime_sem_marco_aurelio
+
+
+def _df_macro() -> pd.DataFrame:
+    return pd.DataFrame({
+        "ano": [2020, 2020, 2021, 2021],
+        "ambiente": "Plenário Virtual",
+        "macro_desfecho": ["Concluído", "Não concluído", "Concluído", "Não concluído"],
+    })
+
+
+def test_macro_anual_empilhado_empilha_e_mostra_percentual():
+    fig = _macro_anual(_df_macro(), "t", empilhado=True)
+    assert fig.layout.barmode == "stack"
+    concl = next(t for t in fig.data if t.name == "CONCLUÍDO")
+    assert all("%" in s for s in concl.text)  # rótulo do segmento de baixo tem %
+    naoc = next(t for t in fig.data if t.name == "NÃO CONCLUÍDO")
+    assert all("%" not in s for s in naoc.text)
+
+
+def test_macro_anual_agrupado_inalterado():
+    fig = _macro_anual(_df_macro(), "t")
+    assert fig.layout.barmode == "group"
+
+
+def test_unanime_sem_ma_duas_series_ajustada_nunca_menor():
+    df = pd.DataFrame({
+        "ano": [2019, 2019, 2021, 2021],
+        "ambiente": "Plenário Virtual",
+        "macro_desfecho": "Concluído",
+        "desfecho": ["Concluído - decisão unânime",
+                     "Concluído - decisão maioria com o relator",
+                     "Concluído - decisão maioria com o relator",
+                     "Concluído - decisão maioria, vencido o relator"],
+        "desfecho_sem_ma": ["Concluído - decisão unânime",
+                            "Concluído - decisão unânime",
+                            "Concluído - decisão maioria com o relator",
+                            "Concluído - decisão maioria, vencido o relator"],
+    })
+    fig = g_unanime_sem_marco_aurelio(df, show_values=False)
+    assert len(fig.data) == 2
+    real = {a: v for a, v in zip(fig.data[0].x, fig.data[0].y)}
+    semma = {a: v for a, v in zip(fig.data[1].x, fig.data[1].y)}
+    assert all(semma[a] >= real[a] for a in real)
+    assert semma[2019] == 2 and real[2019] == 1
+
+
 if __name__ == "__main__":
     for _nome, _fn in sorted(globals().items()):
         if _nome.startswith("test_"):

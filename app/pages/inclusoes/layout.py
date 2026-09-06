@@ -9,6 +9,7 @@ from components.tabulador import render_tabulador
 from .plots import (
     g5_anual_ambiente, g6_classe_filtravel, g8_desfecho_filtravel,
     g10_macro_anual_filtravel, g12_concluidos_filtravel,
+    g_inclusoes_pct_concluido, g_unanime_sem_marco_aurelio,
     g14_nao_concluidos_classe_filtravel, g16_concluidos_classe_filtravel,
     g18_nc_tipo_filtravel, g20_c_tipo_filtravel,
     g22_cat_periodo_filtravel, g24_cat_anual_filtravel,
@@ -128,6 +129,20 @@ _CATALOGO: list[GraficoSpec] = [
         periodo_padrao=(2020, 2025),
         percentual=True,
         kwargs_fixos={"segmentar": True},
+    ),
+    GraficoSpec(
+        id="I43",
+        rotulo="I43 — Inclusões por Ano e Quanto Concluiu (Plenário Virtual e Plenário Presencial)",
+        subtitulo="Barra empilhada de todas as inclusões do ano; o rótulo marca o % concluído",
+        descricao="Como o I5, mas sem descartar as não concluídas: cada ano é uma barra "
+                  "empilhada de concluídas (base) e não concluídas (topo), e o rótulo do "
+                  "segmento de baixo traz o percentual de inclusões que concluíram. "
+                  "Selecione o âmbito; alterne entre valor absoluto e percentual.",
+        fn=g_inclusoes_pct_concluido,
+        tipos=("barra",),
+        filtros=("ambiente", "classe", "tipo_questao", "periodo"),
+        periodo_padrao=(2020, 2025),
+        percentual=True,
     ),
     GraficoSpec(
         id="I7",
@@ -397,6 +412,43 @@ _CATALOGO: list[GraficoSpec] = [
         kwargs_fixos={"agrupamento": "relator_vs_divergência", "ambiente": "Ambos os ambientes"},
         percentual=True,
     ),
+    # ── Hipótese Marco Aurélio ───────────────────────────────────────────────
+    GraficoSpec(
+        id="I44",
+        rotulo="I44 (hipótese Marco Aurélio) — Unanimidade com e sem as divergências isoladas do ministro — Plenário Virtual",
+        subtitulo="Contando como unânimes as decisões em que Marco Aurélio foi o único vencido",
+        descricao="Duas séries por ano no Plenário Virtual: decisões unânimes como foram "
+                  "decididas, e o mesmo recontando como unânime toda decisão 'por maioria' em "
+                  "que Marco Aurélio (que saiu em 2022) foi o único voto vencido. Testa se o "
+                  "salto na unanimidade acompanha a saída dele. Período fixo do dado.",
+        fn=g_unanime_sem_marco_aurelio,
+        tipos=("linha", "barra"),
+        filtros=(),
+        kwargs_fixos={"ambiente": "Plenário Virtual"},
+        percentual=True,
+    ),
+    GraficoSpec(
+        id="I45",
+        rotulo="I45 (hipótese Marco Aurélio) — Unanimidade com e sem as divergências isoladas do ministro — Plenário Presencial",
+        subtitulo="Contando como unânimes as decisões em que Marco Aurélio foi o único vencido",
+        descricao="Igual ao I44, no Plenário Presencial. Período fixo do dado.",
+        fn=g_unanime_sem_marco_aurelio,
+        tipos=("linha", "barra"),
+        filtros=(),
+        kwargs_fixos={"ambiente": "Plenário Presencial"},
+        percentual=True,
+    ),
+    GraficoSpec(
+        id="I46",
+        rotulo="I46 (hipótese Marco Aurélio) — Unanimidade com e sem as divergências isoladas do ministro — Ambos os ambientes",
+        subtitulo="Contando como unânimes as decisões em que Marco Aurélio foi o único vencido",
+        descricao="Igual ao I44, nos dois ambientes somados. Período fixo do dado.",
+        fn=g_unanime_sem_marco_aurelio,
+        tipos=("linha", "barra"),
+        filtros=(),
+        kwargs_fixos={"ambiente": "Ambos os ambientes"},
+        percentual=True,
+    ),
     # ── Desfecho Não Concluído por Categoria ──────────────────────────────────
     GraficoSpec(
         id="I27",
@@ -569,6 +621,17 @@ _CATALOGO.append(GraficoSpec(
 
 def render_graficos(df: pd.DataFrame, df_dec: pd.DataFrame | None = None) -> None:
     df = _refinar_motivos_diversos(df, df_dec if df_dec is not None else pd.DataFrame())
+
+    # `desfecho_sem_ma` (hipótese Marco Aurélio, anexado em inclusoes.py) é uma
+    # cópia de `desfecho` com as maiorias isoladas dele viradas em unânime.
+    # `_refinar_motivos_diversos` acabou de reescrever `desfecho` em linhas "Não
+    # concluído - motivos diversos" (PP), então reconstrói a coluna a partir do
+    # `desfecho` já refinado + a máscara de virada, pra ela não divergir do bruto
+    # fora das linhas que a hipótese de fato mexe.
+    if "desfecho_sem_ma" in df.columns:
+        virou = ((df["desfecho_sem_ma"] == "Concluído - decisão unânime")
+                 & df["desfecho"].str.startswith("Concluído - decisão maioria"))
+        df = df.assign(desfecho_sem_ma=df["desfecho"].mask(virou, "Concluído - decisão unânime"))
 
     # "Não identificado" -> PR, só nesta página. O texto do andamento físico só
     # registra sufixo (AgR/ED/MC/TPI/QO/Acordo) quando é recurso ou questão

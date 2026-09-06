@@ -413,6 +413,61 @@ def g7b_unanimidade_vs_divergencia_2010_2025(df: pd.DataFrame, show_values: bool
                          excluir_ers=(53,))
 
 
+# Cores dos dois traços do I44-46: a série "como decidido" no azul escuro do
+# consenso (mesmo tom de "Julgamento por unanimidade"), a série ajustada num
+# degrau de reserva pra contrastar sem entrar na família de outro conceito.
+_COR_UNANIME_REAL = cor("Julgamento por unanimidade")
+_COR_UNANIME_SEM_MA = cor("hipótese sem marco aurélio")
+
+
+def g_unanime_sem_marco_aurelio(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
+                                ambiente: str = "Plenário Virtual") -> go.Figure:
+    """I44/I45/I46 — hipótese Marco Aurélio.
+
+    Duas séries por ano: decisões unânimes como foram decididas, e o mesmo
+    contando como unânimes as decisões "por maioria" em que Marco Aurélio foi o
+    único voto vencido (coluna `desfecho_sem_ma`, anexada em `inclusoes.py`).
+    `proporcao` alterna contagem ↔ % dos concluídos do ano.
+    """
+    sub = df if ambiente == "Ambos os ambientes" else df[df["ambiente"] == ambiente]
+    sub = sub[sub["macro_desfecho"] == "Concluído"]
+    col_sem_ma = "desfecho_sem_ma" if "desfecho_sem_ma" in sub.columns else "desfecho"
+
+    grp = sub.groupby("ano", observed=True)
+    tot = grp.size()
+    real = grp.apply(lambda x: (x["desfecho"] == "Concluído - decisão unânime").sum())
+    semma = grp.apply(lambda x: (x[col_sem_ma] == "Concluído - decisão unânime").sum())
+    anos = list(tot.index)
+
+    if proporcao:
+        real_y = (real / tot * 100).round(1)
+        semma_y = (semma / tot * 100).round(1)
+        fmt = lambda v: f"{br(v, 1)}%"
+        y_title = "% dos concluídos do ano"
+    else:
+        real_y, semma_y = real, semma
+        fmt = br
+        y_title = "Decisões unânimes"
+
+    fig = _bar_fig()
+    for nome, serie, cor_ in [
+        ("Unânime (como decidido)", real_y, _COR_UNANIME_REAL),
+        ("Unânime (sem divergência isolada de Marco Aurélio)", semma_y, _COR_UNANIME_SEM_MA),
+    ]:
+        fig.add_trace(go.Bar(
+            x=anos, y=serie.values, name=nome, marker_color=cor_,
+            text=[fmt(v) for v in serie.values] if show_values else None,
+            textposition="outside", cliponaxis=False,
+        ))
+    aplicar_padrao(fig, f"Unanimidade com e sem as divergências isoladas de Marco Aurélio — {ambiente}",
+                   showlegend=True, legend=_LEGEND_BARRAS,
+                   xaxis=dict(title="Ano", dtick=1), yaxis_title=y_title)
+    if anos:
+        y_max = max(float(real_y.max()), float(semma_y.max()))
+        _marcos_temporais(fig, y_max, min(anos), max(anos))
+    return fig
+
+
 def g10_macro_anual_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
                               ambiente: str = "Plenário Virtual") -> go.Figure:
     return _macro_anual(df[df["ambiente"] == ambiente],
@@ -425,6 +480,16 @@ def g12_concluidos_filtravel(df: pd.DataFrame, show_values: bool = True, proporc
     return _concluidos_anual(df[df["ambiente"] == ambiente],
                              f"Concluídos por ano — {ambiente}",
                              show_values=show_values, proporcao=proporcao, segmentar=segmentar)
+
+
+def g_inclusoes_pct_concluido(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
+                              ambiente: str = "Plenário Virtual") -> go.Figure:
+    """I43 — todas as inclusões do ano (barra empilhada Concluído + Não concluído),
+    com o % concluído no rótulo do segmento de baixo. Igual ao I5 no estilo, mas
+    sem descartar as não concluídas."""
+    return _macro_anual(df[df["ambiente"] == ambiente],
+                        f"Inclusões por ano e quanto concluiu — {ambiente}",
+                        show_values=show_values, proporcao=proporcao, empilhado=True)
 
 
 def g14_nao_concluidos_classe_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
@@ -446,11 +511,13 @@ def g16_concluidos_classe_filtravel(df: pd.DataFrame, show_values: bool = True, 
 
 
 def _macro_anual(df_amb: pd.DataFrame, titulo: str,
-                 show_values: bool = True, proporcao: bool = False) -> go.Figure:
+                 show_values: bool = True, proporcao: bool = False,
+                 empilhado: bool = False) -> go.Figure:
     tab = df_amb.groupby(["ano", "macro_desfecho"], observed=True).size().reset_index(name="n")
+    totais = tab.groupby("ano")["n"].transform("sum")
+    tab["pct"] = (tab["n"] / totais * 100).round(1)
     if proporcao:
-        totais = tab.groupby("ano")["n"].transform("sum")
-        tab["y"] = (tab["n"] / totais * 100).round(1)
+        tab["y"] = tab["pct"]
         texto = tab["y"].apply(lambda v: f"{v:.1f}%") if show_values else None
         y_title = "% do total"
     else:
@@ -458,7 +525,20 @@ def _macro_anual(df_amb: pd.DataFrame, titulo: str,
         texto = tab["y"] if show_values else None
         y_title = "Inclusões em pauta"
 
-    fig = _bar_fig()
+    # I43: barras empilhadas Concluído (base) + Não concluído (topo). O rótulo do
+    # segmento Concluído sempre carrega o %, mesmo na escala absoluta — é o ponto
+    # do gráfico ("quanto das inclusões daquele ano concluiu").
+    if empilhado and show_values:
+        pct_por_ano = tab.set_index(["ano", "macro_desfecho"])["pct"].to_dict()
+        rotulo = {}
+        for _, r in tab.iterrows():
+            if r["macro_desfecho"] == "Concluído":
+                rotulo[r.name] = f"{br(r['n'])} ({br(r['pct'], 1)}%)"
+            else:
+                rotulo[r.name] = br(r["n"])
+        texto = pd.Series(rotulo)
+
+    fig = _bar_fig("stack" if empilhado else "group")
     for macro in ["Concluído", "Não concluído"]:
         d = tab[tab["macro_desfecho"] == macro]
         if d.empty:
@@ -467,13 +547,17 @@ def _macro_anual(df_amb: pd.DataFrame, titulo: str,
             x=d["ano"], y=d["y"], name=macro.upper(),
             marker_color=CORES_MACRO[macro],
             text=texto[d.index] if isinstance(texto, pd.Series) else texto,
-            textposition="outside", cliponaxis=False,
+            textposition="inside" if empilhado else "outside", cliponaxis=False,
         ))
     aplicar_padrao(fig, titulo, showlegend=True, legend=_LEGEND_BARRAS,
                    xaxis=dict(title="Ano", dtick=1),
                    yaxis_title=y_title)
-    if not tab.empty:
+    if not tab.empty and not empilhado:
         _marcos_temporais(fig, tab["y"].max(), tab["ano"].min(), tab["ano"].max())
+    elif not tab.empty:
+        # empilhado: y_max é a altura da pilha (soma), não o maior segmento
+        soma_ano = tab.groupby("ano")["y"].sum()
+        _marcos_temporais(fig, float(soma_ano.max()), tab["ano"].min(), tab["ano"].max())
     return fig
 
 

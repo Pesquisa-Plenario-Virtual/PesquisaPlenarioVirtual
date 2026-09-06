@@ -11,8 +11,15 @@ _root = _here.parent.parent.parent
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
+from dados.divergencia import anexar_desfecho_sem_ministro
 from dados.loader import load_inclusoes_em_pauta, load_dim_decisoes
 from pages.inclusoes.layout import render_graficos
+
+
+@st.cache_data(ttl=3600)
+def _com_desfecho_sem_ma(df: pd.DataFrame, df_dec: pd.DataFrame) -> pd.DataFrame:
+    """Anexa `desfecho_sem_ma` (hipótese Marco Aurélio) — ver dados.divergencia."""
+    return anexar_desfecho_sem_ministro(df, df_dec)
 
 try:
     df = load_inclusoes_em_pauta()
@@ -29,6 +36,8 @@ try:
 except Exception as e:
     st.warning(f"Não foi possível carregar decisões para refinamento: {e}")
     df_dec = pd.DataFrame()
+
+df = _com_desfecho_sem_ma(df, df_dec)
 
 # ── Cabeçalho ─────────────────────────────────────────────────────────────────
 st.title("Inclusões em Pauta")
