@@ -195,6 +195,60 @@ def test_unanime_sem_ma_duas_series_ajustada_nunca_menor():
     assert semma[2019] == 2 and real[2019] == 1
 
 
+from pages.inclusoes.plots import linha_decisao
+
+
+def _df_sem_ma() -> pd.DataFrame:
+    # 2 concluídos: um unânime, um "maioria" que sem Marco Aurélio vira unânime
+    return pd.DataFrame({
+        "ano": [2019, 2019],
+        "ambiente": "Plenário Virtual",
+        "macro_desfecho": "Concluído",
+        "desfecho": ["Concluído - decisão unânime",
+                     "Concluído - decisão maioria com o relator"],
+        "desfecho_sem_ma": ["Concluído - decisão unânime",
+                            "Concluído - decisão unânime"],
+    })
+
+
+def test_linha_decisao_usa_coluna_desfecho_sem_ma():
+    df = _df_sem_ma()
+    real = linha_decisao(df, show_values=False)
+    semma = linha_decisao(df, show_values=False, coluna_desfecho="desfecho_sem_ma")
+    unan = lambda f: next(v for t in f.data if t.name == "Julgamento por unanimidade" for v in t.y)
+    assert unan(real) == 1
+    assert unan(semma) == 2
+
+
+def test_linha_decisao_coluna_ausente_cai_em_desfecho():
+    df = _df_sem_ma().drop(columns=["desfecho_sem_ma"])
+    fig = linha_decisao(df, show_values=False, coluna_desfecho="desfecho_sem_ma")
+    unan = next(v for t in fig.data if t.name == "Julgamento por unanimidade" for v in t.y)
+    assert unan == 1
+
+
+def test_g22_macro_unanime_respeita_coluna_desfecho():
+    df = _df_sem_ma()
+    real = g22_cat_periodo_filtravel(df, show_values=False, excluir_nc=True, macro_unanime=True)
+    semma = g22_cat_periodo_filtravel(df, show_values=False, excluir_nc=True, macro_unanime=True,
+                                      coluna_desfecho="desfecho_sem_ma")
+
+    def unan(f):  # barra horizontal: y = rótulos, x = valores
+        for t in f.data:
+            for lbl, x in zip(t.y, t.x):
+                if "unanimidade" in str(lbl).lower():
+                    return float(x)
+        return 0.0
+
+    assert unan(semma) > unan(real)
+
+
+def test_i47_i48_i49_no_catalogo():
+    from pages.inclusoes.layout import _CATALOGO
+    ids = {s.id for s in _CATALOGO}
+    assert {"I47", "I48", "I49"} <= ids
+
+
 if __name__ == "__main__":
     for _nome, _fn in sorted(globals().items()):
         if _nome.startswith("test_"):

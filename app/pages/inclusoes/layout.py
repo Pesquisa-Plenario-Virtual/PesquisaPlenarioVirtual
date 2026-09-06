@@ -449,6 +449,53 @@ _CATALOGO: list[GraficoSpec] = [
         kwargs_fixos={"ambiente": "Ambos os ambientes"},
         percentual=True,
     ),
+    GraficoSpec(
+        id="I47",
+        rotulo="I47 (hipótese Marco Aurélio, base I21) — Unânime vs Divergência sem as divergências isoladas do ministro — Plenário Virtual",
+        subtitulo="Como o I21, mas as decisões 'por maioria' em que Marco Aurélio foi o único vencido entram como unânimes",
+        descricao="Linha temporal de unanimidade contra divergência no Plenário Virtual, já "
+                  "descontadas as maiorias em que Marco Aurélio (que saiu em 2022) foi o único "
+                  "voto vencido — essas viram unânime. Sem comparação com a série original "
+                  "(essa é o I21). Período fixo do dado.",
+        fn=linha_decisao,
+        tipos=("linha", "barra"),
+        filtros=(),
+        kwargs_fixos={"agrupamento": "unânime_vs_divergência", "ambiente": "Plenário Virtual",
+                      "coluna_desfecho": "desfecho_sem_ma",
+                      "titulo": "Unanimidade vs divergência, sem as divergências isoladas de Marco Aurélio — Plenário Virtual"},
+        percentual=True,
+    ),
+    GraficoSpec(
+        id="I48",
+        rotulo="I48 (hipótese Marco Aurélio, base I22) — Unânime vs Divergência sem as divergências isoladas do ministro — Plenário Presencial",
+        subtitulo="Como o I22, mas as decisões 'por maioria' em que Marco Aurélio foi o único vencido entram como unânimes",
+        descricao="Igual ao I47, no Plenário Presencial. Sem comparação com a série original "
+                  "(essa é o I22). Período fixo do dado.",
+        fn=linha_decisao,
+        tipos=("linha", "barra"),
+        filtros=(),
+        kwargs_fixos={"agrupamento": "unânime_vs_divergência", "ambiente": "Plenário Presencial",
+                      "coluna_desfecho": "desfecho_sem_ma",
+                      "titulo": "Unanimidade vs divergência, sem as divergências isoladas de Marco Aurélio — Plenário Presencial"},
+        percentual=True,
+    ),
+    GraficoSpec(
+        id="I49",
+        rotulo="I49 (hipótese Marco Aurélio, base I42) — Julgamento por unanimidade vs divergência sem as divergências isoladas do ministro (2020-2025)",
+        subtitulo="Como o I42, mas as maiorias em que Marco Aurélio foi o único vencido entram como unânimes",
+        descricao="Composição do período total (barra horizontal) — julgamento por unanimidade "
+                  "contra julgamento com divergência(s) — já descontadas as maiorias em que "
+                  "Marco Aurélio foi o único voto vencido. Selecione o âmbito. Sem comparação "
+                  "com a série original (essa é o I42).",
+        fn=g22_cat_periodo_filtravel,
+        tipos=("barra",),
+        filtros=("ambiente", "classe", "tipo_questao", "periodo"),
+        periodo_padrao=(2020, 2025),
+        percentual=True,
+        kwargs_fixos={"excluir_nc": True, "macro_unanime": True,
+                      "coluna_desfecho": "desfecho_sem_ma",
+                      "titulo": "Julgamento por unanimidade vs divergência, sem Marco Aurélio"},
+    ),
     # ── Desfecho Não Concluído por Categoria ──────────────────────────────────
     GraficoSpec(
         id="I27",

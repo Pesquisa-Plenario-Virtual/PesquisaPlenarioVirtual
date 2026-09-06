@@ -372,23 +372,29 @@ _AGRUPAMENTO_MACRO_UNANIME: dict[str, tuple[str, ...]] = {
 def linha_decisao(df: pd.DataFrame, agrupamento: str = "unânime_vs_divergência",
                   ambiente: str = "Plenário Virtual",
                   show_values: bool = True, proporcao: bool = False,
-                  excluir_ers: tuple = ()) -> go.Figure:
+                  excluir_ers: tuple = (), coluna_desfecho: str = "desfecho",
+                  titulo: str | None = None) -> go.Figure:
     """Item 6.b2/6.b3 — série temporal de unanimidade contra divergência.
 
     Monta como barras agrupadas por ano (não linha à mão); o catálogo declara
     `tipos=("linha", "barra")` e `visual.tema.converter_tipo` faz a conversão,
     o mesmo mecanismo das outras páginas. "Ambos os ambientes" não filtra.
+
+    `coluna_desfecho` troca a coluna de origem — I47/I48 passam `desfecho_sem_ma`
+    (hipótese Marco Aurélio). Cai em `desfecho` se a coluna não existir (o portão
+    de conformidade roda contra o parquet cru).
     """
     grupos = _AGRUPAMENTOS_DECISAO[agrupamento]
     sub = df if ambiente == "Ambos os ambientes" else df[df["ambiente"] == ambiente]
+    col = coluna_desfecho if coluna_desfecho in sub.columns else "desfecho"
     mapa = {d: nome for nome, ds in grupos.items() for d in ds}
-    sub = sub.assign(serie=sub["desfecho"].map(mapa)).dropna(subset=["serie"])
+    sub = sub.assign(serie=sub[col].map(mapa)).dropna(subset=["serie"])
     # Prevalência da relatoria/divergência usa a cor local do I12 (fora da
     # paleta validada, pedido explícito) — paleta.cor() só entra pro grupo
     # unânime_vs_divergência, que continua nos tons de azul de sempre.
     cores = {nome: CORES_MACRO_DESFECHO.get(nome) or cor(nome) for nome in grupos}
     fig = _barras_grupo(sub, "ano", "serie", cores,
-                        f"Unanimidade contra divergência — {ambiente}",
+                        titulo or f"Unanimidade contra divergência — {ambiente}",
                         "Quantidade de processos incluídos em pauta", "Total (linha)",
                         show_values=show_values, proporcao=proporcao, excluir_ers=excluir_ers)
     # Cor vetorial só pra Prevalência da relatoria/divergência — protege o
@@ -710,9 +716,10 @@ def g20_c_tipo_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: 
                          show_values=show_values, proporcao=proporcao)
 
 
-def _prep_cat(df: pd.DataFrame) -> pd.DataFrame:
+def _prep_cat(df: pd.DataFrame, coluna_desfecho: str = "desfecho") -> pd.DataFrame:
     d = df.copy()
-    d["categoria"] = d["desfecho"].apply(_categoria_desfecho)
+    col = coluna_desfecho if coluna_desfecho in d.columns else "desfecho"
+    d["categoria"] = d[col].apply(_categoria_desfecho)
     return d
 
 
@@ -756,14 +763,15 @@ def _pizzas_categoria_por_tipo(sub: pd.DataFrame, ambiente_label: str,
 def g22_cat_periodo_filtravel(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False,
                               ambiente: str = "Plenário Virtual",
                               excluir_nc: bool = False, macro: bool = False,
-                              macro_unanime: bool = False) -> go.Figure:
-    sub = _prep_cat(df[df["ambiente"] == ambiente])
+                              macro_unanime: bool = False, coluna_desfecho: str = "desfecho",
+                              titulo: str | None = None) -> go.Figure:
+    sub = _prep_cat(df[df["ambiente"] == ambiente], coluna_desfecho)
     if excluir_nc or macro or macro_unanime:
         sub = _sem_nao_concluido(sub)
     if macro_unanime:
         mapa = {c: nome for nome, cs in _AGRUPAMENTO_MACRO_UNANIME.items() for c in cs}
         vc = sub["categoria"].map(mapa).value_counts()
-        return _pizza(vc, f"Julgamento por unanimidade vs divergência — {ambiente} (período total)",
+        return _pizza(vc, titulo or f"Julgamento por unanimidade vs divergência — {ambiente} (período total)",
                       cores=[cor(l) for l in vc.index],
                       show_values=show_values, proporcao=proporcao)
     if macro:
