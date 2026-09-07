@@ -475,7 +475,7 @@ _CATALOGO: list[GraficoSpec] = [
         tipos=("linha", "barra"),
         filtros=(),
         kwargs_fixos={"agrupamento": "unânime_vs_divergência", "ambiente": "Plenário Presencial",
-                      "coluna_desfecho": "desfecho_sem_ma",
+                      "coluna_desfecho": "desfecho_sem_ma", "tamanho_texto": 15,
                       "titulo": "Unanimidade vs divergência, sem as divergências isoladas de Marco Aurélio — Plenário Presencial"},
         percentual=True,
     ),

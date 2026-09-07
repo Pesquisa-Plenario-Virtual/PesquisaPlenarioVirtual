@@ -373,7 +373,7 @@ def linha_decisao(df: pd.DataFrame, agrupamento: str = "unânime_vs_divergência
                   ambiente: str = "Plenário Virtual",
                   show_values: bool = True, proporcao: bool = False,
                   excluir_ers: tuple = (), coluna_desfecho: str = "desfecho",
-                  titulo: str | None = None) -> go.Figure:
+                  titulo: str | None = None, tamanho_texto: int = 20) -> go.Figure:
     """Item 6.b2/6.b3 — série temporal de unanimidade contra divergência.
 
     Monta como barras agrupadas por ano (não linha à mão); o catálogo declara
@@ -396,7 +396,8 @@ def linha_decisao(df: pd.DataFrame, agrupamento: str = "unânime_vs_divergência
     fig = _barras_grupo(sub, "ano", "serie", cores,
                         titulo or f"Unanimidade contra divergência — {ambiente}",
                         "Quantidade de processos incluídos em pauta", "Total (linha)",
-                        show_values=show_values, proporcao=proporcao, excluir_ers=excluir_ers)
+                        show_values=show_values, proporcao=proporcao, excluir_ers=excluir_ers,
+                        tamanho_texto=tamanho_texto)
     # Cor vetorial só pra Prevalência da relatoria/divergência — protege o
     # hex fora da paleta do recolore de visual/tema.py, mesmo mecanismo do
     # I1. As séries de unânime_vs_divergência continuam escalares, seguindo
