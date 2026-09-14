@@ -20,6 +20,7 @@ from .plots import (
     _refinar_motivos_diversos,
     g_pauta_concluidos,
     g7b_unanimidade_vs_divergencia_2010_2025,
+    g50_destino_destaque, g51_desfecho_presencial_pos_destaque,
 )
 from pages.tramitacao.plots import gt10_tabulador
 from dados.filters import dimensoes_disponiveis
@@ -648,6 +649,33 @@ _CATALOGO: list[GraficoSpec] = [
         tipos=("barra",),
         filtros=(),
         portada=True,
+    ),
+    # ── Pedidos de Destaque ──────────────────────────────────────────────────
+    GraficoSpec(
+        id="I50",
+        rotulo="I50 — Destino dos pedidos de destaque (2020–2025)",
+        subtitulo="Onde pararam os pedidos de destaque do Plenário Virtual",
+        descricao="Dos pedidos de destaque no Plenário Virtual (2020–2025), quantos tiveram "
+                  "inclusão em pauta posterior no Plenário Presencial, quantos voltaram a ser "
+                  "incluídos no próprio Plenário Virtual e quantos não tiveram nenhuma inclusão "
+                  "posterior. Cálculo cruza o processo (`incidente`) com sua próxima inclusão em "
+                  "pauta cronológica, em qualquer ambiente; período fixo do dado, sem recorte.",
+        fn=g50_destino_destaque,
+        tipos=("barra",),
+        filtros=(),
+        percentual=True,
+    ),
+    GraficoSpec(
+        id="I51",
+        rotulo="I51 — Desfecho no Plenário Presencial dos pedidos de destaque (2020–2025)",
+        subtitulo="O que aconteceu com quem voltou pro Presencial",
+        descricao="Recorte do I50 só com os pedidos de destaque que tiveram inclusão posterior "
+                  "no Plenário Presencial: barra empilhada com não concluído e os três tipos de "
+                  "conclusão (decisão unânime, maioria com o relator, maioria vencido o relator). "
+                  "Período fixo do dado, sem recorte.",
+        fn=g51_desfecho_presencial_pos_destaque,
+        tipos=("barra",),
+        filtros=(),
     ),
 ]
 

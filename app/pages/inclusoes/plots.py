@@ -916,3 +916,86 @@ def g_pauta_concluidos(df: pd.DataFrame, show_values: bool = True, **kwargs) -> 
                    height=650, yaxis=dict(range=[0, 110]), xaxis=dict(title="", tickangle=0))
     return fig
 
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GRUPO 6 — Pedidos de destaque: destino e desfecho posterior (2020–2025)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_CORES_DESTINO_DESTAQUE = {
+    "Plenário Presencial":         COR_PP,
+    "Plenário Virtual":            COR_PV,
+    "Nenhuma inclusão posterior":  "#9ca3af",
+}
+
+
+def _analisar_destaques(df: pd.DataFrame) -> pd.DataFrame:
+    """Para cada pedido de destaque no Plenário Virtual (2020-2025), acha a
+    próxima inclusão em pauta do mesmo processo (qualquer ambiente) e, quando
+    essa inclusão foi no Presencial, o desfecho dela.
+
+    Unidade de análise é o pedido de destaque (linha de `desfecho`), não o
+    processo — igual à contagem do I3, que também conta eventos.
+    """
+    d = df.sort_values("data_inclusao_dt")
+    destaques = d[
+        (d["desfecho"] == "Não concluído - destaque")
+        & (d["ambiente"] == "Plenário Virtual")
+        & (d["ano"] >= 2020) & (d["ano"] <= 2025)
+    ]
+
+    linhas = []
+    for _, row in destaques.iterrows():
+        seguintes = d[
+            (d["incidente"] == row["incidente"])
+            & (d["data_inclusao_dt"] > row["data_inclusao_dt"])
+        ]
+        if seguintes.empty:
+            destino, desfecho_seguinte = "Nenhuma inclusão posterior", None
+        else:
+            prox = seguintes.iloc[0]
+            destino = prox["ambiente"]
+            desfecho_seguinte = prox["desfecho"] if destino == "Plenário Presencial" else None
+        linhas.append({
+            "incidente": row["incidente"],
+            "destino": destino,
+            "desfecho_seguinte": desfecho_seguinte,
+        })
+    return pd.DataFrame(linhas, columns=["incidente", "destino", "desfecho_seguinte"])
+
+
+def g50_destino_destaque(df: pd.DataFrame, show_values: bool = True, proporcao: bool = False) -> go.Figure:
+    """I50 — onde os pedidos de destaque (2020-2025) pararam: inclusão
+    posterior no Presencial, de volta ao Virtual, ou nenhuma inclusão."""
+    dest = _analisar_destaques(df)["destino"].value_counts()
+    cores = [_CORES_DESTINO_DESTAQUE[i] for i in dest.index]
+    return _composicao(dest, "Destino dos pedidos de destaque (2020–2025)",
+                       cores=cores, show_values=show_values, proporcao=proporcao)
+
+
+def g51_desfecho_presencial_pos_destaque(df: pd.DataFrame, show_values: bool = True) -> go.Figure:
+    """I51 — dos pedidos de destaque que foram incluídos no Presencial,
+    quantos concluíram (por tipo de decisão) e quantos não concluíram —
+    barra empilhada única, no padrão de `_tramitacao_periodo_vertical`
+    (bloco2_inclusoes/plots.py)."""
+    dest = _analisar_destaques(df)
+    pos = dest[dest["destino"] == "Plenário Presencial"]
+    cat = pos["desfecho_seguinte"].apply(_categoria_desfecho).value_counts()
+    total = float(cat.sum()) or 1.0
+
+    fig = go.Figure()
+    for c in sorted(cat.index):
+        n = cat[c]
+        fig.add_trace(go.Bar(
+            x=[""], y=[n], name=c, marker_color=CORES_CATEGORIA[c],
+            text=[f"{br(n)}<br>{n / total * 100:.1f}%"] if show_values else None,
+            textposition="inside", textfont=dict(color="black"),
+        ))
+    fig.update_layout(barmode="stack")
+    aplicar_padrao(
+        fig, "Desfecho no Plenário Presencial dos pedidos de destaque (2020–2025)",
+        xaxis=dict(title="", showticklabels=False),
+        yaxis=dict(title="Pedidos de destaque incluídos no Presencial"),
+        showlegend=True, legend=_LEGEND_BARRAS,
+    )
+    return fig
+
